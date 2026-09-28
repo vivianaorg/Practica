@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  ci3-web:
+    build: .
+    container_name: ci3-web
+    ports:
+      - "80:80"
+    depends_on:
+      - ci3-mysql
+      - ci3-pgsql
+    environment:
+      - ORACLE_HOST=192.168.13.37
+      - ORACLE_PORT=1521
+      - ORACLE_SID=orcl
+      - MYSQL_HOST=ci3-mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=ci3db
+      - MYSQL_USER=ci3user
+      - MYSQL_PASSWORD=ci3pass
+      - PGSQL_HOST=ci3-pgsql
+      - PGSQL_PORT=5432
+      - PGSQL_DATABASE=ci3db
+      - PGSQL_USER=ci3user
+      - PGSQL_PASSWORD=ci3pass
+    networks:
+      - ci3-network
+
+  ci3-mysql:
+    image: mysql:5.7
+    container_name: ci3-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - MYSQL_DATABASE=ci3db
+      - MYSQL_USER=ci3user
+      - MYSQL_PASSWORD=ci3pass
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - ci3-network
+
+  ci3-pgsql:
+    image: postgres:9.6
+    container_name: ci3-pgsql
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=ci3db
+      - POSTGRES_USER=ci3user
+      - POSTGRES_PASSWORD=ci3pass
+    volumes:
+      - pgsql-data:/var/lib/postgresql/data
+    networks:
+      - ci3-network
+
+volumes:
+  mysql-data:
+  pgsql-data:
+
+networks:
+  ci3-network:
+    driver: bridge

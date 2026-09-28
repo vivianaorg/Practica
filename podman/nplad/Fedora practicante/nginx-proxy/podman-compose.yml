@@ -1,0 +1,17 @@
+services:
+  nginx-proxy:
+    image: docker.io/library/nginx:stable-alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "8080:80"  
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d:Z
+      - ./ssl:/etc/nginx/ssl:Z
+      - ./logs:/var/log/nginx:Z
+    networks:
+      fedorapracticante_default:
+
+networks:
+  fedorapracticante_default:
+    external: true

@@ -1,0 +1,21 @@
+# Imágenes de contenedores exportadas (pesan varios GB y superan el límite de GitHub)
+*.tar
+*.rpm
+
+# Archivos comprimidos de copias antiguas (>50MB)
+*.tar.gz
+
+# Directorios de datos y base de datos local
+**/data/mariadb_data/
+**/data/plad_actual/
+**/data/plad_old/
+
+# Carpeta de copia duplicada (descomentar si no se requiere subir)
+# podman/nplad/copia/
+
+# Credenciales y archivos sensibles
+# google_credentials/
+
+# Archivos del sistema
+Thumbs.db
+.DS_Store

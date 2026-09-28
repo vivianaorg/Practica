@@ -1,0 +1,129 @@
+# ============================================================
+# 0. SERVIDOR POR DEFECTO (Seguridad)
+# ============================================================
+server {
+    listen 80 default_server;
+    # CAMBIO: Escuchamos en 443 porque en pruebas no hay Nginx en el Host
+    listen 443 ssl default_server;
+    server_name _;
+    
+    ssl_certificate /etc/nginx/ssl/combined.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+    
+    return 444; 
+}
+
+# ===============================================
+# 1. DEFINICIÓN DE UPSTREAMS
+# ===============================================
+upstream plad_old_backend {
+    server moodle_old:80; 
+}
+upstream nplad_backend {
+    server moodle_new:80;
+}
+upstream phpmyadmin_backend {
+    server phpmyadmin:80;  
+}
+
+# ============================================================
+# 2. REDIRECCIÓN HTTP -> HTTPS (GLOBAL)
+# ============================================================
+server {
+    listen 80;
+    # CAMBIO: Usamos tus dominios de prueba
+    server_name test-nplad.ufps.edu.co www.test-nplad.ufps.edu.co
+                test-plad-old.ufps.edu.co www.test-plad-old.ufps.edu.co;
+
+    return 301 https://$host$request_uri;
+}
+
+# ===============================================
+# 4. SERVIDOR MOODLE NUEVO (test-nplad)
+# ===============================================
+server {
+    # CAMBIO: Listen 443 (antes 36511)
+    listen 443 ssl;
+    http2 on;
+    # CAMBIO: Dominio de prueba
+    server_name test-nplad.ufps.edu.co www.test-nplad.ufps.edu.co;
+
+    ssl_certificate /etc/nginx/ssl/combined.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+
+    # Mantenemos tus protocolos y ciphers de producción
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers on;
+
+    client_max_body_size 2128M;
+    add_header X-Frame-Options "SAMEORIGIN";
+
+    location / {
+        proxy_pass http://nplad_backend; # Corregido: http://
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Port 443; 
+    }
+
+    # Mantenemos phpmyadmin tal cual lo tenías
+    location /phpmyadmin/ {
+        proxy_pass http://phpmyadmin_backend/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_redirect default;
+    }
+
+    error_page 502 503 504 /50x_error.html;
+    location = /50x_error.html {
+        root /usr/share/nginx/html;
+        internal;
+    }
+}
+
+# ===============================================
+# 5. SERVIDOR MOODLE OLD (test-plad-old)
+# ===============================================
+server {
+    # CAMBIO: Listen 443 (antes 36511)
+    listen 443 ssl;
+    http2 on;
+    # CAMBIO: Dominio de prueba
+    server_name test-plad-old.ufps.edu.co www.test-plad-old.ufps.edu.co;
+
+    ssl_certificate /etc/nginx/ssl/combined.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers on;
+
+    client_max_body_size 2128M;
+    add_header X-Frame-Options "SAMEORIGIN";
+
+    location / {
+        proxy_pass http://plad_old_backend; # Corregido: http://
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Port 443; 
+        
+        proxy_redirect off;
+        proxy_buffering off;
+    }
+
+    error_page 502 503 504 /50x_error.html;
+    location = /50x_error.html {
+        root /usr/share/nginx/html;
+        internal;
+    }
+}

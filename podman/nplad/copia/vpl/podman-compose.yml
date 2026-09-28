@@ -1,0 +1,93 @@
+services:
+  vpl-service:
+    container_name: vpl-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args: {}
+    image: localhost/vpl-jail-system:latest
+    restart: unless-stopped
+    stop_grace_period: 30s
+    
+    # Mantenemos privileged:true. VPL lo necesita para sus operaciones de jail.
+    privileged: true
+
+    networks:
+      plad_new_default:
+        # ✅ NO hay ipv4_address fija. Podman Compose asigna la IP dinámica y el DNS interno.
+    
+    # ❌ ELIMINADA la sección 'ports' ("8092:80").
+    # La comunicación de Moodle a VPL será ahora interna, usando solo el nombre del servicio.
+
+    environment:
+      TZ: "America/Bogota"
+      LANG: "en_US.UTF-8"
+      LANGUAGE: "en_US.UTF-8"
+      LC_ALL: "en_US.UTF-8"
+
+      # --- VARIABLES DE CONFIGURACIÓN ---
+      JAILPATH: "/"
+      LOGDIR: "/var/log/vpl"
+      TMPDIR: "/tmp"
+      FIREWALL: "0"
+      CHROOT: "0"
+      AUTOREMOVE: "1"
+      MIN_PRISONER_UGID: "10000"
+      MAX_PRISONER_UGID: "12000"
+      MAXMEMORY: "512M"
+      MAXPROCESSES: "150"
+      MAXTIME: "1800"
+      LOGLEVEL: "3"
+      VPL_JAIL_PORT: "80"
+      VPL_JAIL_SECURE_PORT: "0"
+      VPL_JAIL_JAILPATH: "/"
+      VPL_CERTIFICATES_DIR: "/etc/vpl/ssl"
+      VPL_JAIL_SSL_CERT_FILE: "/etc/vpl/ssl/fullchain.pem"
+      VPL_JAIL_SSL_KEY_FILE: "/etc/vpl/ssl/privkey.pem"
+      
+      # --- CORRECCIÓN CRÍTICA: CON SLASH FINAL ---
+      URLPATH: "/"
+      VPL_JAIL_URLPATH: "/"
+      
+      container_mode: "1"
+      
+      # (Dejar vacío para prueba abierta, o poner IPs de Moodle para seguridad)
+      VPL_JAIL_TASK_ONLY_FROM: ""
+      
+
+    volumes:
+      - type: bind
+        source: ./logs
+        target: /var/log/vpl
+        bind:
+          selinux: Z
+          create_host_path: true
+
+      # --- VOLUMEN DE JAIL ELIMINADO POR COMPLETO ---
+
+      - type: bind
+        source: ../nginx-proxy/ssl
+        target: /etc/vpl/ssl
+        read_only: true
+        bind:
+          selinux: Z
+          create_host_path: true
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    healthcheck:
+      # Verificación de salud interna por HTTP
+      test: ["CMD", "sh", "-c", "if command -v curl >/dev/null 2>&1; then curl -sSf http://localhost:80${URLPATH}ping.html >/dev/null || exit 1; else exit 0; fi"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  plad_new_default:
+    external: true
+    name: plad_new_default

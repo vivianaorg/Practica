@@ -1,0 +1,48 @@
+FROM centos:7
+
+# Fix EOL CentOS 7 repos -> vault.centos.org
+RUN sed -i 's|^mirrorlist=|#mirrorlist=|g; s|^#\s*baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g; s|/7/|/7.9.2009/|g' /etc/yum.repos.d/CentOS-Base.repo
+
+# Add EPEL 7 (archive) and Remi 7 repos
+RUN yum install -y https://archives.fedoraproject.org/pub/archive/epel/7/x86_64/Packages/e/epel-release-7-14.noarch.rpm https://rpms.remirepo.net/enterprise/remi-release-7.rpm
+
+# Enable Remi PHP 5.6
+RUN yum-config-manager --enable remi remi-php56
+
+# Install Apache + PHP 5.6 + extensions
+RUN yum install -y \
+        httpd \
+        php \
+        php-ldap \
+        php-gd \
+        php-devel \
+        php-pear \
+        libaio \
+        mod_ssl \
+        wget \
+        gcc \
+        make \
+        && yum clean all
+
+# Install Oracle InstantClient
+ADD data/oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm /tmp/
+ADD data/oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm /tmp/
+RUN yum install -y /tmp/oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm && \
+    yum install -y /tmp/oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm && \
+    rm -f /tmp/oracle-instantclient*.rpm
+
+# Use pre-built OCI8 extension (included in project, avoids compile/DTrace issues)
+COPY data/oci8.so /usr/lib64/php/modules/oci8.so
+RUN echo "extension=oci8.so" > /etc/php.d/20-oci8.ini
+
+# Configure PHP timezone
+RUN sed -ri 's/^;date.timezone\s*=.*$/date.timezone =America\/Bogota/g' /etc/php.ini
+
+# Enable Apache mod_rewrite
+RUN sed -ri 's/\s*AllowOverride None/   AllowOverride All/g' /etc/httpd/conf/httpd.conf
+
+# Expose ports
+EXPOSE 80 10001-10021
+
+# Start Apache in foreground
+CMD ["/bin/bash", "-c", "rm -f /var/run/httpd/httpd.pid /run/httpd/httpd.pid && exec httpd -D FOREGROUND"]

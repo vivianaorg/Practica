@@ -1,0 +1,92 @@
+version: '3.7'
+
+services:
+  moodle_old:
+    build:
+      context: ./moodle_old
+      dockerfile: Dockerfile
+    image: localhost/moodle_old:5.0
+    container_name: moodle_old
+    command: ["/usr/bin/supervisord", "-n"]
+    volumes:
+      - ./data/plad_old/moodledata:/var/www/moodledata:Z
+    env_file:
+      - ./moodle_old/.env
+    environment:
+      - MOODLE_URL=http://nplad2.ufps.edu.co
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    restart: always
+    networks:
+      - fedorapracticante_default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+
+  moodle_new:
+    build:
+      context: ./moodle_new
+      dockerfile: Dockerfile
+    image: localhost/moodle_new:5.0
+    container_name: moodle_new
+    command: ["/usr/bin/supervisord", "-n"]
+    volumes:
+      - ./data/plad_actual/moodledata:/var/www/moodledata:Z
+    env_file:
+      - ./moodle_new/.env
+    environment:
+      - MOODLE_URL=http://nplad.ufps.edu.co
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    restart: always
+    networks:
+      - fedorapracticante_default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+
+  mariadb:
+    image: localhost/mariadb:10.11
+    container_name: mariadb
+    ports:
+      - "36514:3306"
+    env_file:
+      - ./mariadb/.env
+    volumes:
+      - ./data/mariadb_data:/var/lib/mysql:Z
+    restart: always
+    networks:
+      - fedorapracticante_default
+    command: [
+      "mysqld",
+      "--default-authentication-plugin=mysql_native_password"
+    ]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  phpmyadmin:
+    image: localhost/phpmyadmin:5.2.2
+    container_name: phpmyadmin
+    environment:
+      - PMA_ABSOLUTE_URI=http://nplad.ufps.edu.co/phpmyadmin/
+    env_file:
+      - ./phpmyadmin/.env
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - fedorapracticante_default
+    restart: always
+  
+networks:
+  fedorapracticante_default:
+    external: true

@@ -1,0 +1,5 @@
+PMA_HOST=mariadb
+PMA_PORT=3306
+PMA_USER=root
+PMA_PASSWORD=mariadb_password
+PMA_ABSOLUTE_URI=https://nplad.ufps.edu.co/phpmyadmin/
