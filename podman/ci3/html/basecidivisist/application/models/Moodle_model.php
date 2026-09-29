@@ -62,6 +62,16 @@ class Moodle_model extends CI_Model
         return $this->_llamar_endpoint($url);
     }
 
+    public function obtener_calificaciones($courseId)
+    {
+        $url = $this->base_url . '/obtener_calificaciones.php?' . http_build_query(array(
+            'token'     => $this->token,
+            'course_id' => $courseId,
+        ));
+
+        return $this->_llamar_endpoint($url);
+    }
+
     private function _llamar_endpoint($url, $timeout = null)
     {
         if ($timeout === null) {
