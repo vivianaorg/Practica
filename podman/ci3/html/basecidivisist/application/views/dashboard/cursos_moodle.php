@@ -20,12 +20,15 @@
                             <div class="icon">
                                 <i class="fa fa-book"></i>
                             </div>
-                            <div style="background: rgba(0,0,0,0.15); padding: 5px 10px; text-align: center;">
-                                <a href="<?php echo site_url('dashboard/actividades_moodle/' . $curso['id']); ?>" style="color: #fff; margin-right: 15px;">
+                            <div style="background: rgba(0,0,0,0.15); padding: 7px 10px; text-align: center; font-size: 12px;">
+                                <a href="<?php echo site_url('dashboard/actividades_moodle/' . $curso['id']); ?>" style="color: #fff; margin-right: 10px;">
                                     Actividades <i class="fa fa-list"></i>
                                 </a>
-                                <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $curso['id']); ?>" style="color: #fff; font-weight: bold;">
-                                    Configurar Rubrica <i class="fa fa-sliders"></i>
+                                <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $curso['id']); ?>" style="color: #fff; margin-right: 10px;">
+                                    Rúbrica <i class="fa fa-sliders"></i>
+                                </a>
+                                <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $curso['id']); ?>" style="color: #fff; font-weight: bold; background: rgba(0,0,0,0.2); padding: 3px 6px; border-radius: 3px;">
+                                    Calificar <i class="fa fa-calculator"></i>
                                 </a>
                             </div>
                         </div>

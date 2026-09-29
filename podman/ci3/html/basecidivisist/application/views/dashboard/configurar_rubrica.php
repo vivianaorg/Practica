@@ -17,6 +17,11 @@
                         <i class="fa fa-arrow-left"></i> Volver a cursos
                     </a>
                 </li>
+                <li class="pull-right">
+                    <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $tipo_previo); ?>" class="text-green" style="padding: 10px 15px; font-weight: bold;">
+                        <i class="fa fa-calculator"></i> Ir a Calificar Corte
+                    </a>
+                </li>
             </ul>
 
             <div class="tab-content">
@@ -104,6 +109,11 @@
                                                 <button type="button" class="btn btn-primary btn-xs" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
                                                     <i class="fa fa-pencil"></i> Modificar Rubrica
                                                 </button>
+                                                <?php if ($estaCompleto): ?>
+                                                    <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-success btn-xs" style="margin-left: 5px;">
+                                                        <i class="fa fa-calculator"></i> Calificar Corte
+                                                    </a>
+                                                <?php endif; ?>
                                             </div>
                                         <?php endif; ?>
                                     </div>

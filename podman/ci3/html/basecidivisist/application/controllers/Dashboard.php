@@ -186,8 +186,198 @@ class Dashboard extends CMS_Controller {
             ));
         }
     }
-    
-        public function test_oracle() {
+
+    public function calificar_rubrica($courseId = 2, $tipoPrevio = '1') {
+        $this->load->model('Moodle_model');
+        $this->load->model('Subnotas_model');
+
+        $codProfesor = '04608';
+        $codMateria  = '1155304';
+        $grupo       = 'A';
+        $semestre    = '2026-1';
+
+        $rubrica = $this->Subnotas_model->obtener_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
+        $todasRubricas = $this->Subnotas_model->obtener_todas_rubricas_curso($codProfesor, $codMateria, $grupo, $semestre);
+
+        $sumaPorcentajes = 0;
+        if (!empty($rubrica)) {
+            foreach ($rubrica as $r) {
+                $sumaPorcentajes += isset($r->PORCENTAJE) ? (float)$r->PORCENTAJE : 0;
+            }
+        }
+        $rubricaValida = (!empty($rubrica) && abs($sumaPorcentajes - 100) < 0.01);
+
+        $resultadoMoodle = $this->Moodle_model->obtener_calificaciones($courseId);
+        $exitoMoodle = isset($resultadoMoodle['exito']) ? $resultadoMoodle['exito'] : false;
+        $mensajeMoodle = isset($resultadoMoodle['mensaje']) ? $resultadoMoodle['mensaje'] : '';
+        $cursoNombre = isset($resultadoMoodle['datos']['curso_nombre']) ? $resultadoMoodle['datos']['curso_nombre'] : 'Curso Moodle #' . $courseId;
+        $cursoCodigo = isset($resultadoMoodle['datos']['curso_codigo']) ? $resultadoMoodle['datos']['curso_codigo'] : '';
+        $estudiantesMoodle = isset($resultadoMoodle['datos']['estudiantes']) ? $resultadoMoodle['datos']['estudiantes'] : array();
+
+        $subnotasGuardadas = $this->Subnotas_model->obtener_todas_subnotas_grupo($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
+
+        $estudiantesCalculados = array();
+        $totalAprobados = 0;
+        $totalReprobados = 0;
+        $acumuladorPromedio = 0;
+
+        foreach ($estudiantesMoodle as $est) {
+            $codEstudiante = !empty($est['codigo']) ? $est['codigo'] : (!empty($est['idnumber']) ? $est['idnumber'] : $est['username']);
+            $nombreCompleto = !empty($est['nombre_completo']) ? $est['nombre_completo'] : (trim($est['nombres'] . ' ' . $est['apellidos']));
+
+            $calificacionesMap = array();
+            if (!empty($est['calificaciones']) && is_array($est['calificaciones'])) {
+                foreach ($est['calificaciones'] as $cal) {
+                    $idAct = (int)$cal['id_actividad'];
+                    $calificacionesMap[$idAct] = $cal;
+                }
+            }
+
+            $desglose = array();
+            $notaSugerida = 0.0;
+
+            if ($rubricaValida) {
+                foreach ($rubrica as $itemRubrica) {
+                    $idAct  = (int)$itemRubrica->ID_ACTIVIDAD_MOODLE;
+                    $nomAct = $itemRubrica->NOMBRE_ACTIVIDAD;
+                    $pct    = (float)$itemRubrica->PORCENTAJE;
+
+                    $notaOriginal = 0.0;
+                    $notaMax = 5.0;
+                    $presento = false;
+
+                    if (isset($calificacionesMap[$idAct])) {
+                        $presento = true;
+                        $notaOriginal = (float)$calificacionesMap[$idAct]['nota_final'];
+                        $notaMax = (float)$calificacionesMap[$idAct]['nota_maxima'];
+                    }
+
+                    if ($notaMax > 0 && abs($notaMax - 5.0) > 0.01) {
+                        $notaNormalizada = round(($notaOriginal / $notaMax) * 5.0, 2);
+                    } else {
+                        $notaNormalizada = $notaOriginal;
+                    }
+
+                    $subnota = round($notaNormalizada * ($pct / 100), 2);
+                    $notaSugerida += $subnota;
+
+                    $desglose[] = array(
+                        'id_actividad_moodle' => $idAct,
+                        'nombre_actividad'    => $nomAct,
+                        'nota_original'       => $notaOriginal,
+                        'nota_maxima'         => $notaMax,
+                        'nota_normalizada'    => $notaNormalizada,
+                        'porcentaje'          => $pct,
+                        'subnota'             => $subnota,
+                        'presento'            => $presento,
+                    );
+                }
+            }
+
+            $notaSugerida = min(5.0, max(0.0, round($notaSugerida, 2)));
+
+            $yaGuardado = isset($subnotasGuardadas[$codEstudiante]);
+            $estadoActual = 'SUGERIDA';
+            $notaDefinitiva = $notaSugerida;
+
+            if ($yaGuardado) {
+                $estadoActual = $subnotasGuardadas[$codEstudiante]['estado'];
+                $notaDefinitiva = round($subnotasGuardadas[$codEstudiante]['total_nota'], 2);
+            }
+
+            if ($notaDefinitiva >= 3.0) {
+                $totalAprobados++;
+            } else {
+                $totalReprobados++;
+            }
+            $acumuladorPromedio += $notaDefinitiva;
+
+            $estudiantesCalculados[] = array(
+                'user_id'          => isset($est['user_id']) ? $est['user_id'] : 0,
+                'codigo'           => $codEstudiante,
+                'nombre_completo'  => $nombreCompleto,
+                'email'            => isset($est['email']) ? $est['email'] : '',
+                'nota_sugerida'    => $notaSugerida,
+                'nota_definitiva'  => $notaDefinitiva,
+                'estado'           => $estadoActual,
+                'ya_guardado'      => $yaGuardado,
+                'desglose'         => $desglose,
+            );
+        }
+
+        $totalEstudiantes = count($estudiantesCalculados);
+        $promedioGrupo = ($totalEstudiantes > 0) ? round($acumuladorPromedio / $totalEstudiantes, 2) : 0.0;
+
+        $this->template->set('course_id', $courseId);
+        $this->template->set('tipo_previo', $tipoPrevio);
+        $this->template->set('curso_nombre', $cursoNombre);
+        $this->template->set('curso_codigo', $cursoCodigo);
+        $this->template->set('cod_profesor', $codProfesor);
+        $this->template->set('cod_materia', $codMateria);
+        $this->template->set('grupo', $grupo);
+        $this->template->set('semestre', $semestre);
+        $this->template->set('rubrica', $rubrica);
+        $this->template->set('todas_rubricas', $todasRubricas);
+        $this->template->set('rubrica_valida', $rubricaValida);
+        $this->template->set('suma_porcentajes', $sumaPorcentajes);
+        $this->template->set('exito_moodle', $exitoMoodle);
+        $this->template->set('mensaje_moodle', $mensajeMoodle);
+        $this->template->set('estudiantes', $estudiantesCalculados);
+        $this->template->set('total_estudiantes', $totalEstudiantes);
+        $this->template->set('total_aprobados', $totalAprobados);
+        $this->template->set('total_reprobados', $totalReprobados);
+        $this->template->set('promedio_grupo', $promedioGrupo);
+
+        $this->template->set('item_sidebar_active', 'calificar_rubrica');
+        $this->template->set('content_header', 'Calculo de Notas Sugeridas y Aceptacion');
+        $this->template->set('content_sub_header', 'Integracion Moodle - Evaluacion por Rubrica');
+        $this->template->render('dashboard/calificar_rubrica');
+    }
+
+    public function guardar_calificaciones_corte_ajax() {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $this->load->model('Subnotas_model');
+
+        $codProfesor = $this->input->post('cod_profesor');
+        $codMateria  = $this->input->post('cod_materia');
+        $grupo       = $this->input->post('grupo');
+        $semestre    = $this->input->post('semestre');
+        $tipoPrevio  = $this->input->post('tipo_previo');
+        $datosRaw    = $this->input->post('calificaciones');
+
+        if (empty($codProfesor) || empty($codMateria) || empty($tipoPrevio)) {
+            echo json_encode(array('exito' => false, 'mensaje' => 'Parametros requeridos incompletos'));
+            return;
+        }
+
+        $estudiantes = is_array($datosRaw) ? $datosRaw : json_decode($datosRaw, true);
+        if (!is_array($estudiantes) || empty($estudiantes)) {
+            echo json_encode(array('exito' => false, 'mensaje' => 'No se recibieron datos de estudiantes'));
+            return;
+        }
+
+        $guardado = $this->Subnotas_model->guardar_calificaciones_grupo(
+            $codProfesor,
+            $codMateria,
+            $grupo,
+            $semestre,
+            $tipoPrevio,
+            $estudiantes
+        );
+
+        if ($guardado) {
+            echo json_encode(array('exito' => true, 'mensaje' => 'Calificaciones del corte guardadas exitosamente'));
+        } else {
+            $detalle = isset($this->Subnotas_model->ultimo_error) ? $this->Subnotas_model->ultimo_error : '';
+            echo json_encode(array(
+                'exito'   => false,
+                'mensaje' => 'Error al guardar en base de datos' . ($detalle ? ': ' . $detalle : '')
+            ));
+        }
+    }
+
+    public function test_oracle() {
         header('Content-Type: application/json; charset=utf-8');
 
         $config = $this->config->item('database2');
