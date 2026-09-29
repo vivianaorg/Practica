@@ -3,6 +3,8 @@ if (php_sapi_name() !== 'cli') {
     die("Este script solo puede ejecutarse desde la terminal (CLI).\n");
 }
 
+define('BASEPATH', true);
+
 $configFile = __DIR__ . '/../config/database2.php';
 if (!file_exists($configFile)) {
     die("Error: No se encuentra el archivo de configuracion: $configFile\n");
