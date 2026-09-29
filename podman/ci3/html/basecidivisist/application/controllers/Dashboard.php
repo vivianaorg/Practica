@@ -99,6 +99,87 @@ class Dashboard extends CMS_Controller {
         $this->template->set('content_sub_header', 'Selecciona un curso para ver sus actividades');
         $this->template->render('dashboard/cursos_moodle');
     }
+
+    public function configurar_rubrica($courseId = 2, $tipoPrevio = '1') {
+        $this->load->model('Moodle_model');
+        $this->load->model('Subnotas_model');
+
+        $codProfesor = '04608';
+        $codMateria  = '1155304';
+        $grupo       = 'A';
+        $semestre    = '2026-1';
+
+        $resultado = $this->Moodle_model->listar_actividades($courseId);
+
+        $exito = isset($resultado['exito']) ? $resultado['exito'] : false;
+        $mensaje_moodle = isset($resultado['mensaje']) ? $resultado['mensaje'] : null;
+        $curso_nombre = isset($resultado['datos']['curso_nombre']) ? $resultado['datos']['curso_nombre'] : null;
+        $actividades = isset($resultado['datos']['actividades']) ? $resultado['datos']['actividades'] : array();
+
+        $rubricaActual = $this->Subnotas_model->obtener_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
+
+        $this->template->set('exito', $exito);
+        $this->template->set('mensaje_moodle', $mensaje_moodle);
+        $this->template->set('course_id', $courseId);
+        $this->template->set('curso_nombre', $curso_nombre);
+        $this->template->set('actividades', $actividades);
+        $this->template->set('rubrica_actual', $rubricaActual);
+        $this->template->set('tipo_previo', $tipoPrevio);
+        $this->template->set('cod_profesor', $codProfesor);
+        $this->template->set('cod_materia', $codMateria);
+        $this->template->set('grupo', $grupo);
+        $this->template->set('semestre', $semestre);
+
+        $this->template->set('item_sidebar_active', 'actividades_moodle');
+        $this->template->set('content_header', 'Configuracion de Rubrica');
+        $this->template->set('content_sub_header', 'Asignacion de actividades y porcentajes para corte');
+        $this->template->render('dashboard/configurar_rubrica');
+    }
+
+    public function guardar_rubrica_ajax() {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $this->load->model('Subnotas_model');
+
+        $codProfesor = $this->input->post('cod_profesor');
+        $codMateria  = $this->input->post('cod_materia');
+        $grupo       = $this->input->post('grupo');
+        $semestre    = $this->input->post('semestre');
+        $tipoPrevio  = $this->input->post('tipo_previo');
+        $itemsRaw    = $this->input->post('items');
+
+        if (empty($codProfesor) || empty($codMateria) || empty($tipoPrevio)) {
+            echo json_encode(array('exito' => false, 'mensaje' => 'Parametros requeridos incompletos'));
+            return;
+        }
+
+        $items = is_array($itemsRaw) ? $itemsRaw : json_decode($itemsRaw, true);
+        if (!is_array($items) || empty($items)) {
+            echo json_encode(array('exito' => false, 'mensaje' => 'Debe agregar al menos una actividad'));
+            return;
+        }
+
+        $suma = 0;
+        foreach ($items as $it) {
+            $suma += isset($it['porcentaje']) ? (float)$it['porcentaje'] : 0;
+        }
+
+        if (abs($suma - 100) > 0.01) {
+            echo json_encode(array(
+                'exito'   => false,
+                'mensaje' => 'La suma de los porcentajes debe ser exactamente 100%. Total actual: ' . $suma . '%'
+            ));
+            return;
+        }
+
+        $guardado = $this->Subnotas_model->guardar_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio, $items);
+
+        if ($guardado) {
+            echo json_encode(array('exito' => true, 'mensaje' => 'Rubrica guardada correctamente'));
+        } else {
+            echo json_encode(array('exito' => false, 'mensaje' => 'Error al registrar en la base de datos'));
+        }
+    }
     
         public function test_oracle() {
         header('Content-Type: application/json; charset=utf-8');

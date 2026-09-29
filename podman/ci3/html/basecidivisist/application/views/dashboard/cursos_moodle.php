@@ -20,9 +20,14 @@
                             <div class="icon">
                                 <i class="fa fa-book"></i>
                             </div>
-                            <a href="<?php echo site_url('dashboard/actividades_moodle/' . $curso['id']); ?>" class="small-box-footer">
-                                Ver actividades <i class="fa fa-arrow-circle-right"></i>
-                            </a>
+                            <div style="background: rgba(0,0,0,0.15); padding: 5px 10px; text-align: center;">
+                                <a href="<?php echo site_url('dashboard/actividades_moodle/' . $curso['id']); ?>" style="color: #fff; margin-right: 15px;">
+                                    Actividades <i class="fa fa-list"></i>
+                                </a>
+                                <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $curso['id']); ?>" style="color: #fff; font-weight: bold;">
+                                    Configurar Rubrica <i class="fa fa-sliders"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 <?php endforeach; ?>
