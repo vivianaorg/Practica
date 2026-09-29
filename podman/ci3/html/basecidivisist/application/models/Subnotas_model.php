@@ -74,6 +74,40 @@ class Subnotas_model extends CI_Model
         return $arr;
     }
 
+    public function obtener_todas_rubricas_curso($codProfesor, $codMateria, $grupo, $semestre)
+    {
+        $sql = "SELECT ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, 
+                       ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE 
+                FROM CONFIG_RUBRICA 
+                WHERE COD_PROFESOR = '{$codProfesor}' 
+                  AND COD_MATERIA  = '{$codMateria}' 
+                  AND GRUPO        = '{$grupo}' 
+                  AND SEMESTRE     = '{$semestre}' 
+                ORDER BY TIPO_PREVIO ASC, ID ASC";
+
+        $arr = array();
+        $this->database2->get_obj_array($sql, $arr);
+
+        $agrupadas = array(
+            '1'     => array(),
+            '2'     => array(),
+            '3'     => array(),
+            'FINAL' => array(),
+        );
+
+        if (!empty($arr) && is_array($arr)) {
+            foreach ($arr as $row) {
+                $previo = isset($row->TIPO_PREVIO) ? $row->TIPO_PREVIO : '1';
+                if (!isset($agrupadas[$previo])) {
+                    $agrupadas[$previo] = array();
+                }
+                $agrupadas[$previo][] = $row;
+            }
+        }
+
+        return $agrupadas;
+    }
+
     public function eliminar_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
         $where = array(

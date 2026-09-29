@@ -117,6 +117,7 @@ class Dashboard extends CMS_Controller {
         $actividades = isset($resultado['datos']['actividades']) ? $resultado['datos']['actividades'] : array();
 
         $rubricaActual = $this->Subnotas_model->obtener_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
+        $todasRubricas = $this->Subnotas_model->obtener_todas_rubricas_curso($codProfesor, $codMateria, $grupo, $semestre);
 
         $this->template->set('exito', $exito);
         $this->template->set('mensaje_moodle', $mensaje_moodle);
@@ -124,6 +125,7 @@ class Dashboard extends CMS_Controller {
         $this->template->set('curso_nombre', $curso_nombre);
         $this->template->set('actividades', $actividades);
         $this->template->set('rubrica_actual', $rubricaActual);
+        $this->template->set('todas_rubricas', $todasRubricas);
         $this->template->set('tipo_previo', $tipoPrevio);
         $this->template->set('cod_profesor', $codProfesor);
         $this->template->set('cod_materia', $codMateria);

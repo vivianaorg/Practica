@@ -1,82 +1,188 @@
-<div class="box box-primary">
-    <div class="box-header with-border">
-        <h3 class="box-title">
-            <i class="fa fa-sliders"></i> <?php echo htmlspecialchars(isset($curso_nombre) ? $curso_nombre : 'Curso'); ?>
-        </h3>
-        <div class="box-tools pull-right">
-            <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>" class="btn btn-default btn-sm">
-                <i class="fa fa-arrow-left"></i> Volver a cursos
-            </a>
+<div class="row">
+    <div class="col-md-12">
+        <div class="nav-tabs-custom">
+            <ul class="nav nav-tabs">
+                <li class="active">
+                    <a href="#tab_resumen" data-toggle="tab">
+                        <i class="fa fa-eye"></i> Resumen de Rubricas del Curso
+                    </a>
+                </li>
+                <li>
+                    <a href="#tab_configurar" data-toggle="tab">
+                        <i class="fa fa-sliders"></i> Configurar / Editar Rubrica
+                    </a>
+                </li>
+                <li class="pull-right">
+                    <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>" class="text-muted" style="padding: 10px 15px;">
+                        <i class="fa fa-arrow-left"></i> Volver a cursos
+                    </a>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <div class="tab-pane active" id="tab_resumen">
+                    <h4>
+                        <i class="fa fa-book text-primary"></i> <?php echo htmlspecialchars(isset($curso_nombre) ? $curso_nombre : 'Curso'); ?>
+                        <small class="text-muted"><?php echo htmlspecialchars($cod_materia . '-' . $grupo . ' (' . $semestre . ')'); ?></small>
+                    </h4>
+                    <p class="text-muted">Estado general de las rubricas asociadas a cada corte evaluativo:</p>
+
+                    <div class="row" style="margin-top: 15px;">
+                        <?php
+                        $cortesNombres = array(
+                            '1'     => 'Primer Previo',
+                            '2'     => 'Segundo Previo',
+                            '3'     => 'Tercer Previo',
+                            'FINAL' => 'Examen Final'
+                        );
+
+                        foreach ($cortesNombres as $claveCorte => $nombreCorte):
+                            $itemsCorte = isset($todas_rubricas[$claveCorte]) ? $todas_rubricas[$claveCorte] : array();
+                            $totalPorcentajeCorte = 0;
+                            foreach ($itemsCorte as $it) {
+                                $totalPorcentajeCorte += (float)$it->PORCENTAJE;
+                            }
+                            $estaCompleto = (abs($totalPorcentajeCorte - 100) < 0.01);
+                            $tieneItems = !empty($itemsCorte);
+                        ?>
+                            <div class="col-md-6 col-sm-12">
+                                <div class="box box-solid <?php echo $estaCompleto ? 'box-success' : ($tieneItems ? 'box-warning' : 'box-default'); ?>">
+                                    <div class="box-header with-border">
+                                        <h3 class="box-title">
+                                            <i class="fa fa-calendar-check-o"></i> <?php echo htmlspecialchars($nombreCorte); ?>
+                                        </h3>
+                                        <div class="box-tools pull-right">
+                                            <span class="badge <?php echo $estaCompleto ? 'bg-green' : ($tieneItems ? 'bg-yellow' : 'bg-gray'); ?>">
+                                                <?php echo $totalPorcentajeCorte; ?>% / 100%
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="box-body no-padding">
+                                        <?php if (empty($itemsCorte)): ?>
+                                            <div style="padding: 20px; text-align: center;" class="text-muted">
+                                                <i class="fa fa-folder-open-o fa-2x"></i>
+                                                <p style="margin-top: 5px;">No se han configurado actividades para este corte.</p>
+                                                <button type="button" class="btn btn-default btn-sm" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
+                                                    <i class="fa fa-plus"></i> Configurar ahora
+                                                </button>
+                                            </div>
+                                        <?php else: ?>
+                                            <table class="table table-striped table-condensed">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Actividad</th>
+                                                        <th style="width: 90px; text-align: center;">Tipo</th>
+                                                        <th style="width: 90px; text-align: right;">Peso</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($itemsCorte as $it): ?>
+                                                        <tr>
+                                                            <td>
+                                                                <i class="fa fa-check-square-o text-green"></i> 
+                                                                <?php echo htmlspecialchars($it->NOMBRE_ACTIVIDAD); ?>
+                                                            </td>
+                                                            <td style="text-align: center;">
+                                                                <span class="label label-info"><?php echo htmlspecialchars($it->TIPO_ACTIVIDAD ? $it->TIPO_ACTIVIDAD : 'moodle'); ?></span>
+                                                            </td>
+                                                            <td style="text-align: right; font-weight: bold;">
+                                                                <?php echo htmlspecialchars($it->PORCENTAJE); ?>%
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr class="bg-gray-light">
+                                                        <th colspan="2" style="text-align: right;">Total Asignado:</th>
+                                                        <th style="text-align: right; font-weight: bold; color: <?php echo $estaCompleto ? 'green' : 'orange'; ?>;">
+                                                            <?php echo $totalPorcentajeCorte; ?>%
+                                                        </th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                            <div style="padding: 8px; text-align: right; background: #fafafa; border-top: 1px solid #f4f4f4;">
+                                                <button type="button" class="btn btn-primary btn-xs" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
+                                                    <i class="fa fa-pencil"></i> Modificar Rubrica
+                                                </button>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <div class="tab-pane" id="tab_configurar">
+
+                    <?php if (!$exito): ?>
+                        <div class="alert alert-danger">
+                            Error al consultar Moodle: <?php echo htmlspecialchars(isset($mensaje_moodle) ? $mensaje_moodle : 'Error desconocido'); ?>
+                        </div>
+                    <?php else: ?>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Corte a Editar / Configurar:</label>
+                                    <select id="select_corte" class="form-control">
+                                        <option value="1" <?php echo ($tipo_previo == '1') ? 'selected' : ''; ?>>Primer Previo</option>
+                                        <option value="2" <?php echo ($tipo_previo == '2') ? 'selected' : ''; ?>>Segundo Previo</option>
+                                        <option value="3" <?php echo ($tipo_previo == '3') ? 'selected' : ''; ?>>Tercer Previo</option>
+                                        <option value="FINAL" <?php echo ($tipo_previo == 'FINAL') ? 'selected' : ''; ?>>Examen Final</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-8">
+                                <label>Ponderacion Actual (Total: <span id="total_porcentaje_txt">0%</span> / 100%):</label>
+                                <div class="progress progress-sm active" style="margin-top: 5px;">
+                                    <div id="barra_progreso" class="progress-bar progress-bar-yellow" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <div id="alerta_porcentaje" class="text-sm text-yellow">
+                                    <i class="fa fa-info-circle"></i> La suma de porcentajes debe ser exactamente 100%.
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr style="margin-top: 5px; margin-bottom: 15px;">
+
+                        <div id="mensaje_ajax" style="display: none;"></div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped" id="tabla_rubrica">
+                                <thead>
+                                    <tr class="bg-gray-light">
+                                        <th style="width: 50px; text-align: center;">#</th>
+                                        <th>Actividad de Moodle</th>
+                                        <th style="width: 140px; text-align: center;">Tipo</th>
+                                        <th style="width: 160px; text-align: center;">Porcentaje (%)</th>
+                                        <th style="width: 60px; text-align: center;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody_rubrica">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="row" style="margin-top: 15px;">
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-default" id="btn_agregar_fila">
+                                    <i class="fa fa-plus"></i> Agregar Actividad
+                                </button>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <button type="button" class="btn btn-success btn-lg" id="btn_guardar_rubrica" disabled>
+                                    <i class="fa fa-save"></i> Guardar Rubrica
+                                </button>
+                            </div>
+                        </div>
+
+                    <?php endif; ?>
+
+                </div>
+            </div>
         </div>
-    </div>
-
-    <div class="box-body">
-
-        <?php if (!$exito): ?>
-            <div class="alert alert-danger">
-                Error al consultar Moodle: <?php echo htmlspecialchars(isset($mensaje_moodle) ? $mensaje_moodle : 'Error desconocido'); ?>
-            </div>
-        <?php else: ?>
-
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label>Seleccionar Corte / Previo:</label>
-                        <select id="select_corte" class="form-control">
-                            <option value="1" <?php echo ($tipo_previo == '1') ? 'selected' : ''; ?>>Primer Previo</option>
-                            <option value="2" <?php echo ($tipo_previo == '2') ? 'selected' : ''; ?>>Segundo Previo</option>
-                            <option value="3" <?php echo ($tipo_previo == '3') ? 'selected' : ''; ?>>Tercer Previo</option>
-                            <option value="FINAL" <?php echo ($tipo_previo == 'FINAL') ? 'selected' : ''; ?>>Examen Final</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="col-md-8">
-                    <label>Progreso de Ponderación (Total: <span id="total_porcentaje_txt">0%</span> / 100%):</label>
-                    <div class="progress progress-sm active" style="margin-top: 5px;">
-                        <div id="barra_progreso" class="progress-bar progress-bar-yellow" role="progressbar" style="width: 0%"></div>
-                    </div>
-                    <div id="alerta_porcentaje" class="text-sm text-yellow">
-                        <i class="fa fa-info-circle"></i> La suma de porcentajes debe ser exactamente 100%.
-                    </div>
-                </div>
-            </div>
-
-            <hr style="margin-top: 10px; margin-bottom: 20px;">
-
-            <div id="mensaje_ajax" style="display: none;"></div>
-
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped" id="tabla_rubrica">
-                    <thead>
-                        <tr class="bg-gray-light">
-                            <th style="width: 50px; text-align: center;">#</th>
-                            <th>Actividad de Moodle</th>
-                            <th style="width: 150px; text-align: center;">Tipo</th>
-                            <th style="width: 180px; text-align: center;">Porcentaje (%)</th>
-                            <th style="width: 80px; text-align: center;">Accion</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody_rubrica">
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="row" style="margin-top: 15px;">
-                <div class="col-md-6">
-                    <button type="button" class="btn btn-default" id="btn_agregar_fila">
-                        <i class="fa fa-plus"></i> Agregar Actividad
-                    </button>
-                </div>
-                <div class="col-md-6 text-right">
-                    <button type="button" class="btn btn-success btn-lg" id="btn_guardar_rubrica" disabled>
-                        <i class="fa fa-save"></i> Guardar Rubrica
-                    </button>
-                </div>
-            </div>
-
-        <?php endif; ?>
-
     </div>
 </div>
 
@@ -95,8 +201,15 @@ document.addEventListener("DOMContentLoaded", function() {
     if (selectCorte) {
         selectCorte.addEventListener("change", function() {
             var urlBase = "<?php echo site_url('dashboard/configurar_rubrica/' . $course_id); ?>";
-            window.location.href = urlBase + "/" + this.value;
+            window.location.href = urlBase + "/" + this.value + "#tab_configurar";
         });
+    }
+
+    if (window.location.hash === "#tab_configurar") {
+        var tabLink = document.querySelector('a[href="#tab_configurar"]');
+        if (tabLink) {
+            tabLink.click();
+        }
     }
 
     var btnAgregar = document.getElementById("btn_agregar_fila");
@@ -123,6 +236,17 @@ document.addEventListener("DOMContentLoaded", function() {
     actualizarOpcionesDisponibles();
     recalcularTotales();
 });
+
+function irAConfigurarCorte(corte) {
+    var selectCorte = document.getElementById("select_corte");
+    if (selectCorte && selectCorte.value === String(corte)) {
+        var tabLink = document.querySelector('a[href="#tab_configurar"]');
+        if (tabLink) tabLink.click();
+    } else {
+        var urlBase = "<?php echo site_url('dashboard/configurar_rubrica/' . $course_id); ?>";
+        window.location.href = urlBase + "/" + corte + "#tab_configurar";
+    }
+}
 
 function agregarFilaRubrica(actividadSeleccionada, porcentaje) {
     var tbody = document.getElementById("tbody_rubrica");
@@ -342,13 +466,15 @@ function guardarRubrica() {
         if (data.exito) {
             msgDiv.className = "alert alert-success";
             msgDiv.innerHTML = '<i class="fa fa-check"></i> ' + data.mensaje;
+            setTimeout(function() {
+                window.location.reload();
+            }, 1200);
         } else {
             msgDiv.className = "alert alert-danger";
             msgDiv.innerHTML = '<i class="fa fa-exclamation-triangle"></i> ' + data.mensaje;
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = '<i class="fa fa-save"></i> Guardar Rubrica';
         }
-
-        btnGuardar.disabled = false;
-        btnGuardar.innerHTML = '<i class="fa fa-save"></i> Guardar Rubrica';
         window.scrollTo({ top: 0, behavior: "smooth" });
     })
     .catch(function(err) {
