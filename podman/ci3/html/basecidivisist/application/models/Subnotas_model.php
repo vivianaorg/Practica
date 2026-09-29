@@ -29,10 +29,11 @@ class Subnotas_model extends CI_Model
             $porcentaje  = isset($item['porcentaje']) ? (float)$item['porcentaje'] : 0;
 
             $objId = null;
-            @$this->database2->get_sql_object("SELECT SEQ_CONFIG_RUBRICA.NEXTVAL AS NEXT_ID FROM DUAL", $objId);
-            $nextId = ($objId && isset($objId->NEXT_ID)) ? $objId->NEXT_ID : null;
+            $this->database2->get_sql_object("SELECT NVL(MAX(ID), 0) + 1 AS NEXT_ID FROM CONFIG_RUBRICA", $objId);
+            $nextId = ($objId && isset($objId->NEXT_ID)) ? (int)$objId->NEXT_ID : 1;
 
             $dataInsert = array(
+                'ID'                  => $nextId,
                 'COD_PROFESOR'        => $codProfesor,
                 'COD_MATERIA'         => $codMateria,
                 'GRUPO'               => $grupo,
@@ -43,10 +44,6 @@ class Subnotas_model extends CI_Model
                 'TIPO_ACTIVIDAD'      => $tipo,
                 'PORCENTAJE'          => $porcentaje,
             );
-
-            if ($nextId !== null) {
-                $dataInsert['ID'] = $nextId;
-            }
 
             $res = $this->database2->insert('CONFIG_RUBRICA', $dataInsert);
             if (!$res) {
@@ -108,10 +105,11 @@ class Subnotas_model extends CI_Model
             $subnota       = isset($item['subnota']) ? (float)$item['subnota'] : 0.0;
 
             $objId = null;
-            @$this->database2->get_sql_object("SELECT SEQ_SUBNOTAS.NEXTVAL AS NEXT_ID FROM DUAL", $objId);
-            $nextId = ($objId && isset($objId->NEXT_ID)) ? $objId->NEXT_ID : null;
+            $this->database2->get_sql_object("SELECT NVL(MAX(ID), 0) + 1 AS NEXT_ID FROM SUBNOTAS", $objId);
+            $nextId = ($objId && isset($objId->NEXT_ID)) ? (int)$objId->NEXT_ID : 1;
 
             $dataInsert = array(
+                'ID'                  => $nextId,
                 'COD_PROFESOR'        => $codProfesor,
                 'COD_MATERIA'         => $codMateria,
                 'GRUPO'               => $grupo,
@@ -126,10 +124,6 @@ class Subnotas_model extends CI_Model
                 'SUBNOTA'             => $subnota,
                 'ESTADO'              => $estado,
             );
-
-            if ($nextId !== null) {
-                $dataInsert['ID'] = $nextId;
-            }
 
             $res = $this->database2->insert('SUBNOTAS', $dataInsert);
             if (!$res) {
