@@ -177,8 +177,81 @@ class Dashboard extends CMS_Controller {
         if ($guardado) {
             echo json_encode(array('exito' => true, 'mensaje' => 'Rubrica guardada correctamente'));
         } else {
-            echo json_encode(array('exito' => false, 'mensaje' => 'Error al registrar en la base de datos'));
+            $detalle = isset($this->Subnotas_model->ultimo_error) ? $this->Subnotas_model->ultimo_error : '';
+            echo json_encode(array(
+                'exito' => false, 
+                'mensaje' => 'Error al registrar en la base de datos' . ($detalle ? ': ' . $detalle : '')
+            ));
         }
+    }
+
+    public function migrar_tablas() {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $config = $this->config->item('database2');
+        $conexion = @oci_pconnect(
+            $config['username'],
+            $config['password'],
+            $config['hostname'],
+            $config['char_set']
+        );
+
+        if (!$conexion) {
+            echo json_encode(array('exito' => false, 'error' => oci_error()));
+            return;
+        }
+
+        $sentencias = array(
+            "CREATE SEQUENCE SEQ_CONFIG_RUBRICA START WITH 1 INCREMENT BY 1 NOCACHE",
+            "CREATE TABLE CONFIG_RUBRICA (
+                ID                  NUMBER PRIMARY KEY,
+                COD_PROFESOR        VARCHAR2(20) NOT NULL,
+                COD_MATERIA         VARCHAR2(20) NOT NULL,
+                GRUPO               VARCHAR2(5)  NOT NULL,
+                SEMESTRE            VARCHAR2(10) NOT NULL,
+                TIPO_PREVIO         VARCHAR2(20) NOT NULL,
+                ID_ACTIVIDAD_MOODLE NUMBER NOT NULL,
+                NOMBRE_ACTIVIDAD    VARCHAR2(200) NOT NULL,
+                TIPO_ACTIVIDAD      VARCHAR2(50),
+                PORCENTAJE          NUMBER(5,2) NOT NULL,
+                FECHA_CREACION      DATE DEFAULT SYSDATE
+            )",
+            "CREATE INDEX IDX_RUBRICA_BUSQUEDA ON CONFIG_RUBRICA (COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO)",
+            "CREATE SEQUENCE SEQ_SUBNOTAS START WITH 1 INCREMENT BY 1 NOCACHE",
+            "CREATE TABLE SUBNOTAS (
+                ID                  NUMBER PRIMARY KEY,
+                COD_PROFESOR        VARCHAR2(20) NOT NULL,
+                COD_MATERIA         VARCHAR2(20) NOT NULL,
+                GRUPO               VARCHAR2(5)  NOT NULL,
+                SEMESTRE            VARCHAR2(10) NOT NULL,
+                COD_ESTUDIANTE      VARCHAR2(20) NOT NULL,
+                TIPO_PREVIO         VARCHAR2(20) NOT NULL,
+                ID_ACTIVIDAD_MOODLE NUMBER NOT NULL,
+                NOMBRE_ACTIVIDAD    VARCHAR2(200) NOT NULL,
+                NOTA_ORIGINAL       NUMBER(5,2) DEFAULT 0,
+                NOTA_MAXIMA         NUMBER(5,2) DEFAULT 5,
+                PORCENTAJE          NUMBER(5,2) NOT NULL,
+                SUBNOTA             NUMBER(5,2) NOT NULL,
+                ESTADO              VARCHAR2(20) DEFAULT 'SUGERIDA',
+                FECHA_REGISTRO      DATE DEFAULT SYSDATE
+            )",
+            "CREATE INDEX IDX_SUBNOTAS_ESTUDIANTE ON SUBNOTAS (COD_ESTUDIANTE, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO)",
+            "CREATE INDEX IDX_SUBNOTAS_GRUPO ON SUBNOTAS (COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO)"
+        );
+
+        $resultados = array();
+        foreach ($sentencias as $sql) {
+            $stid = @oci_parse($conexion, $sql);
+            $ejecutado = @oci_execute($stid);
+            if ($ejecutado) {
+                $resultados[] = array('sql' => substr(trim($sql), 0, 35) . '...', 'status' => 'OK');
+            } else {
+                $err = oci_error($stid);
+                $resultados[] = array('sql' => substr(trim($sql), 0, 35) . '...', 'status' => 'ERROR', 'error' => $err);
+            }
+        }
+
+        echo json_encode(array('exito' => true, 'resultados' => $resultados));
     }
     
         public function test_oracle() {

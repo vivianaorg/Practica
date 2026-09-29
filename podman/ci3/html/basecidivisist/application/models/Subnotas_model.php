@@ -3,6 +3,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Subnotas_model extends CI_Model
 {
+    public $ultimo_error = null;
+
     public function __construct()
     {
         parent::__construct();
@@ -26,6 +28,10 @@ class Subnotas_model extends CI_Model
             $tipo        = isset($item['tipo_actividad']) ? $item['tipo_actividad'] : '';
             $porcentaje  = isset($item['porcentaje']) ? (float)$item['porcentaje'] : 0;
 
+            $objId = null;
+            @$this->database2->get_sql_object("SELECT SEQ_CONFIG_RUBRICA.NEXTVAL AS NEXT_ID FROM DUAL", $objId);
+            $nextId = ($objId && isset($objId->NEXT_ID)) ? $objId->NEXT_ID : null;
+
             $dataInsert = array(
                 'COD_PROFESOR'        => $codProfesor,
                 'COD_MATERIA'         => $codMateria,
@@ -38,8 +44,15 @@ class Subnotas_model extends CI_Model
                 'PORCENTAJE'          => $porcentaje,
             );
 
-            $res = $this->database2->insert('CONFIG_RUBRICA', $dataInsert, array('FECHA_CREACION'));
+            if ($nextId !== null) {
+                $dataInsert['ID'] = $nextId;
+            }
+
+            $res = $this->database2->insert('CONFIG_RUBRICA', $dataInsert);
             if (!$res) {
+                $conn = $this->database2->get_conn();
+                $err = oci_error($conn);
+                $this->ultimo_error = isset($err['message']) ? $err['message'] : 'Error en insercion CONFIG_RUBRICA';
                 $exito = false;
             }
         }
@@ -94,6 +107,10 @@ class Subnotas_model extends CI_Model
             $porcentaje    = isset($item['porcentaje']) ? (float)$item['porcentaje'] : 0.0;
             $subnota       = isset($item['subnota']) ? (float)$item['subnota'] : 0.0;
 
+            $objId = null;
+            @$this->database2->get_sql_object("SELECT SEQ_SUBNOTAS.NEXTVAL AS NEXT_ID FROM DUAL", $objId);
+            $nextId = ($objId && isset($objId->NEXT_ID)) ? $objId->NEXT_ID : null;
+
             $dataInsert = array(
                 'COD_PROFESOR'        => $codProfesor,
                 'COD_MATERIA'         => $codMateria,
@@ -110,8 +127,15 @@ class Subnotas_model extends CI_Model
                 'ESTADO'              => $estado,
             );
 
-            $res = $this->database2->insert('SUBNOTAS', $dataInsert, array('FECHA_REGISTRO'));
+            if ($nextId !== null) {
+                $dataInsert['ID'] = $nextId;
+            }
+
+            $res = $this->database2->insert('SUBNOTAS', $dataInsert);
             if (!$res) {
+                $conn = $this->database2->get_conn();
+                $err = oci_error($conn);
+                $this->ultimo_error = isset($err['message']) ? $err['message'] : 'Error en insercion SUBNOTAS';
                 $exito = false;
             }
         }
