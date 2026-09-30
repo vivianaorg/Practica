@@ -45,59 +45,6 @@
             </div>
         <?php else: ?>
 
-            <div class="row" style="margin-bottom: 15px;">
-                <div class="col-md-3 col-sm-6 col-xs-12">
-                    <div class="info-box bg-aqua">
-                        <span class="info-box-icon"><i class="fa fa-users"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Estudiantes</span>
-                            <span class="info-box-number"><?php echo $total_estudiantes; ?></span>
-                            <div class="progress"><div class="progress-bar" style="width: 100%"></div></div>
-                            <span class="progress-description">Total matriculados</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6 col-xs-12">
-                    <div class="info-box bg-green">
-                        <span class="info-box-icon"><i class="fa fa-check-circle"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Aprobando</span>
-                            <span class="info-box-number"><?php echo $total_aprobados; ?></span>
-                            <div class="progress">
-                                <?php $pctAp = ($total_estudiantes > 0) ? round(($total_aprobados / $total_estudiantes) * 100) : 0; ?>
-                                <div class="progress-bar" style="width: <?php echo $pctAp; ?>%"></div>
-                            </div>
-                            <span class="progress-description"><?php echo $pctAp; ?>% del curso</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6 col-xs-12">
-                    <div class="info-box bg-red">
-                        <span class="info-box-icon"><i class="fa fa-times-circle"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">En Riesgo</span>
-                            <span class="info-box-number"><?php echo $total_reprobados; ?></span>
-                            <div class="progress">
-                                <?php $pctRep = ($total_estudiantes > 0) ? round(($total_reprobados / $total_estudiantes) * 100) : 0; ?>
-                                <div class="progress-bar" style="width: <?php echo $pctRep; ?>%"></div>
-                            </div>
-                            <span class="progress-description"><?php echo $pctRep; ?>% del curso</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6 col-xs-12">
-                    <div class="info-box bg-yellow">
-                        <span class="info-box-icon"><i class="fa fa-line-chart"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Promedio Curso</span>
-                            <span class="info-box-number"><?php echo number_format($promedio_general, 2); ?></span>
-                            <div class="progress"><div class="progress-bar" style="width: 100%"></div></div>
-                            <span class="progress-description">Escala 0.0 a 5.0</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div class="row" style="margin-bottom: 12px;">
                 <div class="col-md-6">
                     <div class="input-group input-group-sm" style="max-width: 350px;">
