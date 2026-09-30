@@ -60,6 +60,7 @@
                             }
                             $estaCompleto = (abs($totalPorcentajeCorte - 100) < 0.01);
                             $tieneItems = !empty($itemsCorte);
+                            $corteEstaCalificado = isset($cortes_calificados[$claveCorte]) && $cortes_calificados[$claveCorte];
                         ?>
                             <div class="col-md-6 col-sm-12">
                                 <div class="box box-solid <?php echo $estaCompleto ? 'box-success' : ($tieneItems ? 'box-warning' : 'box-default'); ?>">
@@ -68,6 +69,9 @@
                                             <i class="fa fa-calendar-check-o"></i> <?php echo htmlspecialchars($nombreCorte); ?>
                                         </h3>
                                         <div class="box-tools pull-right">
+                                            <?php if ($corteEstaCalificado): ?>
+                                                <span class="badge bg-purple"><i class="fa fa-lock"></i> Calificado</span>
+                                            <?php endif; ?>
                                             <span class="badge <?php echo $estaCompleto ? 'bg-green' : ($tieneItems ? 'bg-yellow' : 'bg-gray'); ?>">
                                                 <?php echo $totalPorcentajeCorte; ?>% / 100%
                                             </span>
@@ -78,9 +82,11 @@
                                             <div style="padding: 20px; text-align: center;" class="text-muted">
                                                 <i class="fa fa-folder-open-o fa-2x"></i>
                                                 <p style="margin-top: 5px;">No se han configurado actividades para este corte.</p>
-                                                <button type="button" class="btn btn-default btn-sm" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
-                                                    <i class="fa fa-plus"></i> Configurar ahora
-                                                </button>
+                                                <?php if (!$corteEstaCalificado): ?>
+                                                    <button type="button" class="btn btn-default btn-sm" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
+                                                        <i class="fa fa-plus"></i> Configurar ahora
+                                                    </button>
+                                                <?php endif; ?>
                                             </div>
                                         <?php else: ?>
                                             <table class="table table-striped table-condensed">
@@ -117,13 +123,22 @@
                                                 </tfoot>
                                             </table>
                                             <div style="padding: 8px; text-align: right; background: #fafafa; border-top: 1px solid #f4f4f4;">
-                                                <button type="button" class="btn btn-primary btn-xs" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
-                                                    <i class="fa fa-pencil"></i> Modificar Rubrica
-                                                </button>
-                                                <?php if ($estaCompleto): ?>
-                                                    <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-success btn-xs" style="margin-left: 5px;">
-                                                        <i class="fa fa-calculator"></i> Calificar Corte
+                                                <?php if ($corteEstaCalificado): ?>
+                                                    <span class="label label-default" style="font-size: 11px; padding: 5px 8px; margin-right: 5px; display: inline-block;">
+                                                        <i class="fa fa-lock"></i> Calificada (Bloqueada)
+                                                    </span>
+                                                    <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-default btn-xs">
+                                                        <i class="fa fa-eye"></i> Ver Calificaciones
                                                     </a>
+                                                <?php else: ?>
+                                                    <button type="button" class="btn btn-primary btn-xs" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
+                                                        <i class="fa fa-pencil"></i> Modificar Rubrica
+                                                    </button>
+                                                    <?php if ($estaCompleto): ?>
+                                                        <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-success btn-xs" style="margin-left: 5px;">
+                                                            <i class="fa fa-calculator"></i> Calificar Corte
+                                                        </a>
+                                                    <?php endif; ?>
                                                 <?php endif; ?>
                                             </div>
                                         <?php endif; ?>
@@ -141,6 +156,12 @@
                             Error al consultar Moodle: <?php echo htmlspecialchars(isset($mensaje_moodle) ? $mensaje_moodle : 'Error desconocido'); ?>
                         </div>
                     <?php else: ?>
+
+                        <?php if ($corte_calificado): ?>
+                            <div class="alert alert-warning" style="margin-bottom: 15px;">
+                                <i class="fa fa-lock"></i> <strong>Rúbrica Bloqueada:</strong> Este corte evaluativo ya fue calificado y cerrado. No es posible modificar actividades ni porcentajes.
+                            </div>
+                        <?php endif; ?>
 
                         <div class="row">
                             <div class="col-md-4">
@@ -188,14 +209,20 @@
 
                         <div class="row" style="margin-top: 15px;">
                             <div class="col-md-6">
-                                <button type="button" class="btn btn-default" id="btn_agregar_fila">
+                                <button type="button" class="btn btn-default" id="btn_agregar_fila" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
                                     <i class="fa fa-plus"></i> Agregar Actividad
                                 </button>
                             </div>
                             <div class="col-md-6 text-right">
-                                <button type="button" class="btn btn-success" id="btn_guardar_rubrica" disabled style="font-weight: 600;">
-                                    <i class="fa fa-save"></i> Guardar Rúbrica
-                                </button>
+                                <?php if ($corte_calificado): ?>
+                                    <button type="button" class="btn btn-default" id="btn_guardar_rubrica" disabled style="font-weight: 600;">
+                                        <i class="fa fa-lock"></i> Rúbrica Bloqueada
+                                    </button>
+                                <?php else: ?>
+                                    <button type="button" class="btn btn-success" id="btn_guardar_rubrica" disabled style="font-weight: 600;">
+                                        <i class="fa fa-save"></i> Guardar Rúbrica
+                                    </button>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -215,6 +242,7 @@ var codProfesor = "<?php echo htmlspecialchars($cod_profesor); ?>";
 var codMateria = "<?php echo htmlspecialchars($cod_materia); ?>";
 var grupo = "<?php echo htmlspecialchars($grupo); ?>";
 var semestre = "<?php echo htmlspecialchars($semestre); ?>";
+var corteCalificado = <?php echo ($corte_calificado ? 'true' : 'false'); ?>;
 
 document.addEventListener("DOMContentLoaded", function() {
 
@@ -234,14 +262,14 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     var btnAgregar = document.getElementById("btn_agregar_fila");
-    if (btnAgregar) {
+    if (btnAgregar && !corteCalificado) {
         btnAgregar.addEventListener("click", function() {
             agregarFilaRubrica(null, 0);
         });
     }
 
     var btnGuardar = document.getElementById("btn_guardar_rubrica");
-    if (btnGuardar) {
+    if (btnGuardar && !corteCalificado) {
         btnGuardar.addEventListener("click", guardarRubrica);
     }
 
@@ -276,7 +304,8 @@ function agregarFilaRubrica(actividadSeleccionada, porcentaje) {
     var index = tbody.rows.length + 1;
     var tr = document.createElement("tr");
 
-    var selectHtml = '<select class="form-control select-actividad" required onchange="onActividadChange(this)">';
+    var disAttr = corteCalificado ? ' disabled' : '';
+    var selectHtml = '<select class="form-control select-actividad" required onchange="onActividadChange(this)"' + disAttr + '>';
     selectHtml += '<option value="">-- Seleccione una actividad --</option>';
 
     for (var i = 0; i < actividadesDisponibles.length; i++) {
@@ -304,12 +333,12 @@ function agregarFilaRubrica(actividadSeleccionada, porcentaje) {
         '<td style="text-align: center; vertical-align: middle;"><span class="label label-info badge-tipo">' + (tipoActividad || '-') + '</span></td>' +
         '<td>' +
             '<div class="input-group">' +
-                '<input type="number" class="form-control input-porcentaje text-right" min="1" max="100" step="0.5" value="' + (porcentaje > 0 ? porcentaje : '') + '" placeholder="0" oninput="recalcularTotales()" required>' +
+                '<input type="number" class="form-control input-porcentaje text-right" min="1" max="100" step="0.5" value="' + (porcentaje > 0 ? porcentaje : '') + '" placeholder="0" oninput="recalcularTotales()" required' + disAttr + '>' +
                 '<span class="input-group-addon">%</span>' +
             '</div>' +
         '</td>' +
         '<td style="text-align: center; vertical-align: middle;">' +
-            '<button type="button" class="btn btn-danger btn-sm" onclick="eliminarFilaRubrica(this)">' +
+            '<button type="button" class="btn btn-danger btn-sm" onclick="eliminarFilaRubrica(this)"' + disAttr + '>' +
                 '<i class="fa fa-trash"></i>' +
             '</button>' +
         '</td>';
@@ -416,7 +445,11 @@ function recalcularTotales() {
     }
 
     if (alerta && btnGuardar) {
-        if (total === 100 && completas === inputs.length && inputs.length > 0) {
+        if (corteCalificado) {
+            alerta.className = "text-sm text-yellow";
+            alerta.innerHTML = '<i class="fa fa-lock"></i> Rúbrica calificada y cerrada. Modo solo lectura.';
+            btnGuardar.disabled = true;
+        } else if (total === 100 && completas === inputs.length && inputs.length > 0) {
             alerta.className = "text-sm text-green";
             alerta.innerHTML = '<i class="fa fa-check-circle"></i> Ponderacion completa (100%). Lista para guardar.';
             btnGuardar.disabled = false;
@@ -435,6 +468,7 @@ function recalcularTotales() {
 }
 
 function guardarRubrica() {
+    if (corteCalificado) return;
     var rows = document.querySelectorAll("#tbody_rubrica tr");
     var items = [];
 

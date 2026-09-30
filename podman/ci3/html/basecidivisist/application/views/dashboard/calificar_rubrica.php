@@ -78,23 +78,35 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
             </div>
         <?php else: ?>
 
+            <?php if ($corte_calificado): ?>
+                <div class="alert alert-info" style="margin-bottom: 15px;">
+                    <i class="fa fa-lock"></i> <strong>Corte Calificado:</strong> Las calificaciones de este corte ya fueron registradas y consolidadas. La planilla se encuentra en modo solo lectura.
+                </div>
+            <?php endif; ?>
+
             <div id="mensaje_guardado" style="display: none;"></div>
 
             <div class="box box-solid box-default" style="border: 1px solid #d2d6de;">
                 <div class="box-header with-border" style="background-color: #f4f5f7;">
                     <div class="row">
                         <div class="col-md-6">
-                            <button type="button" class="btn btn-primary btn-sm" id="btn_aceptar_todas">
+                            <button type="button" class="btn btn-primary btn-sm" id="btn_aceptar_todas" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
                                 <i class="fa fa-check-square-o"></i> Aceptar Todas las Sugerencias
                             </button>
-                            <button type="button" class="btn btn-default btn-sm" id="btn_restablecer_todas" style="margin-left: 5px;">
+                            <button type="button" class="btn btn-default btn-sm" id="btn_restablecer_todas" style="margin-left: 5px;" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
                                 <i class="fa fa-undo"></i> Restablecer Sugerencias
                             </button>
                         </div>
                         <div class="col-md-6 text-right">
-                            <button type="button" class="btn btn-success btn-sm" id="btn_guardar_calificaciones" style="font-weight: bold;">
-                                <i class="fa fa-save"></i> Guardar Calificaciones
-                            </button>
+                            <?php if ($corte_calificado): ?>
+                                <button type="button" class="btn btn-default btn-sm" id="btn_guardar_calificaciones" disabled style="font-weight: bold;">
+                                    <i class="fa fa-lock"></i> Calificaciones Guardadas
+                                </button>
+                            <?php else: ?>
+                                <button type="button" class="btn btn-success btn-sm" id="btn_guardar_calificaciones" style="font-weight: bold;">
+                                    <i class="fa fa-save"></i> Guardar Calificaciones
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -154,7 +166,7 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                                         <button type="button" 
                                                 class="btn btn-default btn-xs btn-aceptar-ind" 
                                                 data-index="<?php echo $idx; ?>" 
-                                                <?php echo ($estado === 'ACEPTADA') ? 'disabled' : ''; ?>
+                                                <?php echo ($corte_calificado || $estado === 'ACEPTADA') ? 'disabled' : ''; ?>
                                                 title="Copiar sugerida a definitiva">
                                             <i class="fa fa-check text-green"></i> Aceptar
                                         </button>
@@ -167,6 +179,7 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                                                max="5.0" 
                                                step="0.1" 
                                                value="<?php echo number_format($def, 2, '.', ''); ?>" 
+                                               <?php echo ($corte_calificado ? 'readonly disabled' : ''); ?>
                                                style="font-weight: bold; font-size: 13px; max-width: 90px; margin: 0 auto;">
                                     </td>
                                     <td style="text-align: center; vertical-align: middle;">
@@ -182,7 +195,11 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
 
                 <div class="box-footer clearfix" style="background-color: #f9fafc;">
                     <div class="text-muted">
-                        <i class="fa fa-info-circle"></i> Puedes ajustar manualmente la nota definitiva de cualquier estudiante antes de guardar.
+                        <?php if ($corte_calificado): ?>
+                            <i class="fa fa-lock"></i> Este corte evaluativo está cerrado. Las notas definitivas no pueden modificarse.
+                        <?php else: ?>
+                            <i class="fa fa-info-circle"></i> Puedes ajustar manualmente la nota definitiva de cualquier estudiante antes de guardar.
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -256,6 +273,7 @@ var COD_MATERIA      = "<?php echo isset($cod_materia) ? $cod_materia : ''; ?>";
 var GRUPO            = "<?php echo isset($grupo) ? $grupo : ''; ?>";
 var SEMESTRE         = "<?php echo isset($semestre) ? $semestre : ''; ?>";
 var TIPO_PREVIO      = "<?php echo isset($tipo_previo) ? $tipo_previo : ''; ?>";
+var CORTE_CALIFICADO = <?php echo ($corte_calificado ? 'true' : 'false'); ?>;
 var URL_GUARDAR_AJAX = "<?php echo site_url('dashboard/guardar_calificaciones_corte_ajax'); ?>";
 var URL_CAMBIO_CORTE = "<?php echo site_url('dashboard/calificar_rubrica/' . $course_id); ?>";
 
@@ -267,20 +285,39 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    var btnsAceptarInd = document.querySelectorAll(".btn-aceptar-ind");
-    for (var i = 0; i < btnsAceptarInd.length; i++) {
-        btnsAceptarInd[i].addEventListener("click", function() {
-            var idx = parseInt(this.getAttribute("data-index"), 10);
-            aceptarSugerenciaIndividual(idx);
-        });
-    }
+    if (!CORTE_CALIFICADO) {
+        var btnsAceptarInd = document.querySelectorAll(".btn-aceptar-ind");
+        for (var i = 0; i < btnsAceptarInd.length; i++) {
+            btnsAceptarInd[i].addEventListener("click", function() {
+                var idx = parseInt(this.getAttribute("data-index"), 10);
+                aceptarSugerenciaIndividual(idx);
+            });
+        }
 
-    var inputsNota = document.querySelectorAll(".input-nota");
-    for (var j = 0; j < inputsNota.length; j++) {
-        inputsNota[j].addEventListener("input", function() {
-            var idx = parseInt(this.getAttribute("data-index"), 10);
-            evaluarCambioNota(idx, this.value);
-        });
+        var inputsNota = document.querySelectorAll(".input-nota");
+        for (var j = 0; j < inputsNota.length; j++) {
+            inputsNota[j].addEventListener("input", function() {
+                var idx = parseInt(this.getAttribute("data-index"), 10);
+                evaluarCambioNota(idx, this.value);
+            });
+        }
+
+        var btnAceptarTodas = document.getElementById("btn_aceptar_todas");
+        if (btnAceptarTodas) {
+            btnAceptarTodas.addEventListener("click", function() {
+                aceptarTodasSugerencias();
+            });
+        }
+
+        var btnRestablecerTodas = document.getElementById("btn_restablecer_todas");
+        if (btnRestablecerTodas) {
+            btnRestablecerTodas.addEventListener("click", function() {
+                restablecerTodasSugerencias();
+            });
+        }
+
+        var btnGuardar = document.getElementById("btn_guardar_calificaciones");
+        if (btnGuardar) btnGuardar.addEventListener("click", guardarCalificaciones);
     }
 
     var btnsDesglose = document.querySelectorAll(".btn-desglose");
@@ -290,27 +327,10 @@ document.addEventListener("DOMContentLoaded", function() {
             abrirModalDesglose(idx);
         });
     }
-
-    var btnAceptarTodas = document.getElementById("btn_aceptar_todas");
-    if (btnAceptarTodas) {
-        btnAceptarTodas.addEventListener("click", function() {
-            aceptarTodasSugerencias();
-        });
-    }
-
-    var btnRestablecerTodas = document.getElementById("btn_restablecer_todas");
-    if (btnRestablecerTodas) {
-        btnRestablecerTodas.addEventListener("click", function() {
-            restablecerTodasSugerencias();
-        });
-    }
-
-    var btnGuardar = document.getElementById("btn_guardar_calificaciones");
-    if (btnGuardar) btnGuardar.addEventListener("click", guardarCalificaciones);
 });
 
 function aceptarSugerenciaIndividual(idx) {
-    if (!ESTUDIANTES_DATA[idx]) return;
+    if (CORTE_CALIFICADO || !ESTUDIANTES_DATA[idx]) return;
     var est = ESTUDIANTES_DATA[idx];
     var input = document.querySelector('.input-nota[data-index="' + idx + '"]');
     var badge = document.querySelector('.badge-estado[data-index="' + idx + '"]');
@@ -334,7 +354,7 @@ function aceptarSugerenciaIndividual(idx) {
 }
 
 function evaluarCambioNota(idx, valorStr) {
-    if (!ESTUDIANTES_DATA[idx]) return;
+    if (CORTE_CALIFICADO || !ESTUDIANTES_DATA[idx]) return;
     var est = ESTUDIANTES_DATA[idx];
     var badge = document.querySelector('.badge-estado[data-index="' + idx + '"]');
     var btn = document.querySelector('.btn-aceptar-ind[data-index="' + idx + '"]');
@@ -369,12 +389,14 @@ function evaluarCambioNota(idx, valorStr) {
 }
 
 function aceptarTodasSugerencias() {
+    if (CORTE_CALIFICADO) return;
     for (var i = 0; i < ESTUDIANTES_DATA.length; i++) {
         aceptarSugerenciaIndividual(i);
     }
 }
 
 function restablecerTodasSugerencias() {
+    if (CORTE_CALIFICADO) return;
     for (var i = 0; i < ESTUDIANTES_DATA.length; i++) {
         var est = ESTUDIANTES_DATA[i];
         var input = document.querySelector('.input-nota[data-index="' + i + '"]');
@@ -460,6 +482,7 @@ function abrirModalDesglose(idx) {
 }
 
 function guardarCalificaciones() {
+    if (CORTE_CALIFICADO) return;
     var btn = document.getElementById("btn_guardar_calificaciones");
     var msgDiv = document.getElementById("mensaje_guardado");
 

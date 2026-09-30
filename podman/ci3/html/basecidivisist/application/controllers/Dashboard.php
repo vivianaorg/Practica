@@ -141,6 +141,8 @@ class Dashboard extends CMS_Controller {
 
         $rubricaActual = $this->Subnotas_model->obtener_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
         $todasRubricas = $this->Subnotas_model->obtener_todas_rubricas_curso($codProfesor, $codMateria, $grupo, $semestre);
+        $cortesCalificados = $this->Subnotas_model->obtener_cortes_calificados($codProfesor, $codMateria, $grupo, $semestre);
+        $corteCalificado = isset($cortesCalificados[$tipoPrevio]) && $cortesCalificados[$tipoPrevio];
 
         $this->template->set('exito', $exito);
         $this->template->set('mensaje_moodle', $mensaje_moodle);
@@ -149,6 +151,8 @@ class Dashboard extends CMS_Controller {
         $this->template->set('actividades', $actividades);
         $this->template->set('rubrica_actual', $rubricaActual);
         $this->template->set('todas_rubricas', $todasRubricas);
+        $this->template->set('cortes_calificados', $cortesCalificados);
+        $this->template->set('corte_calificado', $corteCalificado);
         $this->template->set('tipo_previo', $tipoPrevio);
         $this->template->set('cod_profesor', $codProfesor);
         $this->template->set('cod_materia', $codMateria);
@@ -175,6 +179,14 @@ class Dashboard extends CMS_Controller {
 
         if (empty($codProfesor) || empty($codMateria) || empty($tipoPrevio)) {
             echo json_encode(array('exito' => false, 'mensaje' => 'Parametros requeridos incompletos'));
+            return;
+        }
+
+        if ($this->Subnotas_model->corte_esta_calificado($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)) {
+            echo json_encode(array(
+                'exito'   => false,
+                'mensaje' => 'No es posible modificar la rubrica porque este corte ya fue calificado y cerrado.'
+            ));
             return;
         }
 
@@ -382,6 +394,8 @@ class Dashboard extends CMS_Controller {
         $totalEstudiantes = count($estudiantesCalculados);
         $promedioGrupo = ($totalEstudiantes > 0) ? round($acumuladorPromedio / $totalEstudiantes, 2) : 0.0;
 
+        $corteCalificado = !empty($subnotasGuardadas);
+
         $this->template->set('course_id', $courseId);
         $this->template->set('tipo_previo', $tipoPrevio);
         $this->template->set('curso_nombre', $cursoNombre);
@@ -401,6 +415,7 @@ class Dashboard extends CMS_Controller {
         $this->template->set('total_aprobados', $totalAprobados);
         $this->template->set('total_reprobados', $totalReprobados);
         $this->template->set('promedio_grupo', $promedioGrupo);
+        $this->template->set('corte_calificado', $corteCalificado);
 
         $this->template->set('item_sidebar_active', 'actividades_moodle');
         $this->template->set('content_header', 'Calculo de Notas Sugeridas y Aceptacion');
@@ -421,6 +436,11 @@ class Dashboard extends CMS_Controller {
 
         if (empty($codProfesor) || empty($codMateria) || empty($tipoPrevio)) {
             echo json_encode(array('exito' => false, 'mensaje' => 'Parametros requeridos incompletos'));
+            return;
+        }
+
+        if ($this->Subnotas_model->corte_esta_calificado($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)) {
+            echo json_encode(array('exito' => false, 'mensaje' => 'Este corte ya fue calificado y cerrado.'));
             return;
         }
 

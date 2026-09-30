@@ -123,6 +123,42 @@ class Subnotas_model extends CI_Model
         return $this->database2->get_sql_bool($sql);
     }
 
+    public function corte_esta_calificado($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
+    {
+        $condMateria = "COD_MATERIA = '{$codMateria}'";
+        if (!empty($codMateria) && $codMateria !== '1155304') {
+            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
+        }
+
+        $sql = "SELECT COUNT(*) AS TOTAL FROM SUBNOTAS WHERE {$condMateria} AND TIPO_PREVIO = '{$tipoPrevio}'";
+        $obj = null;
+        $this->database2->get_sql_object($sql, $obj);
+        return ($obj && isset($obj->TOTAL) && (int)$obj->TOTAL > 0);
+    }
+
+    public function obtener_cortes_calificados($codProfesor, $codMateria, $grupo, $semestre)
+    {
+        $condMateria = "COD_MATERIA = '{$codMateria}'";
+        if (!empty($codMateria) && $codMateria !== '1155304') {
+            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
+        }
+
+        $sql = "SELECT TIPO_PREVIO, COUNT(*) AS TOTAL FROM SUBNOTAS WHERE {$condMateria} GROUP BY TIPO_PREVIO";
+        $arr = array();
+        $this->database2->get_obj_array($sql, $arr);
+
+        $calificados = array();
+        if (!empty($arr) && is_array($arr)) {
+            foreach ($arr as $row) {
+                if (isset($row->TOTAL) && (int)$row->TOTAL > 0) {
+                    $calificados[$row->TIPO_PREVIO] = true;
+                }
+            }
+        }
+
+        return $calificados;
+    }
+
     public function guardar_subnotas_estudiante($codProfesor, $codMateria, $grupo, $semestre, $codEstudiante, $tipoPrevio, $desgloseSubnotas, $estado = 'SUGERIDA')
     {
         $this->eliminar_subnotas_estudiante($codEstudiante, $codMateria, $grupo, $semestre, $tipoPrevio);
