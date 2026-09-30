@@ -259,11 +259,26 @@ class Dashboard extends CMS_Controller {
             $codEstudiante = !empty($est['codigo']) ? $est['codigo'] : (!empty($est['idnumber']) ? $est['idnumber'] : $est['username']);
             $nombreCompleto = !empty($est['nombre_completo']) ? $est['nombre_completo'] : (trim($est['nombres'] . ' ' . $est['apellidos']));
 
-            $calificacionesMap = array();
+            $calificacionesPorId = array();
+            $calificacionesPorNombre = array();
+
             if (!empty($est['calificaciones']) && is_array($est['calificaciones'])) {
                 foreach ($est['calificaciones'] as $cal) {
-                    $idAct = (int)$cal['id_actividad'];
-                    $calificacionesMap[$idAct] = $cal;
+                    if (isset($cal['cmid']) && (int)$cal['cmid'] > 0) {
+                        $calificacionesPorId[(int)$cal['cmid']] = $cal;
+                    }
+                    if (isset($cal['id_actividad']) && (int)$cal['id_actividad'] > 0) {
+                        $calificacionesPorId[(int)$cal['id_actividad']] = $cal;
+                    }
+                    if (isset($cal['grade_item_id']) && (int)$cal['grade_item_id'] > 0) {
+                        $calificacionesPorId[(int)$cal['grade_item_id']] = $cal;
+                    }
+
+                    $nomActCal = isset($cal['nombre_actividad']) ? $cal['nombre_actividad'] : '';
+                    $nomNorm = strtolower(trim($nomActCal));
+                    if (!empty($nomNorm)) {
+                        $calificacionesPorNombre[$nomNorm] = $cal;
+                    }
                 }
             }
 
@@ -272,18 +287,33 @@ class Dashboard extends CMS_Controller {
 
             if ($rubricaValida) {
                 foreach ($rubrica as $itemRubrica) {
-                    $idAct  = (int)$itemRubrica->ID_ACTIVIDAD_MOODLE;
-                    $nomAct = $itemRubrica->NOMBRE_ACTIVIDAD;
-                    $pct    = (float)$itemRubrica->PORCENTAJE;
+                    $idAct   = (int)$itemRubrica->ID_ACTIVIDAD_MOODLE;
+                    $nomAct  = trim($itemRubrica->NOMBRE_ACTIVIDAD);
+                    $nomNorm = strtolower($nomAct);
+                    $pct     = (float)$itemRubrica->PORCENTAJE;
+
+                    $calEncontrada = null;
+                    if (isset($calificacionesPorId[$idAct])) {
+                        $calEncontrada = $calificacionesPorId[$idAct];
+                    } elseif (isset($calificacionesPorNombre[$nomNorm])) {
+                        $calEncontrada = $calificacionesPorNombre[$nomNorm];
+                    } else {
+                        foreach ($calificacionesPorNombre as $calNom => $calObj) {
+                            if (strpos($calNom, $nomNorm) !== false || strpos($nomNorm, $calNom) !== false) {
+                                $calEncontrada = $calObj;
+                                break;
+                            }
+                        }
+                    }
 
                     $notaOriginal = 0.0;
                     $notaMax = 5.0;
                     $presento = false;
 
-                    if (isset($calificacionesMap[$idAct])) {
-                        $presento = true;
-                        $notaOriginal = (float)$calificacionesMap[$idAct]['nota_final'];
-                        $notaMax = (float)$calificacionesMap[$idAct]['nota_maxima'];
+                    if ($calEncontrada !== null) {
+                        $presento = isset($calEncontrada['presento']) ? (bool)$calEncontrada['presento'] : true;
+                        $notaOriginal = (float)$calEncontrada['nota_final'];
+                        $notaMax = (float)$calEncontrada['nota_maxima'];
                     }
 
                     if ($notaMax > 0 && abs($notaMax - 5.0) > 0.01) {
@@ -315,8 +345,14 @@ class Dashboard extends CMS_Controller {
             $notaDefinitiva = $notaSugerida;
 
             if ($yaGuardado) {
-                $estadoActual = $subnotasGuardadas[$codEstudiante]['estado'];
-                $notaDefinitiva = round($subnotasGuardadas[$codEstudiante]['total_nota'], 2);
+                $estadoGuardado = $subnotasGuardadas[$codEstudiante]['estado'];
+                if ($estadoGuardado === 'ACEPTADA' || $estadoGuardado === 'MODIFICADA') {
+                    $estadoActual = $estadoGuardado;
+                    $notaDefinitiva = round($subnotasGuardadas[$codEstudiante]['total_nota'], 2);
+                } else {
+                    $estadoActual = 'SUGERIDA';
+                    $notaDefinitiva = $notaSugerida;
+                }
             }
 
             if ($notaDefinitiva >= 3.0) {
