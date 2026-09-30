@@ -499,7 +499,7 @@ class Dashboard extends CMS_Controller {
 
         $calificacionesGuardadas = $this->Subnotas_model->obtener_calificaciones_todos_cortes($codProfesor, $codMateria, $grupo, $semestre);
         $subnotasDetalle = $this->Subnotas_model->obtener_todas_subnotas_curso($codProfesor, $codMateria, $grupo, $semestre);
-        $todasRubricas = $this->Subnotas_model->obtener_todas_rubricas_curso($codProfesor, $codMateria, $grupo, $semestre);
+        $cortesCalificados = $this->Subnotas_model->obtener_cortes_calificados($codProfesor, $codMateria, $grupo, $semestre);
 
         $pesosCortes = array(
             '1'     => 23.3,
@@ -571,88 +571,16 @@ class Dashboard extends CMS_Controller {
 
             $cortesClaves = array('1', '2', '3', 'FINAL');
             $notasCortes = array(
-                '1'     => isset($cortesEst['1']) ? (float)$cortesEst['1']['nota'] : null,
-                '2'     => isset($cortesEst['2']) ? (float)$cortesEst['2']['nota'] : null,
-                '3'     => isset($cortesEst['3']) ? (float)$cortesEst['3']['nota'] : null,
-                'FINAL' => isset($cortesEst['FINAL']) ? (float)$cortesEst['FINAL']['nota'] : null,
+                '1'     => null,
+                '2'     => null,
+                '3'     => null,
+                'FINAL' => null,
             );
 
-            $calificacionesPorId = array();
-            $calificacionesPorNombre = array();
-            if (!empty($est['calificaciones']) && is_array($est['calificaciones'])) {
-                foreach ($est['calificaciones'] as $cal) {
-                    if (isset($cal['cmid']) && (int)$cal['cmid'] > 0) {
-                        $calificacionesPorId[(int)$cal['cmid']] = $cal;
-                    }
-                    if (isset($cal['id_actividad']) && (int)$cal['id_actividad'] > 0) {
-                        $calificacionesPorId[(int)$cal['id_actividad']] = $cal;
-                    }
-                    if (isset($cal['grade_item_id']) && (int)$cal['grade_item_id'] > 0) {
-                        $calificacionesPorId[(int)$cal['grade_item_id']] = $cal;
-                    }
-                    $nomActCal = isset($cal['nombre_actividad']) ? $cal['nombre_actividad'] : '';
-                    $nomNorm = strtolower(trim($nomActCal));
-                    if (!empty($nomNorm)) {
-                        $calificacionesPorNombre[$nomNorm] = $cal;
-                    }
-                }
-            }
-
             foreach ($cortesClaves as $cClave) {
-                if ($notasCortes[$cClave] === null && isset($todasRubricas[$cClave]) && !empty($todasRubricas[$cClave])) {
-                    $rubCorte = $todasRubricas[$cClave];
-                    $sumPct = 0;
-                    foreach ($rubCorte as $rItem) {
-                        $sumPct += (float)$rItem->PORCENTAJE;
-                    }
-                    if (abs($sumPct - 100) < 0.01) {
-                        $notaSugCorte = 0.0;
-                        $itemsDesgloseCalc = array();
-                        foreach ($rubCorte as $itemR) {
-                            $idAct   = (int)$itemR->ID_ACTIVIDAD_MOODLE;
-                            $nomAct  = trim($itemR->NOMBRE_ACTIVIDAD);
-                            $nomNorm = strtolower($nomAct);
-                            $pct     = (float)$itemR->PORCENTAJE;
-
-                            $calEncontrada = null;
-                            if (isset($calificacionesPorId[$idAct])) {
-                                $calEncontrada = $calificacionesPorId[$idAct];
-                            } elseif (isset($calificacionesPorNombre[$nomNorm])) {
-                                $calEncontrada = $calificacionesPorNombre[$nomNorm];
-                            } else {
-                                foreach ($calificacionesPorNombre as $calNom => $calObj) {
-                                    if (strpos($calNom, $nomNorm) !== false || strpos($nomNorm, $calNom) !== false) {
-                                        $calEncontrada = $calObj;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            $notaOriginal = 0.0;
-                            $notaMax = 5.0;
-                            if ($calEncontrada !== null) {
-                                $notaOriginal = (float)$calEncontrada['nota_final'];
-                                $notaMax = (float)$calEncontrada['nota_maxima'];
-                            }
-                            if ($notaMax > 0 && abs($notaMax - 5.0) > 0.01) {
-                                $notaNormalizada = round(($notaOriginal / $notaMax) * 5.0, 2);
-                            } else {
-                                $notaNormalizada = $notaOriginal;
-                            }
-                            $sub = round($notaNormalizada * ($pct / 100), 2);
-                            $notaSugCorte += $sub;
-
-                            $objRow = new stdClass();
-                            $objRow->NOMBRE_ACTIVIDAD = $nomAct;
-                            $objRow->NOTA_ORIGINAL = $notaOriginal;
-                            $objRow->PORCENTAJE = $pct;
-                            $objRow->SUBNOTA = $sub;
-                            $itemsDesgloseCalc[] = $objRow;
-                        }
-                        $notasCortes[$cClave] = min(5.0, max(0.0, round($notaSugCorte, 2)));
-                        if (!isset($desgloseEst[$cClave])) {
-                            $desgloseEst[$cClave] = $itemsDesgloseCalc;
-                        }
+                if (isset($cortesCalificados[$cClave]) && $cortesCalificados[$cClave]) {
+                    if (isset($cortesEst[$cClave]) && isset($cortesEst[$cClave]['nota'])) {
+                        $notasCortes[$cClave] = (float)$cortesEst[$cClave]['nota'];
                     }
                 }
             }
