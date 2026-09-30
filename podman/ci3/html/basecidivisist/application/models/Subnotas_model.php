@@ -352,4 +352,72 @@ class Subnotas_model extends CI_Model
 
         return $exitoGeneral;
     }
+
+    public function obtener_calificaciones_todos_cortes($codProfesor, $codMateria, $grupo, $semestre)
+    {
+        $sql = "SELECT COD_ESTUDIANTE, TIPO_PREVIO, 
+                       ROUND(SUM(SUBNOTA), 2) AS NOTA_CORTE,
+                       MAX(ESTADO) AS ESTADO_CORTE,
+                       COUNT(ID) AS TOTAL_ACTIVIDADES
+                FROM SUBNOTAS 
+                WHERE COD_PROFESOR = '{$codProfesor}' 
+                  AND COD_MATERIA  = '{$codMateria}' 
+                  AND GRUPO        = '{$grupo}' 
+                  AND SEMESTRE     = '{$semestre}' 
+                GROUP BY COD_ESTUDIANTE, TIPO_PREVIO 
+                ORDER BY COD_ESTUDIANTE ASC, TIPO_PREVIO ASC";
+
+        $arr = array();
+        $this->database2->get_obj_array($sql, $arr);
+
+        $agrupadas = array();
+        if (!empty($arr) && is_array($arr)) {
+            foreach ($arr as $row) {
+                $cod = isset($row->COD_ESTUDIANTE) ? $row->COD_ESTUDIANTE : '';
+                $previo = isset($row->TIPO_PREVIO) ? $row->TIPO_PREVIO : '';
+                if (!isset($agrupadas[$cod])) {
+                    $agrupadas[$cod] = array();
+                }
+                $agrupadas[$cod][$previo] = array(
+                    'nota'   => isset($row->NOTA_CORTE) ? (float)$row->NOTA_CORTE : 0.0,
+                    'estado' => isset($row->ESTADO_CORTE) ? $row->ESTADO_CORTE : '',
+                    'total'  => isset($row->TOTAL_ACTIVIDADES) ? (int)$row->TOTAL_ACTIVIDADES : 0,
+                );
+            }
+        }
+
+        return $agrupadas;
+    }
+
+    public function obtener_todas_subnotas_curso($codProfesor, $codMateria, $grupo, $semestre)
+    {
+        $sql = "SELECT ID, COD_ESTUDIANTE, TIPO_PREVIO, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
+                       NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO 
+                FROM SUBNOTAS 
+                WHERE COD_PROFESOR = '{$codProfesor}' 
+                  AND COD_MATERIA  = '{$codMateria}' 
+                  AND GRUPO        = '{$grupo}' 
+                  AND SEMESTRE     = '{$semestre}' 
+                ORDER BY COD_ESTUDIANTE ASC, TIPO_PREVIO ASC, ID ASC";
+
+        $arr = array();
+        $this->database2->get_obj_array($sql, $arr);
+
+        $agrupadas = array();
+        if (!empty($arr) && is_array($arr)) {
+            foreach ($arr as $row) {
+                $cod = isset($row->COD_ESTUDIANTE) ? $row->COD_ESTUDIANTE : '';
+                $previo = isset($row->TIPO_PREVIO) ? $row->TIPO_PREVIO : '';
+                if (!isset($agrupadas[$cod])) {
+                    $agrupadas[$cod] = array();
+                }
+                if (!isset($agrupadas[$cod][$previo])) {
+                    $agrupadas[$cod][$previo] = array();
+                }
+                $agrupadas[$cod][$previo][] = $row;
+            }
+        }
+
+        return $agrupadas;
+    }
 }

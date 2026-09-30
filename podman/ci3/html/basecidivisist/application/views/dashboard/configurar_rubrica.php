@@ -18,13 +18,18 @@
                     </a>
                 </li>
                 <li class="pull-right">
-                    <a href="<?php echo site_url('dashboard/actividades_moodle/' . $course_id); ?>" class="text-muted" style="padding: 10px 15px;">
-                        <i class="fa fa-list"></i> Actividades
+                    <a href="<?php echo site_url('dashboard/calificaciones/' . $course_id); ?>" class="text-green" style="padding: 10px 15px; font-weight: bold;">
+                        <i class="fa fa-graduation-cap"></i> Calificaciones
                     </a>
                 </li>
                 <li class="pull-right">
-                    <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $tipo_previo); ?>" class="text-green" style="padding: 10px 15px; font-weight: bold;">
+                    <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $tipo_previo); ?>" class="text-orange" style="padding: 10px 15px;">
                         <i class="fa fa-calculator"></i> Calificar Corte
+                    </a>
+                </li>
+                <li class="pull-right">
+                    <a href="<?php echo site_url('dashboard/actividades_moodle/' . $course_id); ?>" class="text-muted" style="padding: 10px 15px;">
+                        <i class="fa fa-list"></i> Actividades
                     </a>
                 </li>
             </ul>

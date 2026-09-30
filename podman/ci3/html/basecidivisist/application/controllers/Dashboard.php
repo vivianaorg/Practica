@@ -410,6 +410,141 @@ class Dashboard extends CMS_Controller {
         }
     }
 
+    public function calificaciones($courseId = 2) {
+        $this->load->model('Moodle_model');
+        $this->load->model('Subnotas_model');
+
+        $resultadoMoodle = $this->Moodle_model->obtener_calificaciones($courseId);
+        $exitoMoodle = isset($resultadoMoodle['exito']) ? $resultadoMoodle['exito'] : false;
+        $mensajeMoodle = isset($resultadoMoodle['mensaje']) ? $resultadoMoodle['mensaje'] : '';
+        $cursoNombre = isset($resultadoMoodle['datos']['curso_nombre']) ? $resultadoMoodle['datos']['curso_nombre'] : 'Curso Moodle #' . $courseId;
+        $cursoCodigo = isset($resultadoMoodle['datos']['curso_codigo']) ? $resultadoMoodle['datos']['curso_codigo'] : '';
+        $estudiantesMoodle = isset($resultadoMoodle['datos']['estudiantes']) ? $resultadoMoodle['datos']['estudiantes'] : array();
+
+        $codProfesor = (isset($this->usuario) && isset($this->usuario->CODIGO)) ? $this->usuario->CODIGO : '04608';
+        $semestre    = date('Y') . '-' . (date('n') <= 6 ? '1' : '2');
+
+        $codMateria = !empty($cursoCodigo) ? trim($cursoCodigo) : '1155304';
+        $grupo      = '-';
+        if (!empty($cursoCodigo)) {
+            if (strpos($cursoCodigo, '-') !== false) {
+                $partes = explode('-', $cursoCodigo, 2);
+                $codMateria = trim($partes[0]);
+                $grupo      = trim($partes[1]);
+            } else {
+                $codMateria = trim($cursoCodigo);
+                $grupo      = '-';
+            }
+        }
+
+        $calificacionesGuardadas = $this->Subnotas_model->obtener_calificaciones_todos_cortes($codProfesor, $codMateria, $grupo, $semestre);
+        $subnotasDetalle = $this->Subnotas_model->obtener_todas_subnotas_curso($codProfesor, $codMateria, $grupo, $semestre);
+
+        $pesosCortes = array(
+            '1'     => 23.3,
+            '2'     => 23.3,
+            '3'     => 23.4,
+            'FINAL' => 30.0,
+        );
+
+        $planilla = array();
+        $totalAprobados = 0;
+        $totalReprobados = 0;
+        $sumaDefinitivas = 0;
+        $conNotaDefinitiva = 0;
+
+        foreach ($estudiantesMoodle as $est) {
+            $codEstudiante = !empty($est['codigo']) ? $est['codigo'] : (!empty($est['idnumber']) ? $est['idnumber'] : $est['username']);
+            $nombreCompleto = !empty($est['nombre_completo']) ? $est['nombre_completo'] : (trim($est['nombres'] . ' ' . $est['apellidos']));
+
+            $cortesEst = isset($calificacionesGuardadas[$codEstudiante]) ? $calificacionesGuardadas[$codEstudiante] : array();
+
+            $n1 = isset($cortesEst['1']) ? (float)$cortesEst['1']['nota'] : null;
+            $n2 = isset($cortesEst['2']) ? (float)$cortesEst['2']['nota'] : null;
+            $n3 = isset($cortesEst['3']) ? (float)$cortesEst['3']['nota'] : null;
+            $nf = isset($cortesEst['FINAL']) ? (float)$cortesEst['FINAL']['nota'] : null;
+
+            $acumulado = 0.0;
+            $pesoEvaluado = 0.0;
+
+            if ($n1 !== null) {
+                $acumulado += $n1 * ($pesosCortes['1'] / 100);
+                $pesoEvaluado += $pesosCortes['1'];
+            }
+            if ($n2 !== null) {
+                $acumulado += $n2 * ($pesosCortes['2'] / 100);
+                $pesoEvaluado += $pesosCortes['2'];
+            }
+            if ($n3 !== null) {
+                $acumulado += $n3 * ($pesosCortes['3'] / 100);
+                $pesoEvaluado += $pesosCortes['3'];
+            }
+            if ($nf !== null) {
+                $acumulado += $nf * ($pesosCortes['FINAL'] / 100);
+                $pesoEvaluado += $pesosCortes['FINAL'];
+            }
+
+            $definitiva = round($acumulado, 2);
+            $estadoAcademico = 'EN_CURSO';
+
+            if ($pesoEvaluado >= 99.0) {
+                $estadoAcademico = ($definitiva >= 3.0) ? 'APROBADO' : 'REPROBADO';
+            } elseif ($pesoEvaluado > 0) {
+                $estadoAcademico = ($definitiva >= 3.0) ? 'APROBANDO' : 'EN_RIESGO';
+            }
+
+            if ($definitiva >= 3.0 && $pesoEvaluado > 0) {
+                $totalAprobados++;
+            } elseif ($pesoEvaluado > 0) {
+                $totalReprobados++;
+            }
+
+            if ($pesoEvaluado > 0) {
+                $sumaDefinitivas += $definitiva;
+                $conNotaDefinitiva++;
+            }
+
+            $desgloseEst = isset($subnotasDetalle[$codEstudiante]) ? $subnotasDetalle[$codEstudiante] : array();
+
+            $planilla[] = array(
+                'codigo'           => $codEstudiante,
+                'nombre_completo'  => $nombreCompleto,
+                'email'            => isset($est['email']) ? $est['email'] : '',
+                'corte_1'          => $n1,
+                'corte_2'          => $n2,
+                'corte_3'          => $n3,
+                'corte_final'      => $nf,
+                'peso_evaluado'    => round($pesoEvaluado, 1),
+                'definitiva'       => ($pesoEvaluado > 0) ? $definitiva : null,
+                'estado_academico' => $estadoAcademico,
+                'desglose'         => $desgloseEst,
+            );
+        }
+
+        $totalEstudiantes = count($planilla);
+        $promedioGeneral = ($conNotaDefinitiva > 0) ? round($sumaDefinitivas / $conNotaDefinitiva, 2) : 0.0;
+
+        $this->template->set('course_id', $courseId);
+        $this->template->set('curso_nombre', $cursoNombre);
+        $this->template->set('curso_codigo', $cursoCodigo);
+        $this->template->set('cod_profesor', $codProfesor);
+        $this->template->set('cod_materia', $codMateria);
+        $this->template->set('grupo', $grupo);
+        $this->template->set('semestre', $semestre);
+        $this->template->set('pesos_cortes', $pesosCortes);
+        $this->template->set('planilla', $planilla);
+        $this->template->set('total_estudiantes', $totalEstudiantes);
+        $this->template->set('total_aprobados', $totalAprobados);
+        $this->template->set('total_reprobados', $totalReprobados);
+        $this->template->set('promedio_general', $promedioGeneral);
+        $this->template->set('exito_moodle', $exitoMoodle);
+        $this->template->set('mensaje_moodle', $mensajeMoodle);
+
+        $this->template->set('item_sidebar_active', 'actividades_moodle');
+        $this->template->set('content_header', 'Planilla General de Calificaciones');
+        $this->template->render('dashboard/calificaciones');
+    }
+
     public function test_oracle() {
         header('Content-Type: application/json; charset=utf-8');
 

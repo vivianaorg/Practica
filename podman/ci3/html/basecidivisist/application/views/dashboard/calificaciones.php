@@ -1,0 +1,388 @@
+<div class="box box-primary">
+    <div class="box-header with-border">
+        <div class="row">
+            <div class="col-md-7">
+                <h3 class="box-title" style="font-weight: 600;">
+                    <i class="fa fa-graduation-cap text-primary"></i> <?php echo htmlspecialchars($curso_nombre); ?>
+                </h3>
+                <div class="text-muted" style="margin-top: 4px;">
+                    <strong>Materia:</strong> <?php echo htmlspecialchars($cod_materia); ?> &nbsp;|&nbsp;
+                    <?php if (!empty($grupo) && $grupo !== '-'): ?>
+                        <strong>Grupo:</strong> <?php echo htmlspecialchars($grupo); ?> &nbsp;|&nbsp;
+                    <?php endif; ?>
+                    <strong>Semestre:</strong> <?php echo htmlspecialchars($semestre); ?> &nbsp;|&nbsp;
+                    <strong>Profesor:</strong> <?php echo htmlspecialchars($cod_profesor); ?>
+                </div>
+            </div>
+            <div class="col-md-5 text-right">
+                <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>" class="btn btn-default btn-sm">
+                    <i class="fa fa-arrow-left"></i> Volver a Cursos
+                </a>
+                <a href="<?php echo site_url('dashboard/actividades_moodle/' . $course_id); ?>" class="btn btn-default btn-sm" style="margin-left: 3px;">
+                    <i class="fa fa-list"></i> Actividades
+                </a>
+                <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $course_id); ?>" class="btn btn-info btn-sm" style="margin-left: 3px;">
+                    <i class="fa fa-sliders"></i> Rúbrica
+                </a>
+                <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id); ?>" class="btn btn-warning btn-sm" style="margin-left: 3px;">
+                    <i class="fa fa-calculator"></i> Calificar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="box-body">
+
+        <?php if (!$exito_moodle): ?>
+            <div class="alert alert-danger">
+                <i class="fa fa-exclamation-triangle"></i> Error al consultar Moodle: 
+                <?php echo htmlspecialchars(isset($mensaje_moodle) ? $mensaje_moodle : 'Error desconocido'); ?>
+            </div>
+        <?php elseif (empty($planilla)): ?>
+            <div class="callout callout-info">
+                <h4><i class="fa fa-info-circle"></i> Sin estudiantes</h4>
+                <p>No se encontraron estudiantes matriculados en este curso.</p>
+            </div>
+        <?php else: ?>
+
+            <div class="row" style="margin-bottom: 15px;">
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="info-box bg-aqua">
+                        <span class="info-box-icon"><i class="fa fa-users"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Estudiantes</span>
+                            <span class="info-box-number"><?php echo $total_estudiantes; ?></span>
+                            <div class="progress"><div class="progress-bar" style="width: 100%"></div></div>
+                            <span class="progress-description">Total matriculados</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="info-box bg-green">
+                        <span class="info-box-icon"><i class="fa fa-check-circle"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Aprobando</span>
+                            <span class="info-box-number"><?php echo $total_aprobados; ?></span>
+                            <div class="progress">
+                                <?php $pctAp = ($total_estudiantes > 0) ? round(($total_aprobados / $total_estudiantes) * 100) : 0; ?>
+                                <div class="progress-bar" style="width: <?php echo $pctAp; ?>%"></div>
+                            </div>
+                            <span class="progress-description"><?php echo $pctAp; ?>% del curso</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="info-box bg-red">
+                        <span class="info-box-icon"><i class="fa fa-times-circle"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">En Riesgo</span>
+                            <span class="info-box-number"><?php echo $total_reprobados; ?></span>
+                            <div class="progress">
+                                <?php $pctRep = ($total_estudiantes > 0) ? round(($total_reprobados / $total_estudiantes) * 100) : 0; ?>
+                                <div class="progress-bar" style="width: <?php echo $pctRep; ?>%"></div>
+                            </div>
+                            <span class="progress-description"><?php echo $pctRep; ?>% del curso</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="info-box bg-yellow">
+                        <span class="info-box-icon"><i class="fa fa-line-chart"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Promedio Curso</span>
+                            <span class="info-box-number"><?php echo number_format($promedio_general, 2); ?></span>
+                            <div class="progress"><div class="progress-bar" style="width: 100%"></div></div>
+                            <span class="progress-description">Escala 0.0 a 5.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" style="margin-bottom: 12px;">
+                <div class="col-md-6">
+                    <div class="input-group input-group-sm" style="max-width: 350px;">
+                        <input type="text" id="buscar_estudiante" class="form-control" placeholder="Buscar por código o nombre...">
+                        <span class="input-group-btn">
+                            <button type="button" class="btn btn-default"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-6 text-right">
+                    <span class="text-muted" style="font-size: 12px;">
+                        <i class="fa fa-info-circle"></i> Ponderaciones: 1er Previo (23.3%) | 2do Previo (23.3%) | 3er Previo (23.4%) | Final (30%)
+                    </span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover" id="tabla_calificaciones">
+                    <thead>
+                        <tr class="bg-gray-light">
+                            <th style="width: 35px; text-align: center;">#</th>
+                            <th style="width: 95px; text-align: center;">Código</th>
+                            <th>Estudiante</th>
+                            <th style="width: 110px; text-align: center;">1er Previo<br><small class="text-muted">23.3%</small></th>
+                            <th style="width: 110px; text-align: center;">2do Previo<br><small class="text-muted">23.3%</small></th>
+                            <th style="width: 110px; text-align: center;">3er Previo<br><small class="text-muted">23.4%</small></th>
+                            <th style="width: 110px; text-align: center;">Examen Final<br><small class="text-muted">30.0%</small></th>
+                            <th style="width: 100px; text-align: center;">Definitiva</th>
+                            <th style="width: 105px; text-align: center;">Estado</th>
+                            <th style="width: 85px; text-align: center;">Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($planilla as $idx => $fila): ?>
+                            <?php
+                            $c1Txt = ($fila['corte_1'] !== null) ? number_format($fila['corte_1'], 2) : '<span class="text-muted">-</span>';
+                            $c2Txt = ($fila['corte_2'] !== null) ? number_format($fila['corte_2'], 2) : '<span class="text-muted">-</span>';
+                            $c3Txt = ($fila['corte_3'] !== null) ? number_format($fila['corte_3'], 2) : '<span class="text-muted">-</span>';
+                            $cfTxt = ($fila['corte_final'] !== null) ? number_format($fila['corte_final'], 2) : '<span class="text-muted">-</span>';
+
+                            $defTxt = '<span class="text-muted">-</span>';
+                            $badgeDef = 'label-default';
+                            if ($fila['definitiva'] !== null) {
+                                $defTxt = number_format($fila['definitiva'], 2);
+                                $badgeDef = ($fila['definitiva'] >= 3.0) ? 'label-success' : 'label-danger';
+                            }
+
+                            $estadoBadge = 'label-default';
+                            $estadoNombre = 'Sin Notas';
+                            if ($fila['estado_academico'] === 'APROBADO') {
+                                $estadoBadge = 'label-success';
+                                $estadoNombre = 'Aprobado';
+                            } elseif ($fila['estado_academico'] === 'REPROBADO') {
+                                $estadoBadge = 'label-danger';
+                                $estadoNombre = 'Reprobado';
+                            } elseif ($fila['estado_academico'] === 'APROBANDO') {
+                                $estadoBadge = 'label-success';
+                                $estadoNombre = 'Aprobando';
+                            } elseif ($fila['estado_academico'] === 'EN_RIESGO') {
+                                $estadoBadge = 'label-warning';
+                                $estadoNombre = 'En Riesgo';
+                            }
+                            ?>
+                            <tr class="fila-estudiante">
+                                <td style="text-align: center; vertical-align: middle;"><?php echo ($idx + 1); ?></td>
+                                <td style="text-align: center; vertical-align: middle; font-weight: 600;" class="col-codigo">
+                                    <?php echo htmlspecialchars($fila['codigo']); ?>
+                                </td>
+                                <td style="vertical-align: middle;" class="col-nombre">
+                                    <strong><?php echo htmlspecialchars($fila['nombre_completo']); ?></strong>
+                                    <?php if (!empty($fila['email'])): ?>
+                                        <br><small class="text-muted"><?php echo htmlspecialchars($fila['email']); ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="text-align: center; vertical-align: middle; font-weight: 600;">
+                                    <?php echo $c1Txt; ?>
+                                </td>
+                                <td style="text-align: center; vertical-align: middle; font-weight: 600;">
+                                    <?php echo $c2Txt; ?>
+                                </td>
+                                <td style="text-align: center; vertical-align: middle; font-weight: 600;">
+                                    <?php echo $c3Txt; ?>
+                                </td>
+                                <td style="text-align: center; vertical-align: middle; font-weight: 600;">
+                                    <?php echo $cfTxt; ?>
+                                </td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <span class="label <?php echo $badgeDef; ?>" style="font-size: 13px; padding: 4px 8px;">
+                                        <?php echo $defTxt; ?>
+                                    </span>
+                                </td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <span class="label <?php echo $estadoBadge; ?>" style="font-size: 11px;">
+                                        <?php echo $estadoNombre; ?>
+                                    </span>
+                                </td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <button type="button" class="btn btn-default btn-xs btn-detalle-est" data-index="<?php echo $idx; ?>" title="Ver desglose de subnotas">
+                                        <i class="fa fa-search text-primary"></i> Ver
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+        <?php endif; ?>
+
+    </div>
+</div>
+
+<div class="modal fade" id="modal_detalle_estudiante" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #fff; opacity: 0.9;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" style="font-weight: 600;">
+                    <i class="fa fa-graduation-cap"></i> Desglose Detallado de Calificaciones
+                </h4>
+            </div>
+            <div class="modal-body">
+                <div class="row" style="margin-bottom: 15px;">
+                    <div class="col-md-8">
+                        <h4 id="det_estudiante_nombre" style="margin-top: 0; font-weight: 600; color: #222;">-</h4>
+                        <div class="text-muted">
+                            <strong>Código:</strong> <span id="det_estudiante_codigo">-</span> &nbsp;|&nbsp;
+                            <strong>Curso:</strong> <?php echo htmlspecialchars($curso_nombre); ?>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-right">
+                        <div style="font-size: 11px; text-transform: uppercase; color: #777;">Definitiva Acumulada</div>
+                        <div id="det_estudiante_definitiva" style="font-size: 26px; font-weight: bold; color: #00a65a;">-</div>
+                    </div>
+                </div>
+
+                <div class="nav-tabs-custom" style="box-shadow: none; border: 1px solid #e0e0e0;">
+                    <ul class="nav nav-tabs">
+                        <li class="active"><a href="#tab_det_1" data-toggle="tab">1er Previo (23.3%)</a></li>
+                        <li><a href="#tab_det_2" data-toggle="tab">2do Previo (23.3%)</a></li>
+                        <li><a href="#tab_det_3" data-toggle="tab">3er Previo (23.4%)</a></li>
+                        <li><a href="#tab_det_final" data-toggle="tab">Examen Final (30%)</a></li>
+                    </ul>
+                    <div class="tab-content" style="padding: 15px;">
+                        <div class="tab-pane active" id="tab_det_1">
+                            <div id="contenedor_corte_1"></div>
+                        </div>
+                        <div class="tab-pane" id="tab_det_2">
+                            <div id="contenedor_corte_2"></div>
+                        </div>
+                        <div class="tab-pane" id="tab_det_3">
+                            <div id="contenedor_corte_3"></div>
+                        </div>
+                        <div class="tab-pane" id="tab_det_final">
+                            <div id="contenedor_corte_final"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var PLANILLA_DATA = <?php echo json_encode(isset($planilla) ? $planilla : array()); ?>;
+
+document.addEventListener("DOMContentLoaded", function() {
+    var inputBuscar = document.getElementById("buscar_estudiante");
+    if (inputBuscar) {
+        inputBuscar.addEventListener("keyup", function() {
+            var termino = this.value.toLowerCase().trim();
+            var filas = document.querySelectorAll(".fila-estudiante");
+            for (var i = 0; i < filas.length; i++) {
+                var cod = filas[i].querySelector(".col-codigo").textContent.toLowerCase();
+                var nom = filas[i].querySelector(".col-nombre").textContent.toLowerCase();
+                if (cod.indexOf(termino) !== -1 || nom.indexOf(termino) !== -1) {
+                    filas[i].style.display = "";
+                } else {
+                    filas[i].style.display = "none";
+                }
+            }
+        });
+    }
+
+    var btnsDetalle = document.querySelectorAll(".btn-detalle-est");
+    for (var j = 0; j < btnsDetalle.length; j++) {
+        btnsDetalle[j].addEventListener("click", function() {
+            var idx = parseInt(this.getAttribute("data-index"), 10);
+            abrirDetalleEstudiante(idx);
+        });
+    }
+});
+
+function abrirDetalleEstudiante(idx) {
+    if (!PLANILLA_DATA[idx]) return;
+    var est = PLANILLA_DATA[idx];
+
+    var elNombre = document.getElementById("det_estudiante_nombre");
+    var elCodigo = document.getElementById("det_estudiante_codigo");
+    var elDef    = document.getElementById("det_estudiante_definitiva");
+
+    if (elNombre) elNombre.innerText = est.nombre_completo;
+    if (elCodigo) elCodigo.innerText = est.codigo;
+    if (elDef) {
+        if (est.definitiva !== null) {
+            var val = parseFloat(est.definitiva).toFixed(2);
+            elDef.innerText = val;
+            elDef.style.color = (parseFloat(val) >= 3.0) ? "#00a65a" : "#dd4b39";
+        } else {
+            elDef.innerText = "-";
+            elDef.style.color = "#777";
+        }
+    }
+
+    renderizarTablaCorte("contenedor_corte_1", est.desglose["1"] || [], est.corte_1);
+    renderizarTablaCorte("contenedor_corte_2", est.desglose["2"] || [], est.corte_2);
+    renderizarTablaCorte("contenedor_corte_3", est.desglose["3"] || [], est.corte_3);
+    renderizarTablaCorte("contenedor_corte_final", est.desglose["FINAL"] || [], est.corte_final);
+
+    $("#modal_detalle_estudiante").modal("show");
+}
+
+function renderizarTablaCorte(contenedorId, subnotas, notaCorte) {
+    var cont = document.getElementById(contenedorId);
+    if (!cont) return;
+
+    if (!subnotas || subnotas.length === 0) {
+        cont.innerHTML = '<div class="alert alert-warning" style="margin-bottom: 0;">' +
+            '<i class="fa fa-info-circle"></i> No hay calificaciones registradas para este corte evaluativo.' +
+            '</div>';
+        return;
+    }
+
+    var html = '<div class="table-responsive">' +
+        '<table class="table table-bordered table-striped">' +
+        '<thead>' +
+        '<tr class="bg-gray-light">' +
+        '<th style="width: 35px; text-align: center;">#</th>' +
+        '<th>Actividad Moodle</th>' +
+        '<th style="width: 130px; text-align: center;">Nota Original</th>' +
+        '<th style="width: 90px; text-align: center;">Peso (%)</th>' +
+        '<th style="width: 110px; text-align: center;">Subnota</th>' +
+        '</tr>' +
+        '</thead>' +
+        '<tbody>';
+
+    var sumaSub = 0;
+    var sumaPct = 0;
+
+    for (var i = 0; i < subnotas.length; i++) {
+        var s = subnotas[i];
+        var orig = parseFloat(s.NOTA_ORIGINAL).toFixed(2) + " / " + parseFloat(s.NOTA_MAXIMA).toFixed(2);
+        var pct = parseFloat(s.PORCENTAJE).toFixed(1);
+        var sub = parseFloat(s.SUBNOTA).toFixed(2);
+
+        sumaSub += parseFloat(s.SUBNOTA);
+        sumaPct += parseFloat(s.PORCENTAJE);
+
+        html += '<tr>' +
+            '<td style="text-align: center;">' + (i + 1) + '</td>' +
+            '<td><strong>' + s.NOMBRE_ACTIVIDAD + '</strong></td>' +
+            '<td style="text-align: center;">' + orig + '</td>' +
+            '<td style="text-align: center;"><span class="badge bg-blue">' + pct + '%</span></td>' +
+            '<td style="text-align: center; font-weight: bold; color: #0073b7;">' + sub + '</td>' +
+            '</tr>';
+    }
+
+    var notaFinalCorte = (notaCorte !== null) ? parseFloat(notaCorte).toFixed(2) : sumaSub.toFixed(2);
+
+    html += '</tbody>' +
+        '<tfoot>' +
+        '<tr class="bg-gray-light" style="font-weight: bold;">' +
+        '<td colspan="3" class="text-right">TOTAL PONDERADO:</td>' +
+        '<td style="text-align: center;">' + sumaPct.toFixed(1) + '%</td>' +
+        '<td style="text-align: center; color: #00a65a; font-size: 14px;">' + notaFinalCorte + '</td>' +
+        '</tr>' +
+        '</tfoot>' +
+        '</table>' +
+        '</div>';
+
+    cont.innerHTML = html;
+}
+</script>

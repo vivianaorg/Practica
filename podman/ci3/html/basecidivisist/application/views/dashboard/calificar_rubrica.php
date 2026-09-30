@@ -11,7 +11,7 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
 <div class="box box-danger">
     <div class="box-header with-border">
         <div class="row">
-            <div class="col-md-7">
+            <div class="col-md-6">
                 <h3 class="box-title" style="font-weight: 600;">
                     <i class="fa fa-calculator text-red"></i> <?php echo htmlspecialchars($curso_nombre); ?>
                 </h3>
@@ -24,7 +24,7 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                     <strong>Profesor:</strong> <?php echo htmlspecialchars($cod_profesor); ?>
                 </div>
             </div>
-            <div class="col-md-5 text-right">
+            <div class="col-md-6 text-right">
                 <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>" class="btn btn-default btn-sm">
                     <i class="fa fa-arrow-left"></i> Volver a Cursos
                 </a>
@@ -32,7 +32,10 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                     <i class="fa fa-list"></i> Actividades
                 </a>
                 <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $course_id . '/' . $tipo_previo . '#tab_configurar'); ?>" class="btn btn-info btn-sm" style="margin-left: 3px;">
-                    <i class="fa fa-sliders"></i> Ver / Configurar Rúbrica
+                    <i class="fa fa-sliders"></i> Rúbrica
+                </a>
+                <a href="<?php echo site_url('dashboard/calificaciones/' . $course_id); ?>" class="btn btn-success btn-sm" style="margin-left: 3px; font-weight: bold;">
+                    <i class="fa fa-graduation-cap"></i> Calificaciones
                 </a>
             </div>
         </div>
