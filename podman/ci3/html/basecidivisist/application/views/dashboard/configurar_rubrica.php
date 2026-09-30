@@ -188,8 +188,8 @@
                                 </button>
                             </div>
                             <div class="col-md-6 text-right">
-                                <button type="button" class="btn btn-success btn-lg" id="btn_guardar_rubrica" disabled>
-                                    <i class="fa fa-save"></i> Guardar Rubrica
+                                <button type="button" class="btn btn-success" id="btn_guardar_rubrica" disabled style="font-weight: 600;">
+                                    <i class="fa fa-save"></i> Guardar Rúbrica
                                 </button>
                             </div>
                         </div>
