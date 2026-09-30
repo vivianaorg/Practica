@@ -78,7 +78,7 @@ class Dashboard extends CMS_Controller {
 
         $this->template->set('item_sidebar_active', 'actividades_moodle');
         $this->template->set('content_header', 'Actividades de Moodle');
-        $this->template->set('content_sub_header', 'Integración NPLad - Curso #' . $courseId);
+        $this->template->set('content_sub_header', '');
         $this->template->render('dashboard/actividades_moodle');
     }
 
@@ -105,10 +105,31 @@ class Dashboard extends CMS_Controller {
         $this->load->model('Moodle_model');
         $this->load->model('Subnotas_model');
 
-        $codProfesor = '04608';
-        $codMateria  = '1155304';
-        $grupo       = 'A';
-        $semestre    = '2026-1';
+        $codProfesor = (isset($this->usuario) && isset($this->usuario->CODIGO)) ? $this->usuario->CODIGO : '04608';
+        $semestre    = date('Y') . '-' . (date('n') <= 6 ? '1' : '2');
+
+        $cursoCodigo = '';
+        $cursosRes = $this->Moodle_model->listar_cursos();
+        if (isset($cursosRes['datos']['cursos']) && is_array($cursosRes['datos']['cursos'])) {
+            foreach ($cursosRes['datos']['cursos'] as $c) {
+                if ($c['id'] == $courseId) {
+                    $cursoCodigo = isset($c['codigo']) ? $c['codigo'] : '';
+                    break;
+                }
+            }
+        }
+
+        $codMateria = '1155304';
+        $grupo      = 'A';
+        if (!empty($cursoCodigo)) {
+            if (strpos($cursoCodigo, '-') !== false) {
+                $partes = explode('-', $cursoCodigo, 2);
+                $codMateria = trim($partes[0]);
+                $grupo      = trim($partes[1]);
+            } else {
+                $codMateria = trim($cursoCodigo);
+            }
+        }
 
         $resultado = $this->Moodle_model->listar_actividades($courseId);
 
@@ -192,10 +213,27 @@ class Dashboard extends CMS_Controller {
         $this->load->model('Moodle_model');
         $this->load->model('Subnotas_model');
 
-        $codProfesor = '04608';
-        $codMateria  = '1155304';
-        $grupo       = 'A';
-        $semestre    = '2026-1';
+        $resultadoMoodle = $this->Moodle_model->obtener_calificaciones($courseId);
+        $exitoMoodle = isset($resultadoMoodle['exito']) ? $resultadoMoodle['exito'] : false;
+        $mensajeMoodle = isset($resultadoMoodle['mensaje']) ? $resultadoMoodle['mensaje'] : '';
+        $cursoNombre = isset($resultadoMoodle['datos']['curso_nombre']) ? $resultadoMoodle['datos']['curso_nombre'] : 'Curso Moodle #' . $courseId;
+        $cursoCodigo = isset($resultadoMoodle['datos']['curso_codigo']) ? $resultadoMoodle['datos']['curso_codigo'] : '';
+        $estudiantesMoodle = isset($resultadoMoodle['datos']['estudiantes']) ? $resultadoMoodle['datos']['estudiantes'] : array();
+
+        $codProfesor = (isset($this->usuario) && isset($this->usuario->CODIGO)) ? $this->usuario->CODIGO : '04608';
+        $semestre    = date('Y') . '-' . (date('n') <= 6 ? '1' : '2');
+
+        $codMateria = '1155304';
+        $grupo      = 'A';
+        if (!empty($cursoCodigo)) {
+            if (strpos($cursoCodigo, '-') !== false) {
+                $partes = explode('-', $cursoCodigo, 2);
+                $codMateria = trim($partes[0]);
+                $grupo      = trim($partes[1]);
+            } else {
+                $codMateria = trim($cursoCodigo);
+            }
+        }
 
         $rubrica = $this->Subnotas_model->obtener_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
         $todasRubricas = $this->Subnotas_model->obtener_todas_rubricas_curso($codProfesor, $codMateria, $grupo, $semestre);
@@ -207,13 +245,6 @@ class Dashboard extends CMS_Controller {
             }
         }
         $rubricaValida = (!empty($rubrica) && abs($sumaPorcentajes - 100) < 0.01);
-
-        $resultadoMoodle = $this->Moodle_model->obtener_calificaciones($courseId);
-        $exitoMoodle = isset($resultadoMoodle['exito']) ? $resultadoMoodle['exito'] : false;
-        $mensajeMoodle = isset($resultadoMoodle['mensaje']) ? $resultadoMoodle['mensaje'] : '';
-        $cursoNombre = isset($resultadoMoodle['datos']['curso_nombre']) ? $resultadoMoodle['datos']['curso_nombre'] : 'Curso Moodle #' . $courseId;
-        $cursoCodigo = isset($resultadoMoodle['datos']['curso_codigo']) ? $resultadoMoodle['datos']['curso_codigo'] : '';
-        $estudiantesMoodle = isset($resultadoMoodle['datos']['estudiantes']) ? $resultadoMoodle['datos']['estudiantes'] : array();
 
         $subnotasGuardadas = $this->Subnotas_model->obtener_todas_subnotas_grupo($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
 
