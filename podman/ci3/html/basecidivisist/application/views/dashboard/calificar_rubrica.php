@@ -54,30 +54,6 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                         <option value="FINAL" <?php echo ($tipo_previo == 'FINAL') ? 'selected' : ''; ?>>Examen Final</option>
                     </select>
                 </div>
-                <div class="col-md-8">
-                    <label>Estado de la Rúbrica para <?php echo htmlspecialchars($nombreCorteActual); ?>:</label>
-                    <div>
-                        <?php if ($rubrica_valida): ?>
-                            <span class="label label-success" style="font-size: 13px; padding: 5px 10px;">
-                                <i class="fa fa-check-circle"></i> Configurada al 100% (<?php echo count($rubrica); ?> actividades)
-                            </span>
-                            <div style="margin-top: 8px;">
-                                <?php foreach ($rubrica as $itemR): ?>
-                                    <span class="badge bg-gray" style="margin-right: 5px; font-weight: normal;">
-                                        <?php echo htmlspecialchars($itemR->NOMBRE_ACTIVIDAD); ?>: <strong><?php echo (float)$itemR->PORCENTAJE; ?>%</strong>
-                                    </span>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php else: ?>
-                            <span class="label label-warning" style="font-size: 13px; padding: 5px 10px;">
-                                <i class="fa fa-exclamation-triangle"></i> Incompleta (Suma actual: <?php echo (float)$suma_porcentajes; ?>% / 100%)
-                            </span>
-                            <span style="margin-left: 10px; font-size: 12px; color: #777;">
-                                Es necesario configurar la rúbrica al 100% antes de calcular las notas definitivas.
-                            </span>
-                        <?php endif; ?>
-                    </div>
-                </div>
             </div>
         </div>
 
