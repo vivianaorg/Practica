@@ -99,6 +99,9 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                         </div>
                         <div class="col-md-6 text-right">
                             <?php if ($corte_calificado): ?>
+                                <button type="button" class="btn btn-warning btn-sm" onclick="confirmarDesbloquearCorteCalificar()" style="margin-right: 5px;">
+                                    <i class="fa fa-unlock"></i> Desbloquear Calificaciones
+                                </button>
                                 <button type="button" class="btn btn-default btn-sm" id="btn_guardar_calificaciones" disabled style="font-weight: bold;">
                                     <i class="fa fa-lock"></i> Calificaciones Guardadas
                                 </button>
@@ -546,6 +549,38 @@ function guardarCalificaciones() {
             msgDiv.innerHTML = '<i class="fa fa-exclamation-triangle"></i> Error de comunicacion con el servidor: ' + err;
         }
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-save"></i> Guardar Calificaciones'; }
+    });
+}
+
+function confirmarDesbloquearCorteCalificar() {
+    var advertencia = "¿Está seguro de que desea desbloquear este corte? Se anularán las calificaciones guardadas de este corte y volverá a quedar habilitado para recalificar o modificar la rúbrica.";
+    if (!window.confirm(advertencia)) {
+        return;
+    }
+
+    var formData = new FormData();
+    formData.append("course_id", <?php echo (int)$course_id; ?>);
+    formData.append("cod_profesor", COD_PROFESOR);
+    formData.append("cod_materia", COD_MATERIA);
+    formData.append("grupo", GRUPO);
+    formData.append("semestre", SEMESTRE);
+    formData.append("tipo_previo", TIPO_PREVIO);
+
+    fetch("<?php echo site_url('dashboard/desbloquear_corte_ajax'); ?>", {
+        method: "POST",
+        body: formData
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.exito) {
+            alert(data.mensaje);
+            window.location.reload();
+        } else {
+            alert("Error: " + data.mensaje);
+        }
+    })
+    .catch(function(err) {
+        alert("Error de comunicación al intentar desbloquear el corte.");
     });
 }
 </script>

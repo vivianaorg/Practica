@@ -140,9 +140,15 @@
                                             </table>
                                             <div style="padding: 8px; text-align: right; background: <?php echo $corteEstaCalificado ? '#f0f0f0' : '#fafafa'; ?>; border-top: 1px solid <?php echo $corteEstaCalificado ? '#e4e4e4' : '#f4f4f4'; ?>;">
                                                 <?php if ($corteEstaCalificado): ?>
+                                                    <button type="button" class="btn btn-danger btn-xs pull-left" onclick="confirmarEliminarRubrica('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
+                                                        <i class="fa fa-trash"></i> Eliminar
+                                                    </button>
                                                     <span class="label label-default" style="font-size: 11px; padding: 5px 8px; margin-right: 5px; display: inline-block;">
                                                         <i class="fa fa-lock"></i> Inhabilitada
                                                     </span>
+                                                    <button type="button" class="btn btn-warning btn-xs" style="margin-right: 4px;" onclick="confirmarDesbloquearCorte('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
+                                                        <i class="fa fa-unlock"></i> Desbloquear
+                                                    </button>
                                                     <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-default btn-xs">
                                                         <i class="fa fa-eye"></i> Ver Calificaciones
                                                     </a>
@@ -180,7 +186,19 @@
 
                         <?php if ($corte_calificado): ?>
                             <div class="alert alert-warning" style="margin-bottom: 15px;">
-                                <i class="fa fa-lock"></i> <strong>Rúbrica Bloqueada:</strong> Este corte evaluativo ya fue calificado y cerrado. No es posible modificar actividades ni porcentajes.
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <i class="fa fa-lock"></i> <strong>Rúbrica Inhabilitada:</strong> Este corte ya fue calificado y cerrado. Para modificar o eliminar esta rúbrica, primero debes desbloquear el corte.
+                                    </div>
+                                    <div class="col-md-4 text-right">
+                                        <button type="button" class="btn btn-warning btn-sm" onclick="confirmarDesbloquearCorte('<?php echo $tipo_previo; ?>', '<?php echo htmlspecialchars($nombreCorteActual); ?>')">
+                                            <i class="fa fa-unlock"></i> Desbloquear Corte
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm" style="margin-left: 5px;" onclick="confirmarEliminarRubrica('<?php echo $tipo_previo; ?>', '<?php echo htmlspecialchars($nombreCorteActual); ?>')">
+                                            <i class="fa fa-trash"></i> Eliminar
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         <?php endif; ?>
 
@@ -608,6 +626,38 @@ function confirmarEliminarRubrica(corte, nombre) {
     })
     .catch(function(err) {
         alert("Error de comunicación al intentar eliminar la rúbrica.");
+    });
+}
+
+function confirmarDesbloquearCorte(corte, nombre) {
+    var nom = nombre || ("Corte " + corte);
+    if (!window.confirm("¿Está seguro de que desea desbloquear el corte " + nom + "? Se anularán las calificaciones guardadas de este corte y la rúbrica volverá a quedar habilitada para modificar actividades o eliminarla.")) {
+        return;
+    }
+
+    var formData = new FormData();
+    formData.append("course_id", courseId);
+    formData.append("cod_profesor", codProfesor);
+    formData.append("cod_materia", codMateria);
+    formData.append("grupo", grupo);
+    formData.append("semestre", semestre);
+    formData.append("tipo_previo", corte);
+
+    fetch("<?php echo site_url('dashboard/desbloquear_corte_ajax'); ?>", {
+        method: "POST",
+        body: formData
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.exito) {
+            alert(data.mensaje);
+            window.location.reload();
+        } else {
+            alert("Error: " + data.mensaje);
+        }
+    })
+    .catch(function(err) {
+        alert("Error de comunicación al intentar desbloquear el corte.");
     });
 }
 </script>
