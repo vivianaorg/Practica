@@ -147,6 +147,11 @@
                                                         <i class="fa fa-eye"></i> Ver Calificaciones
                                                     </a>
                                                 <?php else: ?>
+                                                    <?php if (!empty($rubricasAgrupadas[$claveCorte])): ?>
+                                                        <button type="button" class="btn btn-danger btn-xs pull-left" onclick="confirmarEliminarRubrica('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
+                                                            <i class="fa fa-trash"></i> Eliminar
+                                                        </button>
+                                                    <?php endif; ?>
                                                     <button type="button" class="btn btn-primary btn-xs" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
                                                         <i class="fa fa-pencil"></i> Modificar Rubrica
                                                     </button>
@@ -228,6 +233,11 @@
                                 <button type="button" class="btn btn-default" id="btn_agregar_fila" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
                                     <i class="fa fa-plus"></i> Agregar Actividad
                                 </button>
+                                <?php if (!$corte_calificado && !empty($rubrica_actual)): ?>
+                                    <button type="button" class="btn btn-danger" id="btn_eliminar_rubrica_actual" style="margin-left: 8px;">
+                                        <i class="fa fa-trash"></i> Eliminar Rúbrica
+                                    </button>
+                                <?php endif; ?>
                             </div>
                             <div class="col-md-6 text-right">
                                 <?php if ($corte_calificado): ?>
@@ -287,6 +297,16 @@ document.addEventListener("DOMContentLoaded", function() {
     var btnGuardar = document.getElementById("btn_guardar_rubrica");
     if (btnGuardar && !corteCalificado) {
         btnGuardar.addEventListener("click", guardarRubrica);
+    }
+
+    var btnEliminarActual = document.getElementById("btn_eliminar_rubrica_actual");
+    if (btnEliminarActual && !corteCalificado) {
+        btnEliminarActual.addEventListener("click", function() {
+            var corteActual = document.getElementById("select_corte").value;
+            var selectEl = document.getElementById("select_corte");
+            var nombreTxt = selectEl.options[selectEl.selectedIndex].text;
+            confirmarEliminarRubrica(corteActual, nombreTxt);
+        });
     }
 
     if (rubricaGuardada && rubricaGuardada.length > 0) {
@@ -556,6 +576,38 @@ function guardarRubrica() {
 
         btnGuardar.disabled = false;
         btnGuardar.innerHTML = '<i class="fa fa-save"></i> Guardar Rubrica';
+    });
+}
+
+function confirmarEliminarRubrica(corte, nombre) {
+    var nom = nombre || ("Corte " + corte);
+    if (!window.confirm("¿Está seguro de que desea eliminar la rúbrica de " + nom + "? Esta acción borrará la configuración de actividades y no se puede deshacer.")) {
+        return;
+    }
+
+    var formData = new FormData();
+    formData.append("course_id", courseId);
+    formData.append("cod_profesor", codProfesor);
+    formData.append("cod_materia", codMateria);
+    formData.append("grupo", grupo);
+    formData.append("semestre", semestre);
+    formData.append("tipo_previo", corte);
+
+    fetch("<?php echo site_url('dashboard/eliminar_rubrica_ajax'); ?>", {
+        method: "POST",
+        body: formData
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.exito) {
+            alert(data.mensaje);
+            window.location.reload();
+        } else {
+            alert("Error: " + data.mensaje);
+        }
+    })
+    .catch(function(err) {
+        alert("Error de comunicación al intentar eliminar la rúbrica.");
     });
 }
 </script>

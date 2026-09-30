@@ -114,12 +114,15 @@ class Subnotas_model extends CI_Model
 
     public function eliminar_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $condMateria = "COD_MATERIA = '{$codMateria}'";
-        if (!empty($codMateria) && $codMateria !== '1155304') {
-            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        }
-
+        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
         $sql = "DELETE FROM CONFIG_RUBRICA WHERE {$condMateria} AND TIPO_PREVIO = '{$tipoPrevio}'";
+        return $this->database2->get_sql_bool($sql);
+    }
+
+    public function eliminar_subnotas_corte($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
+    {
+        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
+        $sql = "DELETE FROM SUBNOTAS WHERE {$condMateria} AND TIPO_PREVIO = '{$tipoPrevio}'";
         return $this->database2->get_sql_bool($sql);
     }
 

@@ -483,6 +483,12 @@ function abrirModalDesglose(idx) {
 
 function guardarCalificaciones() {
     if (CORTE_CALIFICADO) return;
+
+    var advertencia = "ATENCIÓN: Al guardar las calificaciones de este corte, la rúbrica y las notas quedarán registradas definitivamente y pasarán a modo INHABILITADO, impidiendo futuras modificaciones.\n\n¿Está seguro de que desea confirmar y guardar las calificaciones?";
+    if (!window.confirm(advertencia)) {
+        return;
+    }
+
     var btn = document.getElementById("btn_guardar_calificaciones");
     var msgDiv = document.getElementById("mensaje_guardado");
 

@@ -222,6 +222,39 @@ class Dashboard extends CMS_Controller {
         }
     }
 
+    public function eliminar_rubrica_ajax() {
+        if ($this->input->method() !== 'post') {
+            echo json_encode(array('exito' => false, 'mensaje' => 'Metodo no permitido'));
+            return;
+        }
+
+        $this->load->model('Subnotas_model');
+
+        $codProfesor = $this->input->post('cod_profesor');
+        $codMateria  = $this->input->post('cod_materia');
+        $grupo       = $this->input->post('grupo');
+        $semestre    = $this->input->post('semestre');
+        $tipoPrevio  = $this->input->post('tipo_previo');
+
+        if (empty($codProfesor) || empty($codMateria) || empty($tipoPrevio)) {
+            echo json_encode(array('exito' => false, 'mensaje' => 'Parametros requeridos incompletos'));
+            return;
+        }
+
+        if ($this->Subnotas_model->corte_esta_calificado($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)) {
+            echo json_encode(array(
+                'exito'   => false,
+                'mensaje' => 'No es posible eliminar la rubrica porque este corte ya fue calificado y cerrado.'
+            ));
+            return;
+        }
+
+        $this->Subnotas_model->eliminar_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
+        $this->Subnotas_model->eliminar_subnotas_corte($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
+
+        echo json_encode(array('exito' => true, 'mensaje' => 'Rubrica eliminada correctamente'));
+    }
+
     public function calificar_rubrica($courseId = 2, $tipoPrevio = '1') {
         $this->load->model('Moodle_model');
         $this->load->model('Subnotas_model');
