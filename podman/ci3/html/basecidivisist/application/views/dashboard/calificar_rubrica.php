@@ -17,7 +17,9 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                 </h3>
                 <div class="text-muted" style="margin-top: 4px;">
                     <strong>Materia:</strong> <?php echo htmlspecialchars($cod_materia); ?> &nbsp;|&nbsp;
-                    <strong>Grupo:</strong> <?php echo htmlspecialchars($grupo); ?> &nbsp;|&nbsp;
+                    <?php if (!empty($grupo) && $grupo !== '-'): ?>
+                        <strong>Grupo:</strong> <?php echo htmlspecialchars($grupo); ?> &nbsp;|&nbsp;
+                    <?php endif; ?>
                     <strong>Semestre:</strong> <?php echo htmlspecialchars($semestre); ?> &nbsp;|&nbsp;
                     <strong>Profesor:</strong> <?php echo htmlspecialchars($cod_profesor); ?>
                 </div>

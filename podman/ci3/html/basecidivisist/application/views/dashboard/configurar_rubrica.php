@@ -33,7 +33,7 @@
                 <div class="tab-pane active" id="tab_resumen">
                     <h4>
                         <i class="fa fa-book text-primary"></i> <?php echo htmlspecialchars(isset($curso_nombre) ? $curso_nombre : 'Curso'); ?>
-                        <?php $etiquetaCurso = $cod_materia . (!empty($grupo) ? '-' . $grupo : '') . (!empty($semestre) ? ' (' . $semestre . ')' : ''); ?>
+                        <?php $etiquetaCurso = $cod_materia . (!empty($grupo) && $grupo !== '-' ? '-' . $grupo : '') . (!empty($semestre) ? ' (' . $semestre . ')' : ''); ?>
                         <small class="text-muted"><?php echo htmlspecialchars($etiquetaCurso); ?></small>
                     </h4>
                     <p class="text-muted">Estado general de las rubricas asociadas a cada corte evaluativo:</p>

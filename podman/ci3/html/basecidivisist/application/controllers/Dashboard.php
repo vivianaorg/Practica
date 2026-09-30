@@ -119,8 +119,8 @@ class Dashboard extends CMS_Controller {
             }
         }
 
-        $codMateria = '1155304';
-        $grupo      = 'A';
+        $codMateria = !empty($cursoCodigo) ? trim($cursoCodigo) : '1155304';
+        $grupo      = '-';
         if (!empty($cursoCodigo)) {
             if (strpos($cursoCodigo, '-') !== false) {
                 $partes = explode('-', $cursoCodigo, 2);
@@ -128,6 +128,7 @@ class Dashboard extends CMS_Controller {
                 $grupo      = trim($partes[1]);
             } else {
                 $codMateria = trim($cursoCodigo);
+                $grupo      = '-';
             }
         }
 
@@ -223,8 +224,8 @@ class Dashboard extends CMS_Controller {
         $codProfesor = (isset($this->usuario) && isset($this->usuario->CODIGO)) ? $this->usuario->CODIGO : '04608';
         $semestre    = date('Y') . '-' . (date('n') <= 6 ? '1' : '2');
 
-        $codMateria = '1155304';
-        $grupo      = 'A';
+        $codMateria = !empty($cursoCodigo) ? trim($cursoCodigo) : '1155304';
+        $grupo      = '-';
         if (!empty($cursoCodigo)) {
             if (strpos($cursoCodigo, '-') !== false) {
                 $partes = explode('-', $cursoCodigo, 2);
@@ -232,6 +233,7 @@ class Dashboard extends CMS_Controller {
                 $grupo      = trim($partes[1]);
             } else {
                 $codMateria = trim($cursoCodigo);
+                $grupo      = '-';
             }
         }
 
