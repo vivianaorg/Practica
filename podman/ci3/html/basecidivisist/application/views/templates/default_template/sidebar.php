@@ -46,9 +46,6 @@
                     <li class="hvr-icon-back2 <?php echo ($item_sidebar_active == "actividades_moodle") ? "active" : ""; ?>">
                         <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>"> Cursos Moodle <small class="label pull-right bg-blue">NPLad</small> </a>
                     </li>
-                    <li class="hvr-icon-back2 <?php echo ($item_sidebar_active == "calificar_rubrica") ? "active" : ""; ?>">
-                        <a href="<?php echo site_url('dashboard/calificar_rubrica'); ?>"> Calificar Rúbricas <small class="label pull-right bg-green">Notas</small> </a>
-                    </li>
                 </ul>
             </li>            
             <li class="<?php echo (in_array($item_sidebar_active, array("notification"))) ? "active" : ""; ?>">

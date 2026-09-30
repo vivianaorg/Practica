@@ -328,9 +328,8 @@ class Dashboard extends CMS_Controller {
         $this->template->set('total_reprobados', $totalReprobados);
         $this->template->set('promedio_grupo', $promedioGrupo);
 
-        $this->template->set('item_sidebar_active', 'calificar_rubrica');
+        $this->template->set('item_sidebar_active', 'actividades_moodle');
         $this->template->set('content_header', 'Calculo de Notas Sugeridas y Aceptacion');
-        $this->template->set('content_sub_header', 'Integracion Moodle - Evaluacion por Rubrica');
         $this->template->render('dashboard/calificar_rubrica');
     }
 

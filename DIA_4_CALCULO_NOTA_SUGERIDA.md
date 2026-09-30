@@ -66,23 +66,19 @@ Para cada estudiante $e$ matriculado en Moodle y para cada actividad $i$ configu
 ### 3.3 Vista Principal: `application/views/dashboard/calificar_rubrica.php`
 * **Selector de Corte:** Permite alternar entre Primer Previo, Segundo Previo, Tercer Previo y Examen Final.
 * **Validación Temprana:** Si la rúbrica no suma 100%, bloquea la tabla y muestra un botón directo para configurarla.
-* **Métricas en Vivo (KPI Cards):**
-  - Total Estudiantes matriculados.
-  - Estudiantes aprobando ($\ge 3.0$) con porcentaje.
-  - Estudiantes reprobando ($< 3.0$) con porcentaje.
-  - Promedio global sugerido.
-* **Herramientas de Aceptación:**
+* **Herramientas de Aceptación y Guardado:**
   - Botón *"Aceptar Todas las Sugerencias"*: traslada automáticamente la nota sugerida al campo definitivo para todo el curso.
   - Botón individual *"Aceptar"*: copia la sugerencia para un estudiante específico.
+  - Botón único *"Guardar Calificaciones"*: persistencia asíncrona de notas y subnotas en base de datos.
   - Campo numérico editable (0.0 a 5.0) con detección automática de cambios.
   - Badges dinámicos de estado: `SUGERIDA` (amarillo), `ACEPTADA` (verde), `MODIFICADA` (azul).
 * **Modal de Desglose de Rúbrica:**
   - Muestra nombre, código, actividades evaluadas, nota original en Moodle, nota base normalizada, porcentaje de peso y subnota aportada.
 
 ### 3.4 Puntos de Entrada y Navegación
-* **`cursos_moodle.php`:** Se agregó el enlace directo *"Calificar"* en las tarjetas de cada curso.
-* **`configurar_rubrica.php`:** Se agregó el botón *"Ir a Calificar Corte"* en el encabezado y en cada tarjeta de corte completado.
-* **`sidebar.php`:** Nuevo acceso en el menú lateral denominado *"Calificar Rúbricas"*.
+* **`cursos_moodle.php`:** Acceso directo mediante el botón *"Calificar"* en las tarjetas de cada curso.
+* **`configurar_rubrica.php`:** Botón *"Ir a Calificar Corte"* en el encabezado y en cada tarjeta de corte completado.
+* **`sidebar.php`:** Toda la funcionalidad permanece contenida bajo el menú *"Cursos Moodle"*, sin ítems dispersos ni duplicados.
 
 ---
 

@@ -94,56 +94,6 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
             </div>
         <?php else: ?>
 
-            <div class="row" style="margin-bottom: 15px;">
-                <div class="col-md-3 col-sm-6 col-xs-12">
-                    <div class="info-box bg-aqua">
-                        <span class="info-box-icon"><i class="fa fa-users"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Estudiantes</span>
-                            <span class="info-box-number"><?php echo $total_estudiantes; ?></span>
-                            <div class="progress"><div class="progress-bar" style="width: 100%"></div></div>
-                            <span class="progress-description">Matriculados en Moodle</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-3 col-sm-6 col-xs-12">
-                    <div class="info-box bg-green">
-                        <span class="info-box-icon"><i class="fa fa-check"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Aprobando (&ge; 3.0)</span>
-                            <span class="info-box-number" id="kpi_aprobados"><?php echo $total_aprobados; ?></span>
-                            <div class="progress"><div class="progress-bar" style="width: <?php echo ($total_estudiantes > 0) ? round(($total_aprobados / $total_estudiantes) * 100) : 0; ?>%"></div></div>
-                            <span class="progress-description"><?php echo ($total_estudiantes > 0) ? round(($total_aprobados / $total_estudiantes) * 100) : 0; ?>% del curso</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-3 col-sm-6 col-xs-12">
-                    <div class="info-box bg-red">
-                        <span class="info-box-icon"><i class="fa fa-times"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Reprobando (&lt; 3.0)</span>
-                            <span class="info-box-number" id="kpi_reprobados"><?php echo $total_reprobados; ?></span>
-                            <div class="progress"><div class="progress-bar" style="width: <?php echo ($total_estudiantes > 0) ? round(($total_reprobados / $total_estudiantes) * 100) : 0; ?>%"></div></div>
-                            <span class="progress-description"><?php echo ($total_estudiantes > 0) ? round(($total_reprobados / $total_estudiantes) * 100) : 0; ?>% del curso</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-3 col-sm-6 col-xs-12">
-                    <div class="info-box bg-purple">
-                        <span class="info-box-icon"><i class="fa fa-bar-chart"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Promedio Sugerido</span>
-                            <span class="info-box-number" id="kpi_promedio"><?php echo number_format($promedio_grupo, 2); ?></span>
-                            <div class="progress"><div class="progress-bar" style="width: <?php echo min(100, round(($promedio_grupo / 5.0) * 100)); ?>%"></div></div>
-                            <span class="progress-description">Escala de 0.0 a 5.0</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div id="mensaje_guardado" style="display: none;"></div>
 
             <div class="box box-solid box-default" style="border: 1px solid #d2d6de;">
@@ -243,13 +193,8 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                 </div>
 
                 <div class="box-footer clearfix" style="background-color: #f9fafc;">
-                    <div class="pull-left text-muted" style="padding-top: 6px;">
+                    <div class="text-muted">
                         <i class="fa fa-info-circle"></i> Puedes ajustar manualmente la nota definitiva de cualquier estudiante antes de guardar.
-                    </div>
-                    <div class="pull-right">
-                        <button type="button" class="btn btn-success" id="btn_guardar_calificaciones_abajo" style="font-weight: bold;">
-                            <i class="fa fa-save"></i> Guardar Calificaciones del Corte
-                        </button>
                     </div>
                 </div>
             </div>
@@ -372,10 +317,8 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    var btnGuardar1 = document.getElementById("btn_guardar_calificaciones");
-    var btnGuardar2 = document.getElementById("btn_guardar_calificaciones_abajo");
-    if (btnGuardar1) btnGuardar1.addEventListener("click", guardarCalificaciones);
-    if (btnGuardar2) btnGuardar2.addEventListener("click", guardarCalificaciones);
+    var btnGuardar = document.getElementById("btn_guardar_calificaciones");
+    if (btnGuardar) btnGuardar.addEventListener("click", guardarCalificaciones);
 });
 
 function aceptarSugerenciaIndividual(idx) {
@@ -395,8 +338,6 @@ function aceptarSugerenciaIndividual(idx) {
         badge.className = "label label-success badge-estado";
         badge.innerText = "ACEPTADA";
     }
-
-    recalcularKPIs();
 }
 
 function evaluarCambioNota(idx, valorStr) {
@@ -425,8 +366,6 @@ function evaluarCambioNota(idx, valorStr) {
             badge.innerText = "MODIFICADA";
         }
     }
-
-    recalcularKPIs();
 }
 
 function aceptarTodasSugerencias() {
@@ -452,34 +391,6 @@ function restablecerTodasSugerencias() {
             badge.innerText = "SUGERIDA";
         }
     }
-    recalcularKPIs();
-}
-
-function recalcularKPIs() {
-    var total = ESTUDIANTES_DATA.length;
-    if (total === 0) return;
-
-    var aprobados = 0;
-    var reprobados = 0;
-    var suma = 0;
-
-    for (var i = 0; i < total; i++) {
-        var nota = parseFloat(ESTUDIANTES_DATA[i].nota_definitiva) || 0;
-        suma += nota;
-        if (nota >= 3.0) {
-            aprobados++;
-        } else {
-            reprobados++;
-        }
-    }
-
-    var kpiAprobados = document.getElementById("kpi_aprobados");
-    var kpiReprobados = document.getElementById("kpi_reprobados");
-    var kpiPromedio = document.getElementById("kpi_promedio");
-
-    if (kpiAprobados) kpiAprobados.innerText = aprobados;
-    if (kpiReprobados) kpiReprobados.innerText = reprobados;
-    if (kpiPromedio) kpiPromedio.innerText = (suma / total).toFixed(2);
 }
 
 function abrirModalDesglose(idx) {
@@ -545,12 +456,10 @@ function abrirModalDesglose(idx) {
 }
 
 function guardarCalificaciones() {
-    var btn1 = document.getElementById("btn_guardar_calificaciones");
-    var btn2 = document.getElementById("btn_guardar_calificaciones_abajo");
+    var btn = document.getElementById("btn_guardar_calificaciones");
     var msgDiv = document.getElementById("mensaje_guardado");
 
-    if (btn1) { btn1.disabled = true; btn1.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Guardando...'; }
-    if (btn2) { btn2.disabled = true; btn2.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Guardando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Guardando...'; }
 
     var payload = [];
     for (var i = 0; i < ESTUDIANTES_DATA.length; i++) {
@@ -591,8 +500,7 @@ function guardarCalificaciones() {
             }
         }
 
-        if (btn1) { btn1.disabled = false; btn1.innerHTML = '<i class="fa fa-save"></i> Guardar Calificaciones'; }
-        if (btn2) { btn2.disabled = false; btn2.innerHTML = '<i class="fa fa-save"></i> Guardar Calificaciones del Corte'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-save"></i> Guardar Calificaciones'; }
         window.scrollTo({ top: 0, behavior: "smooth" });
     })
     .catch(function(err) {
@@ -601,8 +509,7 @@ function guardarCalificaciones() {
             msgDiv.className = "alert alert-danger";
             msgDiv.innerHTML = '<i class="fa fa-exclamation-triangle"></i> Error de comunicacion con el servidor: ' + err;
         }
-        if (btn1) { btn1.disabled = false; btn1.innerHTML = '<i class="fa fa-save"></i> Guardar Calificaciones'; }
-        if (btn2) { btn2.disabled = false; btn2.innerHTML = '<i class="fa fa-save"></i> Guardar Calificaciones del Corte'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-save"></i> Guardar Calificaciones'; }
     });
 }
 </script>
