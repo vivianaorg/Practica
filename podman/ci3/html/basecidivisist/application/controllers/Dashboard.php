@@ -72,6 +72,7 @@ class Dashboard extends CMS_Controller {
 
         $this->template->set('exito', $exito);
         $this->template->set('mensaje_moodle', $mensaje_moodle);
+        $this->template->set('course_id', $courseId);
         $this->template->set('curso_nombre', $curso_nombre);
         $this->template->set('actividades', $actividades);
 

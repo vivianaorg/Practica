@@ -26,7 +26,10 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                 <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>" class="btn btn-default btn-sm">
                     <i class="fa fa-arrow-left"></i> Volver a Cursos
                 </a>
-                <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $course_id . '/' . $tipo_previo . '#tab_configurar'); ?>" class="btn btn-info btn-sm">
+                <a href="<?php echo site_url('dashboard/actividades_moodle/' . $course_id); ?>" class="btn btn-default btn-sm" style="margin-left: 3px;">
+                    <i class="fa fa-list"></i> Actividades
+                </a>
+                <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $course_id . '/' . $tipo_previo . '#tab_configurar'); ?>" class="btn btn-info btn-sm" style="margin-left: 3px;">
                     <i class="fa fa-sliders"></i> Ver / Configurar Rúbrica
                 </a>
             </div>

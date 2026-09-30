@@ -18,8 +18,13 @@
                     </a>
                 </li>
                 <li class="pull-right">
+                    <a href="<?php echo site_url('dashboard/actividades_moodle/' . $course_id); ?>" class="text-muted" style="padding: 10px 15px;">
+                        <i class="fa fa-list"></i> Actividades
+                    </a>
+                </li>
+                <li class="pull-right">
                     <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $tipo_previo); ?>" class="text-green" style="padding: 10px 15px; font-weight: bold;">
-                        <i class="fa fa-calculator"></i> Ir a Calificar Corte
+                        <i class="fa fa-calculator"></i> Calificar Corte
                     </a>
                 </li>
             </ul>
