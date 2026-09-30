@@ -42,6 +42,13 @@ $enrolledUsers = get_enrolled_users($context, '', 0, 'u.id, u.username, u.idnumb
 $estudiantesMap = array();
 if (!empty($enrolledUsers)) {
     foreach ($enrolledUsers as $u) {
+        if (is_siteadmin($u->id) || $u->username === 'admin' || (int)$u->id === 2) {
+            continue;
+        }
+        if (has_capability('moodle/grade:edit', $context, $u->id)) {
+            continue;
+        }
+
         $userId = (int)$u->id;
         $codigoEstudiante = !empty($u->idnumber) ? $u->idnumber : $u->username;
         $estudiantesMap[$userId] = array(
@@ -90,6 +97,13 @@ $records = $DB->get_records_sql($sql, array('courseid' => $courseId));
 
 foreach ($records as $row) {
     $userId = (int)$row->user_id;
+
+    if ($row->username === 'admin' || (int)$row->user_id === 2 || is_siteadmin($row->user_id)) {
+        continue;
+    }
+    if (has_capability('moodle/grade:edit', $context, $row->user_id)) {
+        continue;
+    }
 
     if (!isset($estudiantesMap[$userId])) {
         $codigoEstudiante = !empty($row->idnumber) ? $row->idnumber : $row->username;

@@ -256,7 +256,11 @@ class Dashboard extends CMS_Controller {
         $acumuladorPromedio = 0;
 
         foreach ($estudiantesMoodle as $est) {
-            $codEstudiante = !empty($est['codigo']) ? $est['codigo'] : (!empty($est['idnumber']) ? $est['idnumber'] : $est['username']);
+            $username = isset($est['username']) ? $est['username'] : '';
+            $codEstudiante = !empty($est['codigo']) ? $est['codigo'] : (!empty($est['idnumber']) ? $est['idnumber'] : $username);
+            if ($username === 'admin' || $codEstudiante === 'admin' || (isset($est['user_id']) && (int)$est['user_id'] === 2)) {
+                continue;
+            }
             $nombreCompleto = !empty($est['nombre_completo']) ? $est['nombre_completo'] : (trim($est['nombres'] . ' ' . $est['apellidos']));
 
             $calificacionesPorId = array();
@@ -490,7 +494,11 @@ class Dashboard extends CMS_Controller {
         $conNotaDefinitiva = 0;
 
         foreach ($estudiantesMoodle as $est) {
-            $codEstudiante = !empty($est['codigo']) ? $est['codigo'] : (!empty($est['idnumber']) ? $est['idnumber'] : $est['username']);
+            $username = isset($est['username']) ? $est['username'] : '';
+            $codEstudiante = !empty($est['codigo']) ? $est['codigo'] : (!empty($est['idnumber']) ? $est['idnumber'] : $username);
+            if ($username === 'admin' || $codEstudiante === 'admin' || (isset($est['user_id']) && (int)$est['user_id'] === 2)) {
+                continue;
+            }
             $nombreCompleto = !empty($est['nombre_completo']) ? $est['nombre_completo'] : (trim($est['nombres'] . ' ' . $est['apellidos']));
 
             $cortesEst = isset($calificacionesGuardadas[$codEstudiante]) ? $calificacionesGuardadas[$codEstudiante] : array();
