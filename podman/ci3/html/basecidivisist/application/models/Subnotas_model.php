@@ -125,12 +125,8 @@ class Subnotas_model extends CI_Model
 
     public function corte_esta_calificado($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $condMateria = "COD_MATERIA = '{$codMateria}'";
-        if (!empty($codMateria) && $codMateria !== '1155304') {
-            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        }
-
-        $sql = "SELECT COUNT(*) AS TOTAL FROM SUBNOTAS WHERE {$condMateria} AND TIPO_PREVIO = '{$tipoPrevio}'";
+        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
+        $sql = "SELECT COUNT(*) AS TOTAL FROM SUBNOTAS WHERE {$condMateria} AND TIPO_PREVIO = '{$tipoPrevio}' AND (ESTADO = 'ACEPTADA' OR ESTADO = 'MODIFICADA')";
         $obj = null;
         $this->database2->get_sql_object($sql, $obj);
         return ($obj && isset($obj->TOTAL) && (int)$obj->TOTAL > 0);
@@ -138,20 +134,17 @@ class Subnotas_model extends CI_Model
 
     public function obtener_cortes_calificados($codProfesor, $codMateria, $grupo, $semestre)
     {
-        $condMateria = "COD_MATERIA = '{$codMateria}'";
-        if (!empty($codMateria) && $codMateria !== '1155304') {
-            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        }
-
-        $sql = "SELECT TIPO_PREVIO, COUNT(*) AS TOTAL FROM SUBNOTAS WHERE {$condMateria} GROUP BY TIPO_PREVIO";
+        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
+        $sql = "SELECT TIPO_PREVIO, COUNT(*) AS TOTAL FROM SUBNOTAS WHERE {$condMateria} AND (ESTADO = 'ACEPTADA' OR ESTADO = 'MODIFICADA') GROUP BY TIPO_PREVIO";
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
 
         $calificados = array();
         if (!empty($arr) && is_array($arr)) {
             foreach ($arr as $row) {
-                if (isset($row->TOTAL) && (int)$row->TOTAL > 0) {
-                    $calificados[$row->TIPO_PREVIO] = true;
+                $prev = isset($row->TIPO_PREVIO) ? trim($row->TIPO_PREVIO) : '';
+                if (!empty($prev) && isset($row->TOTAL) && (int)$row->TOTAL > 0) {
+                    $calificados[$prev] = true;
                 }
             }
         }
@@ -228,11 +221,7 @@ class Subnotas_model extends CI_Model
 
     public function eliminar_subnotas_estudiante($codEstudiante, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $condMateria = "COD_MATERIA = '{$codMateria}'";
-        if (!empty($codMateria) && $codMateria !== '1155304') {
-            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        }
-
+        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
         $sql = "DELETE FROM SUBNOTAS 
                 WHERE COD_ESTUDIANTE = '{$codEstudiante}' 
                   AND {$condMateria} 
@@ -243,11 +232,7 @@ class Subnotas_model extends CI_Model
 
     public function obtener_resumen_grupo($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $condMateria = "COD_MATERIA = '{$codMateria}'";
-        if (!empty($codMateria) && $codMateria !== '1155304') {
-            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        }
-
+        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
         $sql = "SELECT COD_ESTUDIANTE, 
                        ROUND(SUM(SUBNOTA), 2) AS NOTA_SUGERIDA,
                        COUNT(ID) AS TOTAL_ACTIVIDADES,
@@ -265,11 +250,7 @@ class Subnotas_model extends CI_Model
 
     public function actualizar_estado_grupo($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio, $nuevoEstado)
     {
-        $condMateria = "COD_MATERIA = '{$codMateria}'";
-        if (!empty($codMateria) && $codMateria !== '1155304') {
-            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        }
-
+        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
         $sql = "UPDATE SUBNOTAS SET ESTADO = '{$nuevoEstado}' 
                 WHERE {$condMateria} 
                   AND TIPO_PREVIO = '{$tipoPrevio}'";
@@ -279,11 +260,7 @@ class Subnotas_model extends CI_Model
 
     public function obtener_todas_subnotas_grupo($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $condMateria = "COD_MATERIA = '{$codMateria}'";
-        if (!empty($codMateria) && $codMateria !== '1155304') {
-            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        }
-
+        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
         $sql = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
                        NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
                 FROM SUBNOTAS 
@@ -297,16 +274,18 @@ class Subnotas_model extends CI_Model
         $agrupadas = array();
         if (!empty($arr) && is_array($arr)) {
             foreach ($arr as $row) {
-                $cod = isset($row->COD_ESTUDIANTE) ? $row->COD_ESTUDIANTE : '';
-                if (!isset($agrupadas[$cod])) {
-                    $agrupadas[$cod] = array(
-                        'items'      => array(),
-                        'estado'     => isset($row->ESTADO) ? $row->ESTADO : 'SUGERIDA',
-                        'total_nota' => 0.0,
-                    );
+                $cod = isset($row->COD_ESTUDIANTE) ? trim($row->COD_ESTUDIANTE) : '';
+                if (!empty($cod)) {
+                    if (!isset($agrupadas[$cod])) {
+                        $agrupadas[$cod] = array(
+                            'items'      => array(),
+                            'estado'     => isset($row->ESTADO) ? trim($row->ESTADO) : 'SUGERIDA',
+                            'total_nota' => 0.0,
+                        );
+                    }
+                    $agrupadas[$cod]['items'][] = $row;
+                    $agrupadas[$cod]['total_nota'] += isset($row->SUBNOTA) ? (float)$row->SUBNOTA : 0.0;
                 }
-                $agrupadas[$cod]['items'][] = $row;
-                $agrupadas[$cod]['total_nota'] += isset($row->SUBNOTA) ? (float)$row->SUBNOTA : 0.0;
             }
         }
 
@@ -399,10 +378,7 @@ class Subnotas_model extends CI_Model
 
     public function obtener_calificaciones_todos_cortes($codProfesor, $codMateria, $grupo, $semestre)
     {
-        $condMateria = "COD_MATERIA = '{$codMateria}'";
-        if (!empty($codMateria) && $codMateria !== '1155304') {
-            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        }
+        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
 
         $sql = "SELECT COD_ESTUDIANTE, TIPO_PREVIO, 
                        ROUND(SUM(SUBNOTA), 2) AS NOTA_CORTE,
@@ -419,16 +395,18 @@ class Subnotas_model extends CI_Model
         $agrupadas = array();
         if (!empty($arr) && is_array($arr)) {
             foreach ($arr as $row) {
-                $cod = isset($row->COD_ESTUDIANTE) ? $row->COD_ESTUDIANTE : '';
-                $previo = isset($row->TIPO_PREVIO) ? $row->TIPO_PREVIO : '';
-                if (!isset($agrupadas[$cod])) {
-                    $agrupadas[$cod] = array();
+                $cod = isset($row->COD_ESTUDIANTE) ? trim($row->COD_ESTUDIANTE) : '';
+                $previo = isset($row->TIPO_PREVIO) ? trim($row->TIPO_PREVIO) : '';
+                if (!empty($cod) && !empty($previo)) {
+                    if (!isset($agrupadas[$cod])) {
+                        $agrupadas[$cod] = array();
+                    }
+                    $agrupadas[$cod][$previo] = array(
+                        'nota'   => isset($row->NOTA_CORTE) ? (float)$row->NOTA_CORTE : 0.0,
+                        'estado' => isset($row->ESTADO_CORTE) ? trim($row->ESTADO_CORTE) : '',
+                        'total'  => isset($row->TOTAL_ACTIVIDADES) ? (int)$row->TOTAL_ACTIVIDADES : 0,
+                    );
                 }
-                $agrupadas[$cod][$previo] = array(
-                    'nota'   => isset($row->NOTA_CORTE) ? (float)$row->NOTA_CORTE : 0.0,
-                    'estado' => isset($row->ESTADO_CORTE) ? $row->ESTADO_CORTE : '',
-                    'total'  => isset($row->TOTAL_ACTIVIDADES) ? (int)$row->TOTAL_ACTIVIDADES : 0,
-                );
             }
         }
 
@@ -437,10 +415,7 @@ class Subnotas_model extends CI_Model
 
     public function obtener_todas_subnotas_curso($codProfesor, $codMateria, $grupo, $semestre)
     {
-        $condMateria = "COD_MATERIA = '{$codMateria}'";
-        if (!empty($codMateria) && $codMateria !== '1155304') {
-            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        }
+        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
 
         $sql = "SELECT ID, COD_ESTUDIANTE, TIPO_PREVIO, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
                        NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO 
@@ -454,15 +429,17 @@ class Subnotas_model extends CI_Model
         $agrupadas = array();
         if (!empty($arr) && is_array($arr)) {
             foreach ($arr as $row) {
-                $cod = isset($row->COD_ESTUDIANTE) ? $row->COD_ESTUDIANTE : '';
-                $previo = isset($row->TIPO_PREVIO) ? $row->TIPO_PREVIO : '';
-                if (!isset($agrupadas[$cod])) {
-                    $agrupadas[$cod] = array();
+                $cod = isset($row->COD_ESTUDIANTE) ? trim($row->COD_ESTUDIANTE) : '';
+                $previo = isset($row->TIPO_PREVIO) ? trim($row->TIPO_PREVIO) : '';
+                if (!empty($cod) && !empty($previo)) {
+                    if (!isset($agrupadas[$cod])) {
+                        $agrupadas[$cod] = array();
+                    }
+                    if (!isset($agrupadas[$cod][$previo])) {
+                        $agrupadas[$cod][$previo] = array();
+                    }
+                    $agrupadas[$cod][$previo][] = $row;
                 }
-                if (!isset($agrupadas[$cod][$previo])) {
-                    $agrupadas[$cod][$previo] = array();
-                }
-                $agrupadas[$cod][$previo][] = $row;
             }
         }
 

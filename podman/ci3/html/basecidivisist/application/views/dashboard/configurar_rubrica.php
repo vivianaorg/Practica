@@ -61,18 +61,34 @@
                             $estaCompleto = (abs($totalPorcentajeCorte - 100) < 0.01);
                             $tieneItems = !empty($itemsCorte);
                             $corteEstaCalificado = isset($cortes_calificados[$claveCorte]) && $cortes_calificados[$claveCorte];
+
+                            $boxClase = 'box-default';
+                            $boxStyle = '';
+                            $badgeClase = 'bg-gray';
+                            if ($corteEstaCalificado) {
+                                $boxClase = 'box-default';
+                                $boxStyle = 'border: 1px solid #d2d6de; background-color: #f8f9fa; opacity: 0.88;';
+                                $badgeClase = 'bg-gray';
+                            } elseif ($estaCompleto) {
+                                $boxClase = 'box-success';
+                                $badgeClase = 'bg-green';
+                            } elseif ($tieneItems) {
+                                $boxClase = 'box-warning';
+                                $badgeClase = 'bg-yellow';
+                            }
                         ?>
                             <div class="col-md-6 col-sm-12">
-                                <div class="box box-solid <?php echo $estaCompleto ? 'box-success' : ($tieneItems ? 'box-warning' : 'box-default'); ?>">
-                                    <div class="box-header with-border">
+                                <div class="box box-solid <?php echo $boxClase; ?>" style="<?php echo $boxStyle; ?>">
+                                    <div class="box-header with-border" style="<?php echo $corteEstaCalificado ? 'background-color: #ededed; color: #555;' : ''; ?>">
                                         <h3 class="box-title">
-                                            <i class="fa fa-calendar-check-o"></i> <?php echo htmlspecialchars($nombreCorte); ?>
+                                            <i class="fa <?php echo $corteEstaCalificado ? 'fa-lock text-muted' : 'fa-calendar-check-o'; ?>"></i> 
+                                            <?php echo htmlspecialchars($nombreCorte); ?>
+                                            <?php if ($corteEstaCalificado): ?>
+                                                <small style="color: #777;">(Calificado)</small>
+                                            <?php endif; ?>
                                         </h3>
                                         <div class="box-tools pull-right">
-                                            <?php if ($corteEstaCalificado): ?>
-                                                <span class="badge bg-purple"><i class="fa fa-lock"></i> Calificado</span>
-                                            <?php endif; ?>
-                                            <span class="badge <?php echo $estaCompleto ? 'bg-green' : ($tieneItems ? 'bg-yellow' : 'bg-gray'); ?>">
+                                            <span class="badge <?php echo $badgeClase; ?>">
                                                 <?php echo $totalPorcentajeCorte; ?>% / 100%
                                             </span>
                                         </div>
@@ -116,16 +132,16 @@
                                                 <tfoot>
                                                     <tr class="bg-gray-light">
                                                         <th colspan="2" style="text-align: right;">Total Asignado:</th>
-                                                        <th style="text-align: right; font-weight: bold; color: <?php echo $estaCompleto ? 'green' : 'orange'; ?>;">
+                                                        <th style="text-align: right; font-weight: bold; color: <?php echo $corteEstaCalificado ? '#777' : ($estaCompleto ? 'green' : 'orange'); ?>;">
                                                             <?php echo $totalPorcentajeCorte; ?>%
                                                         </th>
                                                     </tr>
                                                 </tfoot>
                                             </table>
-                                            <div style="padding: 8px; text-align: right; background: #fafafa; border-top: 1px solid #f4f4f4;">
+                                            <div style="padding: 8px; text-align: right; background: <?php echo $corteEstaCalificado ? '#f0f0f0' : '#fafafa'; ?>; border-top: 1px solid <?php echo $corteEstaCalificado ? '#e4e4e4' : '#f4f4f4'; ?>;">
                                                 <?php if ($corteEstaCalificado): ?>
                                                     <span class="label label-default" style="font-size: 11px; padding: 5px 8px; margin-right: 5px; display: inline-block;">
-                                                        <i class="fa fa-lock"></i> Calificada (Bloqueada)
+                                                        <i class="fa fa-lock"></i> Inhabilitada
                                                     </span>
                                                     <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-default btn-xs">
                                                         <i class="fa fa-eye"></i> Ver Calificaciones

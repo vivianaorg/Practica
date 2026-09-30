@@ -495,7 +495,7 @@ function guardarCalificaciones() {
             cod_estudiante:  est.codigo,
             nota_definitiva: parseFloat(est.nota_definitiva) || 0.0,
             nota_sugerida:   parseFloat(est.nota_sugerida) || 0.0,
-            estado:          est.estado || "SUGERIDA",
+            estado:          (est.estado === "MODIFICADA") ? "MODIFICADA" : "ACEPTADA",
             desglose:        est.desglose || []
         });
     }
@@ -521,6 +521,9 @@ function guardarCalificaciones() {
             if (data.exito) {
                 msgDiv.className = "alert alert-success";
                 msgDiv.innerHTML = '<i class="fa fa-check"></i> ' + data.mensaje;
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1000);
             } else {
                 msgDiv.className = "alert alert-danger";
                 msgDiv.innerHTML = '<i class="fa fa-exclamation-triangle"></i> ' + data.mensaje;
