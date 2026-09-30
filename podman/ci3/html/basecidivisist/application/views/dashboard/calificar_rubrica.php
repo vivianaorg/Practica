@@ -172,7 +172,11 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                                         </span>
                                     </td>
                                     <td style="text-align: center; vertical-align: middle;">
-                                        <button type="button" class="btn btn-default btn-xs btn-aceptar-ind" data-index="<?php echo $idx; ?>" title="Copiar sugerida a definitiva">
+                                        <button type="button" 
+                                                class="btn btn-default btn-xs btn-aceptar-ind" 
+                                                data-index="<?php echo $idx; ?>" 
+                                                <?php echo ($estado === 'ACEPTADA') ? 'disabled' : ''; ?>
+                                                title="Copiar sugerida a definitiva">
                                             <i class="fa fa-check text-green"></i> Aceptar
                                         </button>
                                     </td>
@@ -331,6 +335,7 @@ function aceptarSugerenciaIndividual(idx) {
     var est = ESTUDIANTES_DATA[idx];
     var input = document.querySelector('.input-nota[data-index="' + idx + '"]');
     var badge = document.querySelector('.badge-estado[data-index="' + idx + '"]');
+    var btn = document.querySelector('.btn-aceptar-ind[data-index="' + idx + '"]');
 
     if (input) {
         input.value = parseFloat(est.nota_sugerida).toFixed(2);
@@ -343,12 +348,17 @@ function aceptarSugerenciaIndividual(idx) {
         badge.className = "label label-success badge-estado";
         badge.innerText = "ACEPTADA";
     }
+
+    if (btn) {
+        btn.disabled = true;
+    }
 }
 
 function evaluarCambioNota(idx, valorStr) {
     if (!ESTUDIANTES_DATA[idx]) return;
     var est = ESTUDIANTES_DATA[idx];
     var badge = document.querySelector('.badge-estado[data-index="' + idx + '"]');
+    var btn = document.querySelector('.btn-aceptar-ind[data-index="' + idx + '"]');
 
     var val = parseFloat(valorStr);
     if (isNaN(val)) val = 0.0;
@@ -364,11 +374,17 @@ function evaluarCambioNota(idx, valorStr) {
             badge.className = "label label-success badge-estado";
             badge.innerText = "ACEPTADA";
         }
+        if (btn) {
+            btn.disabled = true;
+        }
     } else {
         est.estado = "MODIFICADA";
         if (badge) {
             badge.className = "label label-primary badge-estado";
             badge.innerText = "MODIFICADA";
+        }
+        if (btn) {
+            btn.disabled = false;
         }
     }
 }
@@ -384,6 +400,7 @@ function restablecerTodasSugerencias() {
         var est = ESTUDIANTES_DATA[i];
         var input = document.querySelector('.input-nota[data-index="' + i + '"]');
         var badge = document.querySelector('.badge-estado[data-index="' + i + '"]');
+        var btn = document.querySelector('.btn-aceptar-ind[data-index="' + i + '"]');
 
         est.nota_definitiva = parseFloat(est.nota_sugerida);
         est.estado = "SUGERIDA";
@@ -394,6 +411,9 @@ function restablecerTodasSugerencias() {
         if (badge) {
             badge.className = "label label-warning badge-estado";
             badge.innerText = "SUGERIDA";
+        }
+        if (btn) {
+            btn.disabled = false;
         }
     }
 }
