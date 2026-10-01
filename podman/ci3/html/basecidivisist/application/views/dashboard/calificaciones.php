@@ -73,7 +73,6 @@
                             <th style="width: 110px; text-align: center;">3er Previo<br><small class="text-muted">23.4%</small></th>
                             <th style="width: 110px; text-align: center;">Examen Final<br><small class="text-muted">30.0%</small></th>
                             <th style="width: 100px; text-align: center;">Definitiva</th>
-                            <th style="width: 105px; text-align: center;">Estado</th>
                             <th style="width: 85px; text-align: center;">Detalle</th>
                         </tr>
                     </thead>
@@ -90,22 +89,6 @@
                             if ($fila['definitiva'] !== null) {
                                 $defTxt = number_format($fila['definitiva'], 2);
                                 $badgeDef = ($fila['definitiva'] >= 3.0) ? 'label-success' : 'label-danger';
-                            }
-
-                            $estadoBadge = 'label-default';
-                            $estadoNombre = 'Sin Notas';
-                            if ($fila['estado_academico'] === 'APROBADO') {
-                                $estadoBadge = 'label-success';
-                                $estadoNombre = 'Aprobado';
-                            } elseif ($fila['estado_academico'] === 'REPROBADO') {
-                                $estadoBadge = 'label-danger';
-                                $estadoNombre = 'Reprobado';
-                            } elseif ($fila['estado_academico'] === 'APROBANDO') {
-                                $estadoBadge = 'label-success';
-                                $estadoNombre = 'Aprobando';
-                            } elseif ($fila['estado_academico'] === 'EN_RIESGO') {
-                                $estadoBadge = 'label-warning';
-                                $estadoNombre = 'En Riesgo';
                             }
                             ?>
                             <tr class="fila-estudiante">
@@ -134,11 +117,6 @@
                                 <td style="text-align: center; vertical-align: middle;">
                                     <span class="label <?php echo $badgeDef; ?>" style="font-size: 13px; padding: 4px 8px;">
                                         <?php echo $defTxt; ?>
-                                    </span>
-                                </td>
-                                <td style="text-align: center; vertical-align: middle;">
-                                    <span class="label <?php echo $estadoBadge; ?>" style="font-size: 11px;">
-                                        <?php echo $estadoNombre; ?>
                                     </span>
                                 </td>
                                 <td style="text-align: center; vertical-align: middle;">

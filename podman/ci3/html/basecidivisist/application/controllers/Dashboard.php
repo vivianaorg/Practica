@@ -716,7 +716,7 @@ class Dashboard extends CMS_Controller {
         $this->template->set('mensaje_moodle', $mensajeMoodle);
 
         $this->template->set('item_sidebar_active', 'actividades_moodle');
-        $this->template->set('content_header', 'Planilla General de Calificaciones');
+        $this->template->set('content_header', 'Calificaciones');
         $this->template->render('dashboard/calificaciones');
     }
 
