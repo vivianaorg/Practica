@@ -14,11 +14,13 @@ class Calculo_notas_model extends CI_Model
      * Parsea el código del curso (ej: '1155304-A' o '1155304') en código de materia y grupo.
      *
      * @param string $cursoCodigo
+     * @param int|string|null $courseId ID del curso en Moodle para fallback seguro
      * @return array ['cod_materia' => string, 'grupo' => string]
      */
-    public function parsear_curso_codigo($cursoCodigo)
+    public function parsear_curso_codigo($cursoCodigo, $courseId = null)
     {
-        $codMateria = !empty($cursoCodigo) ? trim($cursoCodigo) : '1155304';
+        $defaultMateria = !empty($courseId) ? 'CURSO_' . $courseId : '1155304';
+        $codMateria = !empty($cursoCodigo) ? trim($cursoCodigo) : $defaultMateria;
         $grupo      = '-';
 
         if (!empty($cursoCodigo)) {
@@ -34,7 +36,7 @@ class Calculo_notas_model extends CI_Model
 
         return array(
             'cod_materia' => $codMateria,
-            'grupo'       => $grupo
+            'grupo'       => (!empty($grupo) && $grupo !== '') ? $grupo : '-'
         );
     }
 
@@ -56,7 +58,7 @@ class Calculo_notas_model extends CI_Model
         $cursoCodigo = isset($resultadoMoodle['datos']['curso_codigo']) ? $resultadoMoodle['datos']['curso_codigo'] : '';
         $estudiantesMoodle = isset($resultadoMoodle['datos']['estudiantes']) ? $resultadoMoodle['datos']['estudiantes'] : array();
 
-        $infoCurso = $this->parsear_curso_codigo($cursoCodigo);
+        $infoCurso = $this->parsear_curso_codigo($cursoCodigo, $courseId);
         $codMateria = $infoCurso['cod_materia'];
         $grupo      = $infoCurso['grupo'];
 
@@ -266,7 +268,7 @@ class Calculo_notas_model extends CI_Model
         $cursoCodigo = isset($resultadoMoodle['datos']['curso_codigo']) ? $resultadoMoodle['datos']['curso_codigo'] : '';
         $estudiantesMoodle = isset($resultadoMoodle['datos']['estudiantes']) ? $resultadoMoodle['datos']['estudiantes'] : array();
 
-        $infoCurso = $this->parsear_curso_codigo($cursoCodigo);
+        $infoCurso = $this->parsear_curso_codigo($cursoCodigo, $courseId);
         $codMateria = $infoCurso['cod_materia'];
         $grupo      = $infoCurso['grupo'];
 

@@ -49,13 +49,19 @@ class Calificaciones extends CMS_Controller {
         if (isset($cursosRes['datos']['cursos']) && is_array($cursosRes['datos']['cursos'])) {
             foreach ($cursosRes['datos']['cursos'] as $c) {
                 if ($c['id'] == $courseId) {
-                    $cursoCodigo = isset($c['codigo']) ? $c['codigo'] : '';
+                    $cursoCodigo = isset($c['codigo']) ? $c['codigo'] : (isset($c['curso_codigo']) ? $c['curso_codigo'] : (isset($c['shortname']) ? $c['shortname'] : ''));
                     break;
                 }
             }
         }
+        if (empty($cursoCodigo)) {
+            $califRes = $this->Moodle_model->obtener_calificaciones($courseId);
+            if (isset($califRes['datos']['curso_codigo']) && !empty($califRes['datos']['curso_codigo'])) {
+                $cursoCodigo = $califRes['datos']['curso_codigo'];
+            }
+        }
 
-        $infoCurso  = $this->Calculo_notas_model->parsear_curso_codigo($cursoCodigo);
+        $infoCurso  = $this->Calculo_notas_model->parsear_curso_codigo($cursoCodigo, $courseId);
         $codMateria = $infoCurso['cod_materia'];
         $grupo      = $infoCurso['grupo'];
 
@@ -107,6 +113,8 @@ class Calificaciones extends CMS_Controller {
             echo json_encode(array('exito' => false, 'mensaje' => 'Parametros requeridos incompletos'));
             return;
         }
+
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
 
         if ($this->Subnotas_model->corte_esta_calificado($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)) {
             echo json_encode(array(
@@ -167,6 +175,8 @@ class Calificaciones extends CMS_Controller {
             return;
         }
 
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+
         $this->Subnotas_model->eliminar_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
         $this->Subnotas_model->eliminar_subnotas_corte($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
 
@@ -191,6 +201,8 @@ class Calificaciones extends CMS_Controller {
             echo json_encode(array('exito' => false, 'mensaje' => 'Parametros requeridos incompletos'));
             return;
         }
+
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
 
         $this->Subnotas_model->eliminar_subnotas_corte($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
 
@@ -230,6 +242,8 @@ class Calificaciones extends CMS_Controller {
             echo json_encode(array('exito' => false, 'mensaje' => 'Parametros requeridos incompletos'));
             return;
         }
+
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
 
         if ($this->Subnotas_model->corte_esta_calificado($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)) {
             echo json_encode(array('exito' => false, 'mensaje' => 'Este corte ya fue calificado y cerrado.'));

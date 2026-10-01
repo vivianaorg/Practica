@@ -15,6 +15,7 @@ class Subnotas_model extends CI_Model
 
     public function guardar_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio, $items)
     {
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
         $this->eliminar_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
 
         if (empty($items) || !is_array($items)) {
@@ -59,15 +60,14 @@ class Subnotas_model extends CI_Model
 
     public function obtener_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $condMateria = "COD_MATERIA = '{$codMateria}'";
-        if (!empty($codMateria) && $codMateria !== '1155304') {
-            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        }
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
 
         $sql = "SELECT ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, 
                        ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE 
                 FROM CONFIG_RUBRICA 
-                WHERE {$condMateria} 
+                WHERE COD_MATERIA = '{$codMateria}' 
+                  AND GRUPO       = '{$grupo}' 
+                  AND SEMESTRE    = '{$semestre}' 
                   AND TIPO_PREVIO = '{$tipoPrevio}' 
                 ORDER BY ID ASC";
 
@@ -78,15 +78,14 @@ class Subnotas_model extends CI_Model
 
     public function obtener_todas_rubricas_curso($codProfesor, $codMateria, $grupo, $semestre)
     {
-        $condMateria = "COD_MATERIA = '{$codMateria}'";
-        if (!empty($codMateria) && $codMateria !== '1155304') {
-            $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        }
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
 
         $sql = "SELECT ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, 
                        ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE 
                 FROM CONFIG_RUBRICA 
-                WHERE {$condMateria} 
+                WHERE COD_MATERIA = '{$codMateria}' 
+                  AND GRUPO       = '{$grupo}' 
+                  AND SEMESTRE    = '{$semestre}' 
                 ORDER BY TIPO_PREVIO ASC, ID ASC";
 
         $arr = array();
@@ -114,22 +113,35 @@ class Subnotas_model extends CI_Model
 
     public function eliminar_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        $sql = "DELETE FROM CONFIG_RUBRICA WHERE {$condMateria} AND TIPO_PREVIO = '{$tipoPrevio}'";
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $sql = "DELETE FROM CONFIG_RUBRICA 
+                WHERE COD_MATERIA = '{$codMateria}' 
+                  AND GRUPO       = '{$grupo}' 
+                  AND SEMESTRE    = '{$semestre}' 
+                  AND TIPO_PREVIO = '{$tipoPrevio}'";
         return $this->database2->get_sql_bool($sql);
     }
 
     public function eliminar_subnotas_corte($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        $sql = "DELETE FROM SUBNOTAS WHERE {$condMateria} AND TIPO_PREVIO = '{$tipoPrevio}'";
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $sql = "DELETE FROM SUBNOTAS 
+                WHERE COD_MATERIA = '{$codMateria}' 
+                  AND GRUPO       = '{$grupo}' 
+                  AND SEMESTRE    = '{$semestre}' 
+                  AND TIPO_PREVIO = '{$tipoPrevio}'";
         return $this->database2->get_sql_bool($sql);
     }
 
     public function corte_esta_calificado($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        $sql = "SELECT COUNT(*) AS TOTAL FROM SUBNOTAS WHERE {$condMateria} AND TIPO_PREVIO = '{$tipoPrevio}' AND (ESTADO = 'ACEPTADA' OR ESTADO = 'MODIFICADA')";
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $sql = "SELECT COUNT(*) AS TOTAL FROM SUBNOTAS 
+                WHERE COD_MATERIA = '{$codMateria}' 
+                  AND GRUPO       = '{$grupo}' 
+                  AND SEMESTRE    = '{$semestre}' 
+                  AND TIPO_PREVIO = '{$tipoPrevio}' 
+                  AND (ESTADO = 'ACEPTADA' OR ESTADO = 'MODIFICADA')";
         $obj = null;
         $this->database2->get_sql_object($sql, $obj);
         return ($obj && isset($obj->TOTAL) && (int)$obj->TOTAL > 0);
@@ -137,8 +149,13 @@ class Subnotas_model extends CI_Model
 
     public function obtener_cortes_calificados($codProfesor, $codMateria, $grupo, $semestre)
     {
-        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
-        $sql = "SELECT TIPO_PREVIO, COUNT(*) AS TOTAL FROM SUBNOTAS WHERE {$condMateria} AND (ESTADO = 'ACEPTADA' OR ESTADO = 'MODIFICADA') GROUP BY TIPO_PREVIO";
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $sql = "SELECT TIPO_PREVIO, COUNT(*) AS TOTAL FROM SUBNOTAS 
+                WHERE COD_MATERIA = '{$codMateria}' 
+                  AND GRUPO       = '{$grupo}' 
+                  AND SEMESTRE    = '{$semestre}' 
+                  AND (ESTADO = 'ACEPTADA' OR ESTADO = 'MODIFICADA') 
+                GROUP BY TIPO_PREVIO";
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
 
@@ -157,6 +174,7 @@ class Subnotas_model extends CI_Model
 
     public function guardar_subnotas_estudiante($codProfesor, $codMateria, $grupo, $semestre, $codEstudiante, $tipoPrevio, $desgloseSubnotas, $estado = 'SUGERIDA')
     {
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
         $this->eliminar_subnotas_estudiante($codEstudiante, $codMateria, $grupo, $semestre, $tipoPrevio);
 
         if (empty($desgloseSubnotas) || !is_array($desgloseSubnotas)) {
@@ -207,6 +225,7 @@ class Subnotas_model extends CI_Model
 
     public function obtener_subnotas_estudiante($codEstudiante, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
         $sql = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
                        NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
                 FROM SUBNOTAS 
@@ -224,24 +243,28 @@ class Subnotas_model extends CI_Model
 
     public function eliminar_subnotas_estudiante($codEstudiante, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
         $sql = "DELETE FROM SUBNOTAS 
                 WHERE COD_ESTUDIANTE = '{$codEstudiante}' 
-                  AND {$condMateria} 
-                  AND TIPO_PREVIO = '{$tipoPrevio}'";
+                  AND COD_MATERIA    = '{$codMateria}' 
+                  AND GRUPO          = '{$grupo}' 
+                  AND SEMESTRE       = '{$semestre}' 
+                  AND TIPO_PREVIO    = '{$tipoPrevio}'";
 
         return $this->database2->get_sql_bool($sql);
     }
 
     public function obtener_resumen_grupo($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
         $sql = "SELECT COD_ESTUDIANTE, 
                        ROUND(SUM(SUBNOTA), 2) AS NOTA_SUGERIDA,
                        COUNT(ID) AS TOTAL_ACTIVIDADES,
                        MAX(ESTADO) AS ESTADO_GENERAL
                 FROM SUBNOTAS 
-                WHERE {$condMateria} 
+                WHERE COD_MATERIA = '{$codMateria}' 
+                  AND GRUPO       = '{$grupo}' 
+                  AND SEMESTRE    = '{$semestre}' 
                   AND TIPO_PREVIO = '{$tipoPrevio}' 
                 GROUP BY COD_ESTUDIANTE 
                 ORDER BY COD_ESTUDIANTE ASC";
@@ -253,9 +276,11 @@ class Subnotas_model extends CI_Model
 
     public function actualizar_estado_grupo($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio, $nuevoEstado)
     {
-        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
         $sql = "UPDATE SUBNOTAS SET ESTADO = '{$nuevoEstado}' 
-                WHERE {$condMateria} 
+                WHERE COD_MATERIA = '{$codMateria}' 
+                  AND GRUPO       = '{$grupo}' 
+                  AND SEMESTRE    = '{$semestre}' 
                   AND TIPO_PREVIO = '{$tipoPrevio}'";
 
         return $this->database2->get_sql_bool($sql);
@@ -263,11 +288,13 @@ class Subnotas_model extends CI_Model
 
     public function obtener_todas_subnotas_grupo($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
         $sql = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
                        NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
                 FROM SUBNOTAS 
-                WHERE {$condMateria} 
+                WHERE COD_MATERIA = '{$codMateria}' 
+                  AND GRUPO       = '{$grupo}' 
+                  AND SEMESTRE    = '{$semestre}' 
                   AND TIPO_PREVIO = '{$tipoPrevio}' 
                 ORDER BY COD_ESTUDIANTE ASC, ID ASC";
 
@@ -381,14 +408,16 @@ class Subnotas_model extends CI_Model
 
     public function obtener_calificaciones_todos_cortes($codProfesor, $codMateria, $grupo, $semestre)
     {
-        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
 
         $sql = "SELECT COD_ESTUDIANTE, TIPO_PREVIO, 
                        ROUND(SUM(SUBNOTA), 2) AS NOTA_CORTE,
                        MAX(ESTADO) AS ESTADO_CORTE,
                        COUNT(ID) AS TOTAL_ACTIVIDADES
                 FROM SUBNOTAS 
-                WHERE {$condMateria} 
+                WHERE COD_MATERIA = '{$codMateria}' 
+                  AND GRUPO       = '{$grupo}' 
+                  AND SEMESTRE    = '{$semestre}' 
                 GROUP BY COD_ESTUDIANTE, TIPO_PREVIO 
                 ORDER BY COD_ESTUDIANTE ASC, TIPO_PREVIO ASC";
 
@@ -418,12 +447,14 @@ class Subnotas_model extends CI_Model
 
     public function obtener_todas_subnotas_curso($codProfesor, $codMateria, $grupo, $semestre)
     {
-        $condMateria = "(COD_MATERIA = '{$codMateria}' OR COD_MATERIA = '1155304' OR COD_MATERIA = 'biologia_111')";
+        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
 
         $sql = "SELECT ID, COD_ESTUDIANTE, TIPO_PREVIO, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
                        NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO 
                 FROM SUBNOTAS 
-                WHERE {$condMateria} 
+                WHERE COD_MATERIA = '{$codMateria}' 
+                  AND GRUPO       = '{$grupo}' 
+                  AND SEMESTRE    = '{$semestre}' 
                 ORDER BY COD_ESTUDIANTE ASC, TIPO_PREVIO ASC, ID ASC";
 
         $arr = array();
