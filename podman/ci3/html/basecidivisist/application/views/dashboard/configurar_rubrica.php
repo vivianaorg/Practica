@@ -30,6 +30,40 @@
                     </h4>
                     <p class="text-muted">Estado general de las rubricas asociadas a cada corte evaluativo:</p>
 
+                    <style>
+                        .card-rubrica-corte {
+                            background: #ffffff;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 8px;
+                            box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+                            display: flex;
+                            flex-direction: column;
+                            width: 100%;
+                            height: 100%;
+                            margin-bottom: 0;
+                            overflow: hidden;
+                            transition: transform 0.2s ease, box-shadow 0.2s ease;
+                        }
+                        .card-rubrica-corte:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+                        }
+                        .rubrica-item-pill {
+                            display: flex;
+                            align-items: center;
+                            justify-content: space-between;
+                            padding: 8px 12px;
+                            margin-bottom: 7px;
+                            border-radius: 6px;
+                            background: #f8fafc;
+                            border: 1px solid #edf2f7;
+                            transition: background-color 0.15s ease;
+                        }
+                        .rubrica-item-pill:hover {
+                            background: #f1f5f9;
+                        }
+                    </style>
+
                     <div class="row" style="margin-top: 15px; display: flex; flex-wrap: wrap;">
                         <?php
                         $cortesNombres = array(
@@ -49,110 +83,139 @@
                             $tieneItems = !empty($itemsCorte);
                             $corteEstaCalificado = isset($cortes_calificados[$claveCorte]) && $cortes_calificados[$claveCorte];
 
-                            $boxClase = 'box-default';
-                            $boxStyle = '';
-                            $badgeClase = 'bg-gray';
+                            // Configuración de estilo y acentos según el estado
                             if ($corteEstaCalificado) {
-                                $boxClase = 'box-default';
-                                $boxStyle = 'border: 1px solid #d2d6de; background-color: #f8f9fa; opacity: 0.88;';
-                                $badgeClase = 'bg-gray';
+                                $lineaColor   = '#94a3b8';
+                                $iconoHeader  = 'fa-lock';
+                                $iconoColor   = '#64748b';
+                                $iconoBg      = '#f1f5f9';
+                                $badgeHtml    = '<span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;"><i class="fa fa-lock"></i> Calificado y Cerrado</span>';
+                                $barraColor   = '#94a3b8';
                             } elseif ($estaCompleto) {
-                                $boxClase = 'box-success';
-                                $badgeClase = 'bg-green';
+                                $lineaColor   = '#10b981';
+                                $iconoHeader  = 'fa-check-circle';
+                                $iconoColor   = '#059669';
+                                $iconoBg      = '#ecfdf5';
+                                $badgeHtml    = '<span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;"><i class="fa fa-check"></i> 100% Completo</span>';
+                                $barraColor   = '#10b981';
                             } elseif ($tieneItems) {
-                                $boxClase = 'box-warning';
-                                $badgeClase = 'bg-yellow';
+                                $lineaColor   = '#f59e0b';
+                                $iconoHeader  = 'fa-sliders';
+                                $iconoColor   = '#d97706';
+                                $iconoBg      = '#fffbeb';
+                                $badgeHtml    = '<span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: #fffbeb; color: #b45309; border: 1px solid #fde68a;"><i class="fa fa-clock-o"></i> ' . $totalPorcentajeCorte . '% / 100%</span>';
+                                $barraColor   = '#f59e0b';
+                            } else {
+                                $lineaColor   = '#cbd5e1';
+                                $iconoHeader  = 'fa-calendar-o';
+                                $iconoColor   = '#94a3b8';
+                                $iconoBg      = '#f8fafc';
+                                $badgeHtml    = '<span style="font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 20px; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0;"><i class="fa fa-circle-o"></i> Sin configurar</span>';
+                                $barraColor   = '#e2e8f0';
                             }
+                            $anchoBarra = min(100, max(0, $totalPorcentajeCorte));
                         ?>
-                            <div class="col-md-6 col-sm-12" style="display: flex; margin-bottom: 20px;">
-                                <div class="box box-solid <?php echo $boxClase; ?>" style="width: 100%; display: flex; flex-direction: column; margin-bottom: 0; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); <?php echo $boxStyle; ?>">
-                                    <div class="box-header with-border" style="<?php echo $corteEstaCalificado ? 'background-color: #ededed; color: #555;' : ''; ?>">
-                                        <h3 class="box-title" style="font-weight: 600;">
-                                            <i class="fa <?php echo $corteEstaCalificado ? 'fa-lock text-muted' : 'fa-calendar-check-o'; ?>" style="margin-right: 5px;"></i> 
-                                            <?php echo htmlspecialchars($nombreCorte); ?>
-                                            <?php if ($corteEstaCalificado): ?>
-                                                <small style="color: #777; font-weight: 500;">(Calificado)</small>
-                                            <?php endif; ?>
-                                        </h3>
-                                        <div class="box-tools pull-right">
-                                            <span class="badge <?php echo $badgeClase; ?>" style="font-size: 11px; padding: 4px 8px;">
-                                                <?php echo $totalPorcentajeCorte; ?>% / 100%
+                            <div class="col-md-6 col-sm-12" style="display: flex; margin-bottom: 22px;">
+                                <div class="card-rubrica-corte">
+                                    <!-- Acento superior de color -->
+                                    <div style="height: 3px; background-color: <?php echo $lineaColor; ?>; width: 100%;"></div>
+
+                                    <!-- Cabecera del card -->
+                                    <div style="padding: 14px 18px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; background: #ffffff;">
+                                        <div style="display: flex; align-items: center;">
+                                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: <?php echo $iconoBg; ?>; color: <?php echo $iconoColor; ?>; font-size: 14px; margin-right: 10px;">
+                                                <i class="fa <?php echo $iconoHeader; ?>"></i>
                                             </span>
+                                            <div>
+                                                <h4 style="margin: 0; font-weight: 700; font-size: 15px; color: #1e293b;">
+                                                    <?php echo htmlspecialchars($nombreCorte); ?>
+                                                </h4>
+                                                <span style="font-size: 11px; color: #64748b;">
+                                                    <?php echo $tieneItems ? count($itemsCorte) . ' actividad(es) asociada(s)' : 'Sin actividades'; ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <?php echo $badgeHtml; ?>
                                         </div>
                                     </div>
-                                    <div class="box-body no-padding" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+
+                                    <!-- Barra de progreso sutil -->
+                                    <div style="height: 3px; background: #f1f5f9; width: 100%;">
+                                        <div style="height: 3px; width: <?php echo $anchoBarra; ?>%; background: <?php echo $barraColor; ?>; transition: width 0.3s ease;"></div>
+                                    </div>
+
+                                    <!-- Cuerpo del card -->
+                                    <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; background: #ffffff;">
                                         <?php if (empty($itemsCorte)): ?>
-                                            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 35px 20px;" class="text-muted">
-                                                <i class="fa fa-folder-open-o fa-2x" style="opacity: 0.6; margin-bottom: 8px;"></i>
-                                                <p style="margin-bottom: 12px;">No se han configurado actividades para este corte.</p>
+                                            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px 20px; text-align: center;">
+                                                <div style="width: 48px; height: 48px; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; border: 1px dashed #cbd5e1;">
+                                                    <i class="fa fa-folder-open-o" style="font-size: 20px; color: #94a3b8;"></i>
+                                                </div>
+                                                <p style="margin-bottom: 14px; font-size: 13px; color: #64748b;">No se han configurado actividades para este corte.</p>
                                                 <?php if (!$corteEstaCalificado): ?>
-                                                    <button type="button" class="btn btn-default btn-sm" style="box-shadow: 0 1px 2px rgba(0,0,0,0.08);" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
-                                                        <i class="fa fa-plus"></i> Configurar ahora
+                                                    <button type="button" class="btn btn-default btn-sm" style="border-radius: 6px; font-weight: 600; color: #2563eb; background: #eff6ff; border-color: #bfdbfe; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
+                                                        <i class="fa fa-plus-circle"></i> Configurar Rúbrica
                                                     </button>
                                                 <?php endif; ?>
                                             </div>
                                         <?php else: ?>
-                                            <div style="flex: 1;">
-                                                <table class="table table-striped table-condensed" style="margin-bottom: 0;">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Actividad</th>
-                                                            <th style="width: 100px; text-align: right;">Peso</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <?php foreach ($itemsCorte as $it): ?>
-                                                            <?php $esItemManual = ((int)$it->ID_ACTIVIDAD_MOODLE === 0 || strtolower($it->TIPO_ACTIVIDAD) === 'manual'); ?>
-                                                            <tr>
-                                                                <td style="vertical-align: middle;">
-                                                                    <i class="fa <?php echo $esItemManual ? 'fa-pencil text-yellow' : 'fa-check-square-o text-green'; ?>"></i> 
-                                                                    <?php echo htmlspecialchars($it->NOMBRE_ACTIVIDAD); ?>
-                                                                </td>
-                                                                <td style="text-align: right; font-weight: bold; vertical-align: middle;">
-                                                                    <?php echo htmlspecialchars($it->PORCENTAJE); ?>%
-                                                                </td>
-                                                            </tr>
-                                                        <?php endforeach; ?>
-                                                    </tbody>
-                                                    <tfoot>
-                                                        <tr class="bg-gray-light">
-                                                            <th style="text-align: right;">Total Asignado:</th>
-                                                            <th style="text-align: right; font-weight: bold; color: <?php echo $corteEstaCalificado ? '#777' : ($estaCompleto ? 'green' : 'orange'); ?>;">
-                                                                <?php echo $totalPorcentajeCorte; ?>%
-                                                            </th>
-                                                        </tr>
-                                                    </tfoot>
-                                                </table>
+                                            <div style="padding: 14px 18px; flex: 1;">
+                                                <?php foreach ($itemsCorte as $it): ?>
+                                                    <?php $esItemManual = ((int)$it->ID_ACTIVIDAD_MOODLE === 0 || strtolower($it->TIPO_ACTIVIDAD) === 'manual'); ?>
+                                                    <div class="rubrica-item-pill">
+                                                        <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">
+                                                            <?php if ($esItemManual): ?>
+                                                                <span style="width: 22px; height: 22px; border-radius: 4px; background: #fef3c7; color: #d97706; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;" title="Actividad Manual">
+                                                                    <i class="fa fa-pencil"></i>
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <span style="width: 22px; height: 22px; border-radius: 4px; background: #e0f2fe; color: #0284c7; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;" title="Actividad de Moodle">
+                                                                    <i class="fa fa-graduation-cap"></i>
+                                                                </span>
+                                                            <?php endif; ?>
+                                                            <span style="font-size: 13px; font-weight: 500; color: #334155; overflow: hidden; text-overflow: ellipsis;" title="<?php echo htmlspecialchars($it->NOMBRE_ACTIVIDAD); ?>">
+                                                                <?php echo htmlspecialchars($it->NOMBRE_ACTIVIDAD); ?>
+                                                            </span>
+                                                        </div>
+                                                        <span style="font-size: 12px; font-weight: 700; color: #0f172a; background: #ffffff; padding: 2px 9px; border-radius: 12px; border: 1px solid #e2e8f0; flex-shrink: 0;">
+                                                            <?php echo htmlspecialchars($it->PORCENTAJE); ?>%
+                                                        </span>
+                                                    </div>
+                                                <?php endforeach; ?>
+
+                                                <!-- Resumen total -->
+                                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; margin-top: 10px; border-radius: 6px; background: #f8fafc; border: 1px dashed #cbd5e1; font-size: 12px;">
+                                                    <span style="font-weight: 600; color: #475569;">Total Ponderado:</span>
+                                                    <span style="font-weight: 700; font-size: 13px; color: <?php echo $corteEstaCalificado ? '#64748b' : ($estaCompleto ? '#059669' : '#d97706'); ?>;">
+                                                        <?php echo $totalPorcentajeCorte; ?>% / 100%
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div style="padding: 10px 12px; background: <?php echo $corteEstaCalificado ? '#f0f0f0' : '#fafafa'; ?>; border-top: 1px solid <?php echo $corteEstaCalificado ? '#e4e4e4' : '#f0f0f0'; ?>; display: flex; justify-content: space-between; align-items: center;">
+
+                                            <!-- Footer de acciones -->
+                                            <div style="padding: 11px 18px; background: #fafbfc; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
                                                 <div>
-                                                    <?php if ($corteEstaCalificado): ?>
-                                                        <button type="button" class="btn btn-danger btn-xs" onclick="confirmarEliminarRubrica('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
-                                                            <i class="fa fa-trash"></i> Eliminar
-                                                        </button>
-                                                    <?php elseif (!empty($rubricasAgrupadas[$claveCorte])): ?>
-                                                        <button type="button" class="btn btn-danger btn-xs" onclick="confirmarEliminarRubrica('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
-                                                            <i class="fa fa-trash"></i> Eliminar
+                                                    <?php if ($tieneItems): ?>
+                                                        <button type="button" class="btn btn-default btn-xs" style="color: #ef4444; border-color: #fecaca; background: #fff5f5; border-radius: 4px; padding: 4px 8px; font-weight: 500;" onclick="confirmarEliminarRubrica('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
+                                                            <i class="fa fa-trash-o"></i> Eliminar
                                                         </button>
                                                     <?php endif; ?>
                                                 </div>
-                                                <div style="display: flex; align-items: center; gap: 5px;">
+                                                <div style="display: flex; align-items: center; gap: 6px;">
                                                     <?php if ($corteEstaCalificado): ?>
-                                                        <span class="label label-default" style="font-size: 11px; padding: 4px 7px;">
-                                                            <i class="fa fa-lock"></i> Inhabilitada
-                                                        </span>
-                                                        <button type="button" class="btn btn-primary btn-xs" onclick="confirmarDesbloquearCorte('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
+                                                        <button type="button" class="btn btn-primary btn-xs" style="border-radius: 4px; padding: 4px 9px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.06);" onclick="confirmarDesbloquearCorte('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
                                                             <i class="fa fa-unlock"></i> Desbloquear
                                                         </button>
-                                                        <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-default btn-xs">
-                                                            <i class="fa fa-eye"></i> Ver Calificaciones
+                                                        <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-default btn-xs" style="border-radius: 4px; padding: 4px 9px; font-weight: 500; border-color: #cbd5e1;">
+                                                            <i class="fa fa-eye"></i> Calificaciones
                                                         </a>
                                                     <?php else: ?>
-                                                        <button type="button" class="btn btn-primary btn-xs" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
-                                                            <i class="fa fa-pencil"></i> Modificar Rubrica
+                                                        <button type="button" class="btn btn-default btn-xs" style="color: #1e40af; background: #eff6ff; border-color: #bfdbfe; border-radius: 4px; padding: 4px 9px; font-weight: 600;" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
+                                                            <i class="fa fa-pencil"></i> Modificar Rúbrica
                                                         </button>
                                                         <?php if ($estaCompleto): ?>
-                                                            <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-success btn-xs">
+                                                            <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-success btn-xs" style="border-radius: 4px; padding: 4px 10px; font-weight: 600; box-shadow: 0 1px 3px rgba(16,185,129,0.3);">
                                                                 <i class="fa fa-calculator"></i> Calificar Corte
                                                             </a>
                                                         <?php endif; ?>
