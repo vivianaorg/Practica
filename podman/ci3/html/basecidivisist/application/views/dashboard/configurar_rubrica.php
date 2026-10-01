@@ -13,20 +13,11 @@
                     </a>
                 </li>
                 <li class="pull-right" style="padding: 6px 10px;">
-                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                        <a href="<?php echo site_url('moodle'); ?>" class="btn btn-default btn-sm" style="border-radius: 4px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
-                            <i class="fa fa-arrow-left text-muted"></i> Volver a cursos
-                        </a>
-                        <a href="<?php echo site_url('moodle/actividades/' . $course_id); ?>" class="btn btn-default btn-sm" style="border-radius: 4px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
-                            <i class="fa fa-list text-primary"></i> Actividades
-                        </a>
-                        <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id . '/' . $tipo_previo); ?>" class="btn btn-warning btn-sm" style="border-radius: 4px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
-                            <i class="fa fa-calculator"></i> Calificar Corte
-                        </a>
-                        <a href="<?php echo site_url('calificaciones/' . $course_id); ?>" class="btn btn-success btn-sm" style="border-radius: 4px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
-                            <i class="fa fa-graduation-cap"></i> Calificaciones
-                        </a>
-                    </div>
+                    <?php $this->load->view('dashboard/nav_curso_botones', array(
+                        'course_id'   => $course_id,
+                        'activo'      => 'rubrica',
+                        'tipo_previo' => isset($tipo_previo) ? $tipo_previo : ''
+                    )); ?>
                 </li>
             </ul>
 
