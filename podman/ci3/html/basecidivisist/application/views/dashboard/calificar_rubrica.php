@@ -25,20 +25,18 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                 </div>
             </div>
             <div class="col-md-6 text-right">
-                <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                    <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>" class="btn btn-default btn-sm" style="border-radius: 4px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
-                        <i class="fa fa-arrow-left text-muted"></i> Volver a Cursos
-                    </a>
-                    <a href="<?php echo site_url('dashboard/actividades_moodle/' . $course_id); ?>" class="btn btn-default btn-sm" style="border-radius: 4px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
-                        <i class="fa fa-list text-primary"></i> Actividades
-                    </a>
-                    <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $course_id . '/' . $tipo_previo . '#tab_configurar'); ?>" class="btn btn-info btn-sm" style="border-radius: 4px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
-                        <i class="fa fa-sliders"></i> Rúbrica
-                    </a>
-                    <a href="<?php echo site_url('dashboard/calificaciones/' . $course_id); ?>" class="btn btn-success btn-sm" style="border-radius: 4px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
-                        <i class="fa fa-graduation-cap"></i> Calificaciones
-                    </a>
-                </div>
+                <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>" class="btn btn-default btn-sm">
+                    <i class="fa fa-arrow-left"></i> Volver a Cursos
+                </a>
+                <a href="<?php echo site_url('dashboard/actividades_moodle/' . $course_id); ?>" class="btn btn-default btn-sm" style="margin-left: 3px;">
+                    <i class="fa fa-list"></i> Actividades
+                </a>
+                <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $course_id . '/' . $tipo_previo . '#tab_configurar'); ?>" class="btn btn-info btn-sm" style="margin-left: 3px;">
+                    <i class="fa fa-sliders"></i> Rúbrica
+                </a>
+                <a href="<?php echo site_url('dashboard/calificaciones/' . $course_id); ?>" class="btn btn-success btn-sm" style="margin-left: 3px; font-weight: bold;">
+                    <i class="fa fa-graduation-cap"></i> Calificaciones
+                </a>
             </div>
         </div>
     </div>
@@ -89,26 +87,26 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
             <div id="mensaje_guardado" style="display: none;"></div>
 
             <div class="box box-solid box-default" style="border: 1px solid #d2d6de;">
-                <div class="box-header with-border" style="background-color: #f4f5f7; padding: 10px 15px;">
-                    <div class="row" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                        <div class="col-md-6" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                            <button type="button" class="btn btn-primary btn-sm" id="btn_aceptar_todas" <?php echo ($corte_calificado ? 'disabled' : ''); ?> style="font-weight: 500; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+                <div class="box-header with-border" style="background-color: #f4f5f7;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-primary btn-sm" id="btn_aceptar_todas" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
                                 <i class="fa fa-check-square-o"></i> Aceptar Todas las Sugerencias
                             </button>
-                            <button type="button" class="btn btn-default btn-sm" id="btn_restablecer_todas" <?php echo ($corte_calificado ? 'disabled' : ''); ?> style="font-weight: 500; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+                            <button type="button" class="btn btn-default btn-sm" id="btn_restablecer_todas" style="margin-left: 5px;" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
                                 <i class="fa fa-undo"></i> Restablecer Sugerencias
                             </button>
                         </div>
-                        <div class="col-md-6 text-right" style="display: flex; justify-content: flex-end; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <div class="col-md-6 text-right">
                             <?php if ($corte_calificado): ?>
-                                <button type="button" class="btn btn-primary btn-sm" onclick="confirmarDesbloquearCorteCalificar()" style="font-weight: 600; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                                <button type="button" class="btn btn-warning btn-sm" onclick="confirmarDesbloquearCorteCalificar()" style="margin-right: 5px;">
                                     <i class="fa fa-unlock"></i> Desbloquear Calificaciones
                                 </button>
-                                <button type="button" class="btn btn-default btn-sm" id="btn_guardar_calificaciones" disabled style="font-weight: bold; border-radius: 4px;">
+                                <button type="button" class="btn btn-default btn-sm" id="btn_guardar_calificaciones" disabled style="font-weight: bold;">
                                     <i class="fa fa-lock"></i> Calificaciones Guardadas
                                 </button>
                             <?php else: ?>
-                                <button type="button" class="btn btn-success btn-sm" id="btn_guardar_calificaciones" style="font-weight: bold; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                                <button type="button" class="btn btn-success btn-sm" id="btn_guardar_calificaciones" style="font-weight: bold;">
                                     <i class="fa fa-save"></i> Guardar Calificaciones
                                 </button>
                             <?php endif; ?>
