@@ -12,25 +12,21 @@
                         <i class="fa fa-sliders"></i> Configurar / Editar Rubrica
                     </a>
                 </li>
-                <li class="pull-right">
-                    <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>" class="text-muted" style="padding: 10px 15px;">
-                        <i class="fa fa-arrow-left"></i> Volver a cursos
-                    </a>
-                </li>
-                <li class="pull-right">
-                    <a href="<?php echo site_url('dashboard/calificaciones/' . $course_id); ?>" class="text-green" style="padding: 10px 15px; font-weight: bold;">
-                        <i class="fa fa-graduation-cap"></i> Calificaciones
-                    </a>
-                </li>
-                <li class="pull-right">
-                    <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $tipo_previo); ?>" class="text-orange" style="padding: 10px 15px;">
-                        <i class="fa fa-calculator"></i> Calificar Corte
-                    </a>
-                </li>
-                <li class="pull-right">
-                    <a href="<?php echo site_url('dashboard/actividades_moodle/' . $course_id); ?>" class="text-muted" style="padding: 10px 15px;">
-                        <i class="fa fa-list"></i> Actividades
-                    </a>
+                <li class="pull-right" style="padding: 6px 10px;">
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>" class="btn btn-default btn-sm" style="border-radius: 4px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+                            <i class="fa fa-arrow-left text-muted"></i> Volver a cursos
+                        </a>
+                        <a href="<?php echo site_url('dashboard/actividades_moodle/' . $course_id); ?>" class="btn btn-default btn-sm" style="border-radius: 4px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+                            <i class="fa fa-list text-primary"></i> Actividades
+                        </a>
+                        <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $tipo_previo); ?>" class="btn btn-warning btn-sm" style="border-radius: 4px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+                            <i class="fa fa-calculator"></i> Calificar Corte
+                        </a>
+                        <a href="<?php echo site_url('dashboard/calificaciones/' . $course_id); ?>" class="btn btn-success btn-sm" style="border-radius: 4px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+                            <i class="fa fa-graduation-cap"></i> Calificaciones
+                        </a>
+                    </div>
                 </li>
             </ul>
 
