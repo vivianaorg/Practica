@@ -30,7 +30,7 @@
                     </h4>
                     <p class="text-muted">Estado general de las rubricas asociadas a cada corte evaluativo:</p>
 
-                    <div class="row" style="margin-top: 15px;">
+                    <div class="row" style="margin-top: 15px; display: flex; flex-wrap: wrap;">
                         <?php
                         $cortesNombres = array(
                             '1'     => 'Primer Previo',
@@ -49,124 +49,117 @@
                             $tieneItems = !empty($itemsCorte);
                             $corteEstaCalificado = isset($cortes_calificados[$claveCorte]) && $cortes_calificados[$claveCorte];
 
-                            // Panel y etiquetas nativas Bootstrap 3 según estado (como en item4.php)
+                            $boxClase = 'box-default';
+                            $boxStyle = '';
+                            $badgeClase = 'bg-gray';
                             if ($corteEstaCalificado) {
-                                $panelClase  = 'panel-default';
-                                $badgeClase  = 'label-default';
-                                $badgeTexto  = '<i class="fa fa-lock"></i> Calificado y Cerrado';
-                                $iconoHeader = 'fa-lock text-muted';
+                                $boxClase = 'box-default';
+                                $boxStyle = 'border: 1px solid #d2d6de; background-color: #f8f9fa; opacity: 0.88;';
+                                $badgeClase = 'bg-gray';
                             } elseif ($estaCompleto) {
-                                $panelClase  = 'panel-success';
-                                $badgeClase  = 'label-success';
-                                $badgeTexto  = '<i class="fa fa-check"></i> 100% Completo';
-                                $iconoHeader = 'fa-calendar-check-o';
+                                $boxClase = 'box-success';
+                                $badgeClase = 'bg-green';
                             } elseif ($tieneItems) {
-                                $panelClase  = 'panel-warning';
-                                $badgeClase  = 'label-warning';
-                                $badgeTexto  = '<i class="fa fa-sliders"></i> ' . $totalPorcentajeCorte . '% / 100%';
-                                $iconoHeader = 'fa-calendar';
-                            } else {
-                                $panelClase  = 'panel-default';
-                                $badgeClase  = 'label-default';
-                                $badgeTexto  = 'Sin configurar';
-                                $iconoHeader = 'fa-calendar-o text-muted';
+                                $boxClase = 'box-warning';
+                                $badgeClase = 'bg-yellow';
                             }
                         ?>
-                            <div class="col-md-6 col-sm-12" style="margin-bottom: 20px;">
-                                <div class="panel <?php echo $panelClase; ?>" style="margin-bottom: 0;">
-                                    <div class="panel-heading clearfix">
-                                        <h3 class="panel-title pull-left" style="font-weight: bold; line-height: 22px;">
-                                            <i class="fa <?php echo $iconoHeader; ?>"></i> <?php echo htmlspecialchars($nombreCorte); ?>
+                            <div class="col-md-6 col-sm-12" style="display: flex; margin-bottom: 20px;">
+                                <div class="box box-solid <?php echo $boxClase; ?>" style="width: 100%; display: flex; flex-direction: column; margin-bottom: 0; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); <?php echo $boxStyle; ?>">
+                                    <div class="box-header with-border" style="<?php echo $corteEstaCalificado ? 'background-color: #ededed; color: #555;' : ''; ?>">
+                                        <h3 class="box-title" style="font-weight: 600;">
+                                            <i class="fa <?php echo $corteEstaCalificado ? 'fa-lock text-muted' : 'fa-calendar-check-o'; ?>" style="margin-right: 5px;"></i> 
+                                            <?php echo htmlspecialchars($nombreCorte); ?>
                                             <?php if ($corteEstaCalificado): ?>
-                                                <small class="text-muted">(Calificado)</small>
+                                                <small style="color: #777; font-weight: 500;">(Calificado)</small>
                                             <?php endif; ?>
                                         </h3>
-                                        <div class="pull-right">
-                                            <span class="label <?php echo $badgeClase; ?>" style="font-size: 11px;">
-                                                <?php echo $badgeTexto; ?>
+                                        <div class="box-tools pull-right">
+                                            <span class="badge <?php echo $badgeClase; ?>" style="font-size: 11px; padding: 4px 8px;">
+                                                <?php echo $totalPorcentajeCorte; ?>% / 100%
                                             </span>
                                         </div>
                                     </div>
-
-                                    <?php if (empty($itemsCorte)): ?>
-                                        <div class="panel-body text-center text-muted" style="padding: 35px 20px;">
-                                            <p><i class="fa fa-folder-open-o fa-2x" style="opacity: 0.5;"></i></p>
-                                            <p style="margin-bottom: 15px;">No se han configurado actividades para este corte.</p>
-                                            <?php if (!$corteEstaCalificado): ?>
-                                                <button type="button" class="btn btn-default btn-sm" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
-                                                    <i class="fa fa-plus"></i> Configurar Rúbrica
-                                                </button>
-                                            <?php endif; ?>
-                                        </div>
-                                    <?php else: ?>
-                                        <table class="table table-striped table-hover table-condensed" style="margin-bottom: 0;">
-                                            <thead>
-                                                <tr>
-                                                    <th>Actividad</th>
-                                                    <th style="width: 100px; text-align: center;">Tipo</th>
-                                                    <th style="width: 80px; text-align: right;">Peso</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php foreach ($itemsCorte as $it): ?>
-                                                    <?php $esItemManual = ((int)$it->ID_ACTIVIDAD_MOODLE === 0 || strtolower($it->TIPO_ACTIVIDAD) === 'manual'); ?>
-                                                    <tr>
-                                                        <td style="vertical-align: middle;">
-                                                            <i class="fa <?php echo $esItemManual ? 'fa-pencil text-warning' : 'fa-graduation-cap text-info'; ?>"></i> 
-                                                            <?php echo htmlspecialchars($it->NOMBRE_ACTIVIDAD); ?>
-                                                        </td>
-                                                        <td style="text-align: center; vertical-align: middle;">
-                                                            <span class="label <?php echo $esItemManual ? 'label-warning' : 'label-info'; ?>">
-                                                                <?php echo $esItemManual ? 'Manual' : 'Moodle'; ?>
-                                                            </span>
-                                                        </td>
-                                                        <td style="text-align: right; vertical-align: middle; font-weight: bold;">
-                                                            <?php echo htmlspecialchars($it->PORCENTAJE); ?>%
-                                                        </td>
-                                                    </tr>
-                                                <?php endforeach; ?>
-                                            </tbody>
-                                            <tfoot>
-                                                <tr class="active">
-                                                    <th colspan="2" style="text-align: right;">Total Asignado:</th>
-                                                    <th style="text-align: right; font-weight: bold; color: <?php echo $corteEstaCalificado ? '#777' : ($estaCompleto ? '#3c763d' : '#8a6d3b'); ?>;">
-                                                        <?php echo $totalPorcentajeCorte; ?>%
-                                                    </th>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    <?php endif; ?>
-
-                                    <div class="panel-footer clearfix">
-                                        <div class="pull-left">
-                                            <?php if ($tieneItems): ?>
-                                                <button type="button" class="btn btn-danger btn-xs" onclick="confirmarEliminarRubrica('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
-                                                    <i class="fa fa-trash"></i> Eliminar
-                                                </button>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="pull-right">
-                                            <?php if ($corteEstaCalificado): ?>
-                                                <span class="label label-default" style="padding: 4px 6px;">
-                                                    <i class="fa fa-lock"></i> Inhabilitada
-                                                </span>
-                                                <button type="button" class="btn btn-primary btn-xs" onclick="confirmarDesbloquearCorte('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
-                                                    <i class="fa fa-unlock"></i> Desbloquear
-                                                </button>
-                                                <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-default btn-xs">
-                                                    <i class="fa fa-eye"></i> Calificaciones
-                                                </a>
-                                            <?php else: ?>
-                                                <button type="button" class="btn btn-primary btn-xs" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
-                                                    <i class="fa fa-pencil"></i> Modificar Rúbrica
-                                                </button>
-                                                <?php if ($estaCompleto): ?>
-                                                    <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-success btn-xs" style="margin-left: 3px;">
-                                                        <i class="fa fa-calculator"></i> Calificar Corte
-                                                    </a>
+                                    <div class="box-body no-padding" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                                        <?php if (empty($itemsCorte)): ?>
+                                            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 35px 20px;" class="text-muted">
+                                                <i class="fa fa-folder-open-o fa-2x" style="opacity: 0.6; margin-bottom: 8px;"></i>
+                                                <p style="margin-bottom: 12px;">No se han configurado actividades para este corte.</p>
+                                                <?php if (!$corteEstaCalificado): ?>
+                                                    <button type="button" class="btn btn-default btn-sm" style="box-shadow: 0 1px 2px rgba(0,0,0,0.08);" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
+                                                        <i class="fa fa-plus"></i> Configurar ahora
+                                                    </button>
                                                 <?php endif; ?>
-                                            <?php endif; ?>
-                                        </div>
+                                            </div>
+                                        <?php else: ?>
+                                            <div style="flex: 1;">
+                                                <table class="table table-striped table-condensed" style="margin-bottom: 0;">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Actividad</th>
+                                                            <th style="width: 100px; text-align: right;">Peso</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($itemsCorte as $it): ?>
+                                                            <?php $esItemManual = ((int)$it->ID_ACTIVIDAD_MOODLE === 0 || strtolower($it->TIPO_ACTIVIDAD) === 'manual'); ?>
+                                                            <tr>
+                                                                <td style="vertical-align: middle;">
+                                                                    <i class="fa <?php echo $esItemManual ? 'fa-pencil text-yellow' : 'fa-check-square-o text-green'; ?>"></i> 
+                                                                    <?php echo htmlspecialchars($it->NOMBRE_ACTIVIDAD); ?>
+                                                                </td>
+                                                                <td style="text-align: right; font-weight: bold; vertical-align: middle;">
+                                                                    <?php echo htmlspecialchars($it->PORCENTAJE); ?>%
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr class="bg-gray-light">
+                                                            <th style="text-align: right;">Total Asignado:</th>
+                                                            <th style="text-align: right; font-weight: bold; color: <?php echo $corteEstaCalificado ? '#777' : ($estaCompleto ? 'green' : 'orange'); ?>;">
+                                                                <?php echo $totalPorcentajeCorte; ?>%
+                                                            </th>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+                                            <div style="padding: 10px 12px; background: <?php echo $corteEstaCalificado ? '#f0f0f0' : '#fafafa'; ?>; border-top: 1px solid <?php echo $corteEstaCalificado ? '#e4e4e4' : '#f0f0f0'; ?>; display: flex; justify-content: space-between; align-items: center;">
+                                                <div>
+                                                    <?php if ($corteEstaCalificado): ?>
+                                                        <button type="button" class="btn btn-danger btn-xs" onclick="confirmarEliminarRubrica('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
+                                                            <i class="fa fa-trash"></i> Eliminar
+                                                        </button>
+                                                    <?php elseif (!empty($rubricasAgrupadas[$claveCorte])): ?>
+                                                        <button type="button" class="btn btn-danger btn-xs" onclick="confirmarEliminarRubrica('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
+                                                            <i class="fa fa-trash"></i> Eliminar
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div style="display: flex; align-items: center; gap: 5px;">
+                                                    <?php if ($corteEstaCalificado): ?>
+                                                        <span class="label label-default" style="font-size: 11px; padding: 4px 7px;">
+                                                            <i class="fa fa-lock"></i> Inhabilitada
+                                                        </span>
+                                                        <button type="button" class="btn btn-primary btn-xs" onclick="confirmarDesbloquearCorte('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
+                                                            <i class="fa fa-unlock"></i> Desbloquear
+                                                        </button>
+                                                        <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-default btn-xs">
+                                                            <i class="fa fa-eye"></i> Ver Calificaciones
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <button type="button" class="btn btn-primary btn-xs" onclick="irAConfigurarCorte('<?php echo $claveCorte; ?>')">
+                                                            <i class="fa fa-pencil"></i> Modificar Rubrica
+                                                        </button>
+                                                        <?php if ($estaCompleto): ?>
+                                                            <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-success btn-xs">
+                                                                <i class="fa fa-calculator"></i> Calificar Corte
+                                                            </a>
+                                                        <?php endif; ?>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
