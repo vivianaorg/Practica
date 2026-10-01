@@ -199,16 +199,6 @@
                                 </select>
                             </div>
                         </div>
-
-                        <div class="col-md-8">
-                            <label>Ponderacion Actual (Total: <span id="total_porcentaje_txt">0%</span> / 100%):</label>
-                            <div class="progress progress-sm active" style="margin-top: 5px;">
-                                <div id="barra_progreso" class="progress-bar progress-bar-yellow" role="progressbar" style="width: 0%"></div>
-                            </div>
-                            <div id="alerta_porcentaje" class="text-sm text-yellow">
-                                <i class="fa fa-info-circle"></i> La suma de porcentajes debe ser exactamente 100%.
-                            </div>
-                        </div>
                     </div>
 
                     <hr style="margin-top: 5px; margin-bottom: 15px;">
@@ -235,10 +225,10 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                             <!-- Acciones para agregar actividades -->
                             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
-                                <button type="button" class="btn btn-primary" id="btn_agregar_fila" <?php echo ($corte_calificado ? 'disabled' : ''); ?> style="font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+                                <button type="button" class="btn btn-primary" id="btn_agregar_fila" <?php echo ($corte_calificado ? 'disabled' : ''); ?> style="font-weight: 600; box-shadow: 0 1px 2px #caf0f8;">
                                     <i class="fa fa-plus-circle"></i> Agregar Actividad de Moodle
                                 </button>
-                                <button type="button" class="btn btn-info" id="btn_agregar_manual" <?php echo ($corte_calificado ? 'disabled' : ''); ?> style="font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+                                <button type="button" class="btn btn-info" id="btn_agregar_manual" <?php echo ($corte_calificado ? 'disabled' : ''); ?> style="font-weight: 600; box-shadow: 0 1px 2px #c0d6df;">
                                     <i class="fa fa-pencil-square-o"></i> Agregar Actividad Manual
                                 </button>
                             </div>
