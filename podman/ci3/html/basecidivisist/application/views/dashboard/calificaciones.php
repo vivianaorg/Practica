@@ -55,9 +55,6 @@
                     </div>
                 </div>
                 <div class="col-md-6 text-right">
-                    <span class="text-muted" style="font-size: 12px;">
-                        <i class="fa fa-info-circle"></i> Ponderaciones: 1er Previo (23.3%) | 2do Previo (23.3%) | 3er Previo (23.4%) | Final (30%)
-                    </span>
                 </div>
             </div>
 
@@ -68,10 +65,10 @@
                             <th style="width: 35px; text-align: center;">#</th>
                             <th style="width: 95px; text-align: center;">Código</th>
                             <th>Estudiante</th>
-                            <th style="width: 110px; text-align: center;">1er Previo<br><small class="text-muted">23.3%</small></th>
-                            <th style="width: 110px; text-align: center;">2do Previo<br><small class="text-muted">23.3%</small></th>
-                            <th style="width: 110px; text-align: center;">3er Previo<br><small class="text-muted">23.4%</small></th>
-                            <th style="width: 110px; text-align: center;">Examen Final<br><small class="text-muted">30.0%</small></th>
+                            <th style="width: 110px; text-align: center;">1er Previo</th>
+                            <th style="width: 110px; text-align: center;">2do Previo</th>
+                            <th style="width: 110px; text-align: center;">3er Previo</th>
+                            <th style="width: 110px; text-align: center;">Examen Final</th>
                             <th style="width: 100px; text-align: center;">Definitiva</th>
                             <th style="width: 85px; text-align: center;">Detalle</th>
                         </tr>
@@ -163,10 +160,10 @@
 
                 <div class="nav-tabs-custom" style="box-shadow: none; border: 1px solid #e0e0e0;">
                     <ul class="nav nav-tabs">
-                        <li class="active"><a href="#tab_det_1" data-toggle="tab">1er Previo (23.3%)</a></li>
-                        <li><a href="#tab_det_2" data-toggle="tab">2do Previo (23.3%)</a></li>
-                        <li><a href="#tab_det_3" data-toggle="tab">3er Previo (23.4%)</a></li>
-                        <li><a href="#tab_det_final" data-toggle="tab">Examen Final (30%)</a></li>
+                        <li class="active"><a href="#tab_det_1" data-toggle="tab">1er Previo</a></li>
+                        <li><a href="#tab_det_2" data-toggle="tab">2do Previo</a></li>
+                        <li><a href="#tab_det_3" data-toggle="tab">3er Previo</a></li>
+                        <li><a href="#tab_det_final" data-toggle="tab">Examen Final</a></li>
                     </ul>
                     <div class="tab-content" style="padding: 15px;">
                         <div class="tab-pane active" id="tab_det_1">
