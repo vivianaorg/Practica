@@ -30,7 +30,7 @@
                                 <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $curso['id']); ?>" class="btn btn-xs" style="color: #fff; background: rgba(255,255,255,0.18); font-weight: 500;">
                                     <i class="fa fa-calculator"></i> Calificar
                                 </a>
-                                <a href="<?php echo site_url('calificaciones/' . $curso['id']); ?>" class="btn btn-xs" style="color: #fff; background: rgba(0,0,0,0.25); font-weight: 600;">
+                                <a href="<?php echo site_url('calificaciones/index/' . $curso['id']); ?>" class="btn btn-xs" style="color: #fff; background: rgba(0,0,0,0.25); font-weight: 600;">
                                     <i class="fa fa-graduation-cap"></i> Calificaciones
                                 </a>
                             </div>

@@ -15,7 +15,7 @@ $urlCursos         = site_url('moodle');
 $urlActividades    = site_url('moodle/actividades/' . $course_id);
 $urlRubrica        = site_url('calificaciones/configurar_rubrica/' . $course_id . $corteParam);
 $urlCalificar      = site_url('calificaciones/calificar_rubrica/' . $course_id . $corteParam);
-$urlCalificaciones = site_url('calificaciones/' . $course_id);
+$urlCalificaciones = !empty($course_id) ? site_url('calificaciones/index/' . $course_id) : site_url('calificaciones');
 ?>
 
 <div class="nav-curso-toolbar" style="display: inline-flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px;">
