@@ -28,7 +28,6 @@
                         <?php $etiquetaCurso = $cod_materia . (!empty($grupo) && $grupo !== '-' ? '-' . $grupo : '') . (!empty($semestre) ? ' (' . $semestre . ')' : ''); ?>
                         <small class="text-muted"><?php echo htmlspecialchars($etiquetaCurso); ?></small>
                     </h4>
-                    <p class="text-muted">Estado general de las rubricas asociadas a cada corte evaluativo:</p>
 
                     <div class="row" style="margin-top: 15px; display: flex; flex-wrap: wrap;">
                         <?php
@@ -74,11 +73,6 @@
                                                 <small style="color: #777; font-weight: 500;">(Calificado)</small>
                                             <?php endif; ?>
                                         </h3>
-                                        <div class="box-tools pull-right">
-                                            <span class="badge <?php echo $badgeClase; ?>" style="font-size: 11px; padding: 4px 8px;">
-                                                <?php echo $totalPorcentajeCorte; ?>% / 100%
-                                            </span>
-                                        </div>
                                     </div>
                                     <div class="box-body no-padding" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
                                         <?php if (empty($itemsCorte)): ?>
