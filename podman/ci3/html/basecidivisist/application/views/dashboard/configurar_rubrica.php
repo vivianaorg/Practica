@@ -218,6 +218,13 @@
                             </thead>
                             <tbody id="tbody_rubrica">
                             </tbody>
+                            <tfoot>
+                                <tr class="bg-gray-light">
+                                    <th colspan="3" style="text-align: right; vertical-align: middle;">Total Ponderado:</th>
+                                    <th style="text-align: right; vertical-align: middle; font-size: 14px; font-weight: bold;" id="tfoot_total_porcentaje">0%</th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
 
@@ -235,6 +242,7 @@
 
                             <!-- Acciones generales de la rúbrica -->
                             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                <span id="alerta_porcentaje" class="text-sm text-yellow" style="margin-right: 6px; font-weight: 500;"></span>
                                 <?php if (!$corte_calificado && !empty($rubrica_actual)): ?>
                                     <button type="button" class="btn btn-danger" id="btn_eliminar_rubrica_actual" style="font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
                                         <i class="fa fa-trash"></i> Eliminar Rúbrica
@@ -539,8 +547,20 @@ function recalcularTotales() {
     var barra = document.getElementById("barra_progreso");
     var alerta = document.getElementById("alerta_porcentaje");
     var btnGuardar = document.getElementById("btn_guardar_rubrica");
+    var tfootTotal = document.getElementById("tfoot_total_porcentaje");
 
     if (txtTotal) txtTotal.textContent = total + "%";
+
+    if (tfootTotal) {
+        tfootTotal.textContent = total + "%";
+        if (total === 100) {
+            tfootTotal.style.color = "#00a65a";
+        } else if (total > 100) {
+            tfootTotal.style.color = "#dd4b39";
+        } else {
+            tfootTotal.style.color = "#f39c12";
+        }
+    }
 
     if (barra) {
         barra.style.width = Math.min(total, 100) + "%";
@@ -555,25 +575,34 @@ function recalcularTotales() {
         }
     }
 
-    if (alerta && btnGuardar) {
+    // Condición de validez: corte no calificado, suma exactamente 100% y todas las actividades tienen datos válidos
+    var ponderacionCompleta = (total === 100 && completas === rows.length && rows.length > 0);
+
+    // Habilitación autónoma del botón Guardar Rúbrica (funciona exista o no la barra o la alerta)
+    if (btnGuardar) {
+        if (corteCalificado) {
+            btnGuardar.disabled = true;
+        } else {
+            btnGuardar.disabled = !ponderacionCompleta;
+        }
+    }
+
+    // Actualizar mensaje de alerta si existe en el DOM
+    if (alerta) {
         if (corteCalificado) {
             alerta.className = "text-sm text-yellow";
             alerta.innerHTML = '<i class="fa fa-lock"></i> Rúbrica calificada y cerrada. Modo solo lectura.';
-            btnGuardar.disabled = true;
-        } else if (total === 100 && completas === rows.length && rows.length > 0) {
+        } else if (ponderacionCompleta) {
             alerta.className = "text-sm text-green";
-            alerta.innerHTML = '<i class="fa fa-check-circle"></i> Ponderacion completa (100%). Lista para guardar.';
-            btnGuardar.disabled = false;
+            alerta.innerHTML = '<i class="fa fa-check-circle"></i> Ponderación completa (100%). Lista para guardar.';
         } else if (total > 100) {
             var exceso = Math.round((total - 100) * 100) / 100;
             alerta.className = "text-sm text-red";
-            alerta.innerHTML = '<i class="fa fa-times-circle"></i> El total supera el 100% por ' + exceso + '%. Debe corregir los valores.';
-            btnGuardar.disabled = true;
+            alerta.innerHTML = '<i class="fa fa-times-circle"></i> El total supera el 100% por ' + exceso + '%.';
         } else {
             var falta = Math.round((100 - total) * 100) / 100;
             alerta.className = "text-sm text-yellow";
-            alerta.innerHTML = '<i class="fa fa-info-circle"></i> Faltan ' + falta + '% para completar el 100%.';
-            btnGuardar.disabled = true;
+            alerta.innerHTML = '<i class="fa fa-info-circle"></i> Falta ' + falta + '% para completar el 100%.';
         }
     }
 }
