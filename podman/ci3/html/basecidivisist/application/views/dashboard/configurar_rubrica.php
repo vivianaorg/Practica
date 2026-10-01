@@ -14,16 +14,16 @@
                 </li>
                 <li class="pull-right" style="padding: 6px 10px;">
                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                        <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>" class="btn btn-default btn-sm" style="border-radius: 4px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+                        <a href="<?php echo site_url('moodle'); ?>" class="btn btn-default btn-sm" style="border-radius: 4px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
                             <i class="fa fa-arrow-left text-muted"></i> Volver a cursos
                         </a>
-                        <a href="<?php echo site_url('dashboard/actividades_moodle/' . $course_id); ?>" class="btn btn-default btn-sm" style="border-radius: 4px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+                        <a href="<?php echo site_url('moodle/actividades/' . $course_id); ?>" class="btn btn-default btn-sm" style="border-radius: 4px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
                             <i class="fa fa-list text-primary"></i> Actividades
                         </a>
-                        <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $tipo_previo); ?>" class="btn btn-warning btn-sm" style="border-radius: 4px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+                        <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id . '/' . $tipo_previo); ?>" class="btn btn-warning btn-sm" style="border-radius: 4px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
                             <i class="fa fa-calculator"></i> Calificar Corte
                         </a>
-                        <a href="<?php echo site_url('dashboard/calificaciones/' . $course_id); ?>" class="btn btn-success btn-sm" style="border-radius: 4px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+                        <a href="<?php echo site_url('calificaciones/' . $course_id); ?>" class="btn btn-success btn-sm" style="border-radius: 4px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
                             <i class="fa fa-graduation-cap"></i> Calificaciones
                         </a>
                     </div>
@@ -153,7 +153,7 @@
                                                         <button type="button" class="btn btn-primary btn-xs" onclick="confirmarDesbloquearCorte('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
                                                             <i class="fa fa-unlock"></i> Desbloquear
                                                         </button>
-                                                        <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-default btn-xs">
+                                                        <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-default btn-xs">
                                                             <i class="fa fa-eye"></i> Ver Calificaciones
                                                         </a>
                                                     <?php else: ?>
@@ -161,7 +161,7 @@
                                                             <i class="fa fa-pencil"></i> Modificar Rubrica
                                                         </button>
                                                         <?php if ($estaCompleto): ?>
-                                                            <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-success btn-xs">
+                                                            <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id . '/' . $claveCorte); ?>" class="btn btn-success btn-xs">
                                                                 <i class="fa fa-calculator"></i> Calificar Corte
                                                             </a>
                                                         <?php endif; ?>
@@ -324,7 +324,7 @@ document.addEventListener("DOMContentLoaded", function() {
     var selectCorte = document.getElementById("select_corte");
     if (selectCorte) {
         selectCorte.addEventListener("change", function() {
-            var urlBase = "<?php echo site_url('dashboard/configurar_rubrica/' . $course_id); ?>";
+            var urlBase = "<?php echo site_url('calificaciones/configurar_rubrica/' . $course_id); ?>";
             window.location.href = urlBase + "/" + this.value + "#tab_configurar";
         });
     }
@@ -399,7 +399,7 @@ function irAConfigurarCorte(corte) {
         var tabLink = document.querySelector('a[href="#tab_configurar"]');
         if (tabLink) tabLink.click();
     } else {
-        var urlBase = "<?php echo site_url('dashboard/configurar_rubrica/' . $course_id); ?>";
+        var urlBase = "<?php echo site_url('calificaciones/configurar_rubrica/' . $course_id); ?>";
         window.location.href = urlBase + "/" + corte + "#tab_configurar";
     }
 }
@@ -667,7 +667,7 @@ function guardarRubrica() {
     formData.append("tipo_previo", corte);
     formData.append("items", JSON.stringify(items));
 
-    fetch("<?php echo site_url('dashboard/guardar_rubrica_ajax'); ?>", {
+    fetch("<?php echo site_url('calificaciones/guardar_rubrica_ajax'); ?>", {
         method: "POST",
         body: formData
     })
@@ -729,7 +729,7 @@ function ejecutarEliminarRubrica(corte) {
     formData.append("semestre", semestre);
     formData.append("tipo_previo", corte);
 
-    fetch("<?php echo site_url('dashboard/eliminar_rubrica_ajax'); ?>", {
+    fetch("<?php echo site_url('calificaciones/eliminar_rubrica_ajax'); ?>", {
         method: "POST",
         body: formData
     })
@@ -774,7 +774,7 @@ function ejecutarDesbloquearCorte(corte) {
     formData.append("semestre", semestre);
     formData.append("tipo_previo", corte);
 
-    fetch("<?php echo site_url('dashboard/desbloquear_corte_ajax'); ?>", {
+    fetch("<?php echo site_url('calificaciones/desbloquear_corte_ajax'); ?>", {
         method: "POST",
         body: formData
     })

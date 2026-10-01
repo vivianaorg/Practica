@@ -21,16 +21,16 @@
                                 <i class="fa fa-book"></i>
                             </div>
                             <div style="background: rgba(0,0,0,0.15); padding: 7px 10px; text-align: center; font-size: 11px;">
-                                <a href="<?php echo site_url('dashboard/actividades_moodle/' . $curso['id']); ?>" style="color: #fff; margin-right: 8px;">
+                                <a href="<?php echo site_url('moodle/actividades/' . $curso['id']); ?>" style="color: #fff; margin-right: 8px;">
                                     Actividades <i class="fa fa-list"></i>
                                 </a>
-                                <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $curso['id']); ?>" style="color: #fff; margin-right: 8px;">
+                                <a href="<?php echo site_url('calificaciones/configurar_rubrica/' . $curso['id']); ?>" style="color: #fff; margin-right: 8px;">
                                     Rúbrica <i class="fa fa-sliders"></i>
                                 </a>
-                                <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $curso['id']); ?>" style="color: #fff; margin-right: 8px;">
+                                <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $curso['id']); ?>" style="color: #fff; margin-right: 8px;">
                                     Calificar <i class="fa fa-calculator"></i>
                                 </a>
-                                <a href="<?php echo site_url('dashboard/calificaciones/' . $curso['id']); ?>" style="color: #fff; font-weight: bold; background: rgba(0,0,0,0.25); padding: 3px 6px; border-radius: 3px;">
+                                <a href="<?php echo site_url('calificaciones/' . $curso['id']); ?>" style="color: #fff; font-weight: bold; background: rgba(0,0,0,0.25); padding: 3px 6px; border-radius: 3px;">
                                     Calificaciones <i class="fa fa-graduation-cap"></i>
                                 </a>
                             </div>

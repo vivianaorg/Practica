@@ -7,16 +7,16 @@
                 </h3>
             </div>
             <div class="col-md-6 text-right">
-                <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>" class="btn btn-default btn-sm">
+                <a href="<?php echo site_url('moodle'); ?>" class="btn btn-default btn-sm">
                     <i class="fa fa-arrow-left"></i> Volver a Cursos
                 </a>
-                <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $course_id); ?>" class="btn btn-info btn-sm" style="margin-left: 3px;">
+                <a href="<?php echo site_url('calificaciones/configurar_rubrica/' . $course_id); ?>" class="btn btn-info btn-sm" style="margin-left: 3px;">
                     <i class="fa fa-sliders"></i> Rúbrica
                 </a>
-                <a href="<?php echo site_url('dashboard/calificar_rubrica/' . $course_id); ?>" class="btn btn-warning btn-sm" style="margin-left: 3px;">
+                <a href="<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id); ?>" class="btn btn-warning btn-sm" style="margin-left: 3px;">
                     <i class="fa fa-calculator"></i> Calificar
                 </a>
-                <a href="<?php echo site_url('dashboard/calificaciones/' . $course_id); ?>" class="btn btn-success btn-sm" style="margin-left: 3px; font-weight: bold;">
+                <a href="<?php echo site_url('calificaciones/' . $course_id); ?>" class="btn btn-success btn-sm" style="margin-left: 3px; font-weight: bold;">
                     <i class="fa fa-graduation-cap"></i> Calificaciones
                 </a>
             </div>

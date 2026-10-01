@@ -56,3 +56,47 @@ $route['translate_uri_dashes'] = FALSE;
 $route['notification/pag/(:num)'] = 'notification/index/$1';
 $route['login'] = 'sesion/login';
 $route['logout'] = 'sesion/logout';
+
+// Rutas amigables Moodle
+$route['moodle'] = 'moodle/cursos';
+$route['moodle/cursos'] = 'moodle/cursos';
+$route['moodle/actividades'] = 'moodle/actividades';
+$route['moodle/actividades/(:any)'] = 'moodle/actividades/$1';
+
+// Rutas amigables Calificaciones y Rubricas
+$route['calificaciones'] = 'calificaciones/index';
+$route['calificaciones/(:num)'] = 'calificaciones/index/$1';
+$route['calificaciones/configurar_rubrica'] = 'calificaciones/configurar_rubrica';
+$route['calificaciones/configurar_rubrica/(:any)'] = 'calificaciones/configurar_rubrica/$1';
+$route['calificaciones/configurar_rubrica/(:any)/(:any)'] = 'calificaciones/configurar_rubrica/$1/$2';
+$route['calificaciones/calificar_rubrica'] = 'calificaciones/calificar_rubrica';
+$route['calificaciones/calificar_rubrica/(:any)'] = 'calificaciones/calificar_rubrica/$1';
+$route['calificaciones/calificar_rubrica/(:any)/(:any)'] = 'calificaciones/calificar_rubrica/$1/$2';
+
+// Retrocompatibilidad con URLs anteriores bajo dashboard/
+$route['dashboard/cursos_moodle'] = 'moodle/cursos';
+$route['dashboard/actividades_moodle'] = 'moodle/actividades';
+$route['dashboard/actividades_moodle/(:any)'] = 'moodle/actividades/$1';
+
+$route['dashboard/configurar_rubrica'] = 'calificaciones/configurar_rubrica';
+$route['dashboard/configurar_rubrica/(:any)'] = 'calificaciones/configurar_rubrica/$1';
+$route['dashboard/configurar_rubrica/(:any)/(:any)'] = 'calificaciones/configurar_rubrica/$1/$2';
+$route['dashboard/guardar_rubrica_ajax'] = 'calificaciones/guardar_rubrica_ajax';
+$route['dashboard/eliminar_rubrica_ajax'] = 'calificaciones/eliminar_rubrica_ajax';
+$route['dashboard/desbloquear_corte_ajax'] = 'calificaciones/desbloquear_corte_ajax';
+
+$route['dashboard/calificar_rubrica'] = 'calificaciones/calificar_rubrica';
+$route['dashboard/calificar_rubrica/(:any)'] = 'calificaciones/calificar_rubrica/$1';
+$route['dashboard/calificar_rubrica/(:any)/(:any)'] = 'calificaciones/calificar_rubrica/$1/$2';
+$route['dashboard/guardar_calificaciones_corte_ajax'] = 'calificaciones/guardar_calificaciones_corte_ajax';
+
+$route['dashboard/calificaciones'] = 'calificaciones/index';
+$route['dashboard/calificaciones/(:any)'] = 'calificaciones/index/$1';
+
+$route['dashboard/test_oracle'] = 'diagnostico/test_oracle';
+$route['dashboard/resumen_esquemas'] = 'diagnostico/resumen_esquemas';
+$route['dashboard/dump_esquema'] = 'diagnostico/dump_esquema';
+$route['dashboard/dump_esquema/(:any)'] = 'diagnostico/dump_esquema/$1';
+$route['dashboard/ver_grupo_cargado'] = 'diagnostico/ver_grupo_cargado';
+$route['dashboard/ver_grupo_cargado/(:any)'] = 'diagnostico/ver_grupo_cargado/$1';
+

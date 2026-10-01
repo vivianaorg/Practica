@@ -25,16 +25,16 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                 </div>
             </div>
             <div class="col-md-6 text-right">
-                <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>" class="btn btn-default btn-sm">
+                <a href="<?php echo site_url('moodle'); ?>" class="btn btn-default btn-sm">
                     <i class="fa fa-arrow-left"></i> Volver a Cursos
                 </a>
-                <a href="<?php echo site_url('dashboard/actividades_moodle/' . $course_id); ?>" class="btn btn-default btn-sm" style="margin-left: 3px;">
+                <a href="<?php echo site_url('moodle/actividades/' . $course_id); ?>" class="btn btn-default btn-sm" style="margin-left: 3px;">
                     <i class="fa fa-list"></i> Actividades
                 </a>
-                <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $course_id . '/' . $tipo_previo . '#tab_configurar'); ?>" class="btn btn-info btn-sm" style="margin-left: 3px;">
+                <a href="<?php echo site_url('calificaciones/configurar_rubrica/' . $course_id . '/' . $tipo_previo . '#tab_configurar'); ?>" class="btn btn-info btn-sm" style="margin-left: 3px;">
                     <i class="fa fa-sliders"></i> Rúbrica
                 </a>
-                <a href="<?php echo site_url('dashboard/calificaciones/' . $course_id); ?>" class="btn btn-success btn-sm" style="margin-left: 3px; font-weight: bold;">
+                <a href="<?php echo site_url('calificaciones/' . $course_id); ?>" class="btn btn-success btn-sm" style="margin-left: 3px; font-weight: bold;">
                     <i class="fa fa-graduation-cap"></i> Calificaciones
                 </a>
             </div>
@@ -67,7 +67,7 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                 <h4><i class="fa fa-warning"></i> Rúbrica no disponible o incompleta para <?php echo htmlspecialchars($nombreCorteActual); ?></h4>
                 <p>Para poder calcular las subnotas ponderadas a partir de Moodle, primero debes definir las actividades y porcentajes para este corte sumando exactamente 100%.</p>
                 <p style="margin-top: 15px;">
-                    <a href="<?php echo site_url('dashboard/configurar_rubrica/' . $course_id . '/' . $tipo_previo . '#tab_configurar'); ?>" class="btn btn-warning">
+                    <a href="<?php echo site_url('calificaciones/configurar_rubrica/' . $course_id . '/' . $tipo_previo . '#tab_configurar'); ?>" class="btn btn-warning">
                         <i class="fa fa-sliders"></i> Configurar Rúbrica Ahora
                     </a>
                 </p>

@@ -6,8 +6,8 @@ var GRUPO            = "<?php echo isset($grupo) ? $grupo : ''; ?>";
 var SEMESTRE         = "<?php echo isset($semestre) ? $semestre : ''; ?>";
 var TIPO_PREVIO      = "<?php echo isset($tipo_previo) ? $tipo_previo : ''; ?>";
 var CORTE_CALIFICADO = <?php echo ($corte_calificado ? 'true' : 'false'); ?>;
-var URL_GUARDAR_AJAX = "<?php echo site_url('dashboard/guardar_calificaciones_corte_ajax'); ?>";
-var URL_CAMBIO_CORTE = "<?php echo site_url('dashboard/calificar_rubrica/' . $course_id); ?>";
+var URL_GUARDAR_AJAX = "<?php echo site_url('calificaciones/guardar_calificaciones_corte_ajax'); ?>";
+var URL_CAMBIO_CORTE = "<?php echo site_url('calificaciones/calificar_rubrica/' . $course_id); ?>";
 
 document.addEventListener("DOMContentLoaded", function() {
     var selectCorte = document.getElementById("select_corte_evaluar");
@@ -438,7 +438,7 @@ function ejecutarDesbloquearCorteCalificar() {
     formData.append("semestre", SEMESTRE);
     formData.append("tipo_previo", TIPO_PREVIO);
 
-    fetch("<?php echo site_url('dashboard/desbloquear_corte_ajax'); ?>", {
+    fetch("<?php echo site_url('calificaciones/desbloquear_corte_ajax'); ?>", {
         method: "POST",
         body: formData
     })

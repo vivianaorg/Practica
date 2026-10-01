@@ -44,7 +44,7 @@
                         <a href="<?php echo site_url('dashboard/item4'); ?>"> Item navegación 4 <small class="label pull-right bg-green">nuevo!</small> </a>
                     </li>
                     <li class="hvr-icon-back2 <?php echo ($item_sidebar_active == "actividades_moodle") ? "active" : ""; ?>">
-                        <a href="<?php echo site_url('dashboard/cursos_moodle'); ?>"> Cursos Moodle <small class="label pull-right bg-blue">NPLad</small> </a>
+                        <a href="<?php echo site_url('moodle'); ?>"> Cursos Moodle <small class="label pull-right bg-blue">NPLad</small> </a>
                     </li>
                 </ul>
             </li>            
