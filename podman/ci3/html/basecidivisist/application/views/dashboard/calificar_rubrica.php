@@ -269,6 +269,31 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
     </div>
 </div>
 
+<div class="modal fade" id="modal_app_dialog" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 480px; margin-top: 10%;">
+        <div class="modal-content" style="border-radius: 6px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); border: none; overflow: hidden;">
+            <div class="modal-header" id="modal_app_dialog_header" style="padding: 12px 16px; color: #fff; background-color: #3c8dbc;">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #fff; opacity: 0.85;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="modal_app_dialog_title" style="font-size: 16px; font-weight: 600;">
+                    <i id="modal_app_dialog_icon" class="fa fa-info-circle"></i> <span id="modal_app_dialog_title_txt">Mensaje</span>
+                </h4>
+            </div>
+            <div class="modal-body" id="modal_app_dialog_body" style="padding: 20px; font-size: 14px; color: #333; line-height: 1.5;">
+            </div>
+            <div class="modal-footer" id="modal_app_dialog_footer" style="padding: 10px 16px; background-color: #f9f9f9; border-top: 1px solid #eee;">
+                <button type="button" class="btn btn-default btn-sm" id="modal_app_btn_cancelar" data-dismiss="modal">
+                    <i class="fa fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" id="modal_app_btn_confirmar">
+                    <i class="fa fa-check"></i> Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 var ESTUDIANTES_DATA = <?php echo json_encode(isset($estudiantes) ? $estudiantes : array()); ?>;
 var COD_PROFESOR     = "<?php echo isset($cod_profesor) ? $cod_profesor : ''; ?>";
@@ -487,11 +512,24 @@ function abrirModalDesglose(idx) {
 function guardarCalificaciones() {
     if (CORTE_CALIFICADO) return;
 
-    var advertencia = "ATENCIÓN: Al guardar las calificaciones de este corte, la rúbrica y las notas quedarán registradas definitivamente y pasarán a modo INHABILITADO, impidiendo futuras modificaciones.\n\n¿Está seguro de que desea confirmar y guardar las calificaciones?";
-    if (!window.confirm(advertencia)) {
-        return;
-    }
+    var advertencia = "<strong>ATENCIÓN:</strong> Al guardar las calificaciones de este corte, la rúbrica y las notas quedarán registradas definitivamente y pasarán a modo <strong>INHABILITADO</strong>, impidiendo futuras modificaciones.<br><br>¿Está seguro de que desea confirmar y guardar las calificaciones?";
 
+    mostrarConfirmacionApp(
+        advertencia,
+        function() {
+            ejecutarGuardarCalificaciones();
+        },
+        {
+            tipo: "warning",
+            titulo: "Confirmar Calificaciones",
+            btnTexto: "Confirmar y Guardar",
+            btnClase: "btn-success",
+            icono: "fa-save"
+        }
+    );
+}
+
+function ejecutarGuardarCalificaciones() {
     var btn = document.getElementById("btn_guardar_calificaciones");
     var msgDiv = document.getElementById("mensaje_guardado");
 
@@ -530,15 +568,15 @@ function guardarCalificaciones() {
             if (data.exito) {
                 msgDiv.className = "alert alert-success";
                 msgDiv.innerHTML = '<i class="fa fa-check"></i> ' + data.mensaje;
-                setTimeout(function() {
+                mostrarAlertaApp(data.mensaje, "success", "Calificaciones Guardadas", function() {
                     window.location.reload();
-                }, 1000);
+                });
             } else {
                 msgDiv.className = "alert alert-danger";
                 msgDiv.innerHTML = '<i class="fa fa-exclamation-triangle"></i> ' + data.mensaje;
+                mostrarAlertaApp(data.mensaje, "danger", "Error al Guardar");
             }
         }
-
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-save"></i> Guardar Calificaciones'; }
         window.scrollTo({ top: 0, behavior: "smooth" });
     })
@@ -548,16 +586,28 @@ function guardarCalificaciones() {
             msgDiv.className = "alert alert-danger";
             msgDiv.innerHTML = '<i class="fa fa-exclamation-triangle"></i> Error de comunicacion con el servidor: ' + err;
         }
+        mostrarAlertaApp("Error de comunicación con el servidor: " + err, "danger", "Error");
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-save"></i> Guardar Calificaciones'; }
     });
 }
 
 function confirmarDesbloquearCorteCalificar() {
-    var advertencia = "¿Está seguro de que desea desbloquear este corte? Se anularán las calificaciones guardadas de este corte y volverá a quedar habilitado para recalificar o modificar la rúbrica.";
-    if (!window.confirm(advertencia)) {
-        return;
-    }
+    mostrarConfirmacionApp(
+        "¿Está seguro de que desea desbloquear este corte?<br><br>Se anularán las calificaciones guardadas de este corte y volverá a quedar habilitado para recalificar o modificar la rúbrica.",
+        function() {
+            ejecutarDesbloquearCorteCalificar();
+        },
+        {
+            tipo: "warning",
+            titulo: "Desbloquear Calificaciones",
+            btnTexto: "Desbloquear Corte",
+            btnClase: "btn-warning",
+            icono: "fa-unlock"
+        }
+    );
+}
 
+function ejecutarDesbloquearCorteCalificar() {
     var formData = new FormData();
     formData.append("course_id", <?php echo (int)$course_id; ?>);
     formData.append("cod_profesor", COD_PROFESOR);
@@ -573,14 +623,140 @@ function confirmarDesbloquearCorteCalificar() {
     .then(function(res) { return res.json(); })
     .then(function(data) {
         if (data.exito) {
-            alert(data.mensaje);
-            window.location.reload();
+            mostrarAlertaApp(data.mensaje, "success", "Corte Desbloqueado", function() {
+                window.location.reload();
+            });
         } else {
-            alert("Error: " + data.mensaje);
+            mostrarAlertaApp(data.mensaje, "danger", "Error al Desbloquear");
         }
     })
     .catch(function(err) {
-        alert("Error de comunicación al intentar desbloquear el corte.");
+        mostrarAlertaApp("Error de comunicación al intentar desbloquear el corte.", "danger", "Error");
     });
+}
+
+var _modalAppCallbackConfirmar = null;
+var _modalAppCallbackCerrar = null;
+
+function mostrarAlertaApp(mensaje, tipo, titulo, onCerrar) {
+    tipo = tipo || "info";
+    titulo = titulo || (tipo === "danger" ? "Error" : (tipo === "warning" ? "Atención" : (tipo === "success" ? "Operación Exitosa" : "Información")));
+    _modalAppCallbackCerrar = onCerrar || null;
+
+    var header = document.getElementById("modal_app_dialog_header");
+    var titleTxt = document.getElementById("modal_app_dialog_title_txt");
+    var icon = document.getElementById("modal_app_dialog_icon");
+    var body = document.getElementById("modal_app_dialog_body");
+    var btnCancelar = document.getElementById("modal_app_btn_cancelar");
+    var btnConfirmar = document.getElementById("modal_app_btn_confirmar");
+
+    var bgColors = {
+        danger: "#dd4b39",
+        warning: "#f39c12",
+        success: "#00a65a",
+        info: "#3c8dbc"
+    };
+    var icons = {
+        danger: "fa fa-times-circle",
+        warning: "fa fa-exclamation-triangle",
+        success: "fa fa-check-circle",
+        info: "fa fa-info-circle"
+    };
+
+    if (header) header.style.backgroundColor = bgColors[tipo] || "#3c8dbc";
+    if (titleTxt) titleTxt.innerText = titulo;
+    if (icon) icon.className = icons[tipo] || "fa fa-info-circle";
+    if (body) body.innerHTML = mensaje;
+
+    if (btnCancelar) btnCancelar.style.display = "none";
+    if (btnConfirmar) {
+        btnConfirmar.className = "btn btn-primary btn-sm";
+        btnConfirmar.innerHTML = '<i class="fa fa-check"></i> Aceptar';
+        btnConfirmar.onclick = function() {
+            cerrarModalApp();
+            if (typeof _modalAppCallbackCerrar === "function") {
+                _modalAppCallbackCerrar();
+                _modalAppCallbackCerrar = null;
+            }
+        };
+    }
+
+    abrirModalApp();
+}
+
+function mostrarConfirmacionApp(mensaje, onConfirmar, opciones) {
+    opciones = opciones || {};
+    var tipo = opciones.tipo || "warning";
+    var titulo = opciones.titulo || "Confirmar Acción";
+    var btnTexto = opciones.btnTexto || "Confirmar";
+    var btnClase = opciones.btnClase || "btn-primary";
+    var iconoClase = opciones.icono || (tipo === "danger" ? "fa-trash" : (tipo === "warning" ? "fa-exclamation-triangle" : "fa-check"));
+
+    _modalAppCallbackConfirmar = onConfirmar || null;
+    _modalAppCallbackCerrar = null;
+
+    var header = document.getElementById("modal_app_dialog_header");
+    var titleTxt = document.getElementById("modal_app_dialog_title_txt");
+    var icon = document.getElementById("modal_app_dialog_icon");
+    var body = document.getElementById("modal_app_dialog_body");
+    var btnCancelar = document.getElementById("modal_app_btn_cancelar");
+    var btnConfirmar = document.getElementById("modal_app_btn_confirmar");
+
+    var bgColors = {
+        danger: "#dd4b39",
+        warning: "#f39c12",
+        success: "#00a65a",
+        info: "#3c8dbc"
+    };
+    var icons = {
+        danger: "fa fa-exclamation-circle",
+        warning: "fa fa-exclamation-triangle",
+        success: "fa fa-check-circle",
+        info: "fa fa-info-circle"
+    };
+
+    if (header) header.style.backgroundColor = bgColors[tipo] || "#3c8dbc";
+    if (titleTxt) titleTxt.innerText = titulo;
+    if (icon) icon.className = "fa " + iconoClase;
+    if (body) body.innerHTML = mensaje;
+
+    if (btnCancelar) btnCancelar.style.display = "inline-block";
+    if (btnConfirmar) {
+        btnConfirmar.className = "btn btn-sm " + btnClase;
+        btnConfirmar.innerHTML = '<i class="fa fa-check"></i> ' + btnTexto;
+        btnConfirmar.onclick = function() {
+            cerrarModalApp();
+            if (typeof _modalAppCallbackConfirmar === "function") {
+                _modalAppCallbackConfirmar();
+                _modalAppCallbackConfirmar = null;
+            }
+        };
+    }
+
+    abrirModalApp();
+}
+
+function abrirModalApp() {
+    if (typeof $ !== "undefined" && $("#modal_app_dialog").modal) {
+        $("#modal_app_dialog").modal("show");
+    } else {
+        var m = document.getElementById("modal_app_dialog");
+        if (m) {
+            m.style.display = "block";
+            m.className = "modal fade in";
+        }
+    }
+}
+
+function cerrarModalApp() {
+    if (typeof $ !== "undefined" && $("#modal_app_dialog").modal) {
+        $("#modal_app_dialog").modal("hide");
+    } else {
+        var m = document.getElementById("modal_app_dialog");
+        if (m) {
+            m.style.display = "none";
+            m.className = "modal fade";
+        }
+    }
 }
 </script>
