@@ -632,7 +632,16 @@ function guardarRubrica() {
         method: "POST",
         body: formData
     })
-    .then(function(res) { return res.json(); })
+    .then(function(res) {
+        return res.text().then(function(text) {
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error("Respuesta no JSON del servidor:", text);
+                throw new Error("Respuesta inválida del servidor: " + (text.substring(0, 100)));
+            }
+        });
+    })
     .then(function(data) {
         var msgDiv = document.getElementById("mensaje_ajax");
         msgDiv.style.display = "block";
@@ -648,19 +657,20 @@ function guardarRubrica() {
             msgDiv.innerHTML = '<i class="fa fa-exclamation-triangle"></i> ' + data.mensaje;
             mostrarAlertaApp(data.mensaje, "danger", "Error al Guardar");
             btnGuardar.disabled = false;
-            btnGuardar.innerHTML = '<i class="fa fa-save"></i> Guardar Rubrica';
+            btnGuardar.innerHTML = '<i class="fa fa-save"></i> Guardar Rúbrica';
         }
         window.scrollTo({ top: 0, behavior: "smooth" });
     })
     .catch(function(err) {
+        console.error("Error al guardar rúbrica:", err);
         var msgDiv = document.getElementById("mensaje_ajax");
         msgDiv.style.display = "block";
         msgDiv.className = "alert alert-danger";
-        msgDiv.innerHTML = '<i class="fa fa-times"></i> Error de comunicacion con el servidor.';
-        mostrarAlertaApp("Error de comunicación con el servidor.", "danger", "Error");
+        msgDiv.innerHTML = '<i class="fa fa-times"></i> Error al procesar la solicitud.';
+        mostrarAlertaApp("Error al comunicarse con el servidor: " + err.message, "danger", "Error");
 
         btnGuardar.disabled = false;
-        btnGuardar.innerHTML = '<i class="fa fa-save"></i> Guardar Rubrica';
+        btnGuardar.innerHTML = '<i class="fa fa-save"></i> Guardar Rúbrica';
     });
 }
 

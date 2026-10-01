@@ -67,13 +67,19 @@ $route['moodle/actividades/(:any)'] = 'moodle/actividades/$1';
 $route['calificaciones'] = 'calificaciones/index';
 $route['calificaciones/index'] = 'calificaciones/index';
 $route['calificaciones/index/(:any)'] = 'calificaciones/index/$1';
+// Endpoints AJAX para Calificaciones y Rúbricas
+$route['calificaciones/guardar_rubrica_ajax'] = 'calificaciones/guardar_rubrica_ajax';
+$route['calificaciones/eliminar_rubrica_ajax'] = 'calificaciones/eliminar_rubrica_ajax';
+$route['calificaciones/desbloquear_corte_ajax'] = 'calificaciones/desbloquear_corte_ajax';
+$route['calificaciones/guardar_calificaciones_corte_ajax'] = 'calificaciones/guardar_calificaciones_corte_ajax';
+
 $route['calificaciones/configurar_rubrica'] = 'calificaciones/configurar_rubrica';
 $route['calificaciones/configurar_rubrica/(:any)'] = 'calificaciones/configurar_rubrica/$1';
 $route['calificaciones/configurar_rubrica/(:any)/(:any)'] = 'calificaciones/configurar_rubrica/$1/$2';
 $route['calificaciones/calificar_rubrica'] = 'calificaciones/calificar_rubrica';
 $route['calificaciones/calificar_rubrica/(:any)'] = 'calificaciones/calificar_rubrica/$1';
 $route['calificaciones/calificar_rubrica/(:any)/(:any)'] = 'calificaciones/calificar_rubrica/$1/$2';
-$route['calificaciones/(:any)'] = 'calificaciones/index/$1';
+$route['calificaciones/(:num)'] = 'calificaciones/index/$1';
 
 // Retrocompatibilidad con URLs anteriores bajo dashboard/
 $route['dashboard/cursos_moodle'] = 'moodle/cursos';
