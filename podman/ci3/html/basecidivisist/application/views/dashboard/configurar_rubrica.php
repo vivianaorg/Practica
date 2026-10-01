@@ -115,13 +115,18 @@
                                                 </thead>
                                                 <tbody>
                                                     <?php foreach ($itemsCorte as $it): ?>
+                                                        <?php $esItemManual = ((int)$it->ID_ACTIVIDAD_MOODLE === 0 || strtolower($it->TIPO_ACTIVIDAD) === 'manual'); ?>
                                                         <tr>
                                                             <td>
-                                                                <i class="fa fa-check-square-o text-green"></i> 
+                                                                <i class="fa <?php echo $esItemManual ? 'fa-pencil text-yellow' : 'fa-check-square-o text-green'; ?>"></i> 
                                                                 <?php echo htmlspecialchars($it->NOMBRE_ACTIVIDAD); ?>
                                                             </td>
                                                             <td style="text-align: center;">
-                                                                <span class="label label-info"><?php echo htmlspecialchars($it->TIPO_ACTIVIDAD ? $it->TIPO_ACTIVIDAD : 'moodle'); ?></span>
+                                                                <?php if ($esItemManual): ?>
+                                                                    <span class="label label-warning">manual</span>
+                                                                <?php else: ?>
+                                                                    <span class="label label-info"><?php echo htmlspecialchars($it->TIPO_ACTIVIDAD ? $it->TIPO_ACTIVIDAD : 'moodle'); ?></span>
+                                                                <?php endif; ?>
                                                             </td>
                                                             <td style="text-align: right; font-weight: bold;">
                                                                 <?php echo htmlspecialchars($it->PORCENTAJE); ?>%
@@ -179,98 +184,99 @@
                 <div class="tab-pane" id="tab_configurar">
 
                     <?php if (!$exito): ?>
-                        <div class="alert alert-danger">
-                            Error al consultar Moodle: <?php echo htmlspecialchars(isset($mensaje_moodle) ? $mensaje_moodle : 'Error desconocido'); ?>
+                        <div class="alert alert-warning">
+                            <i class="fa fa-exclamation-triangle"></i> No fue posible sincronizar con Moodle: <?php echo htmlspecialchars(isset($mensaje_moodle) ? $mensaje_moodle : 'Error desconocido'); ?>. Sin embargo, puede configurar actividades manuales.
                         </div>
-                    <?php else: ?>
-
-                        <?php if ($corte_calificado): ?>
-                            <div class="alert alert-warning" style="margin-bottom: 15px;">
-                                <div class="row">
-                                    <div class="col-md-8">
-                                        <i class="fa fa-lock"></i> <strong>Rúbrica Inhabilitada:</strong> Este corte ya fue calificado y cerrado. Para modificar o eliminar esta rúbrica, primero debes desbloquear el corte.
-                                    </div>
-                                    <div class="col-md-4 text-right">
-                                        <button type="button" class="btn btn-warning btn-sm" onclick="confirmarDesbloquearCorte('<?php echo $tipo_previo; ?>', '<?php echo htmlspecialchars($nombreCorteActual); ?>')">
-                                            <i class="fa fa-unlock"></i> Desbloquear Corte
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm" style="margin-left: 5px;" onclick="confirmarEliminarRubrica('<?php echo $tipo_previo; ?>', '<?php echo htmlspecialchars($nombreCorteActual); ?>')">
-                                            <i class="fa fa-trash"></i> Eliminar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Corte a Editar / Configurar:</label>
-                                    <select id="select_corte" class="form-control">
-                                        <option value="1" <?php echo ($tipo_previo == '1') ? 'selected' : ''; ?>>Primer Previo</option>
-                                        <option value="2" <?php echo ($tipo_previo == '2') ? 'selected' : ''; ?>>Segundo Previo</option>
-                                        <option value="3" <?php echo ($tipo_previo == '3') ? 'selected' : ''; ?>>Tercer Previo</option>
-                                        <option value="FINAL" <?php echo ($tipo_previo == 'FINAL') ? 'selected' : ''; ?>>Examen Final</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-8">
-                                <label>Ponderacion Actual (Total: <span id="total_porcentaje_txt">0%</span> / 100%):</label>
-                                <div class="progress progress-sm active" style="margin-top: 5px;">
-                                    <div id="barra_progreso" class="progress-bar progress-bar-yellow" role="progressbar" style="width: 0%"></div>
-                                </div>
-                                <div id="alerta_porcentaje" class="text-sm text-yellow">
-                                    <i class="fa fa-info-circle"></i> La suma de porcentajes debe ser exactamente 100%.
-                                </div>
-                            </div>
-                        </div>
-
-                        <hr style="margin-top: 5px; margin-bottom: 15px;">
-
-                        <div id="mensaje_ajax" style="display: none;"></div>
-
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped" id="tabla_rubrica">
-                                <thead>
-                                    <tr class="bg-gray-light">
-                                        <th style="width: 50px; text-align: center;">#</th>
-                                        <th>Actividad de Moodle</th>
-                                        <th style="width: 140px; text-align: center;">Tipo</th>
-                                        <th style="width: 160px; text-align: center;">Porcentaje (%)</th>
-                                        <th style="width: 60px; text-align: center;"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody_rubrica">
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="row" style="margin-top: 15px;">
-                            <div class="col-md-6">
-                                <button type="button" class="btn btn-default" id="btn_agregar_fila" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
-                                    <i class="fa fa-plus"></i> Agregar Actividad
-                                </button>
-                                <?php if (!$corte_calificado && !empty($rubrica_actual)): ?>
-                                    <button type="button" class="btn btn-danger" id="btn_eliminar_rubrica_actual" style="margin-left: 8px;">
-                                        <i class="fa fa-trash"></i> Eliminar Rúbrica
-                                    </button>
-                                <?php endif; ?>
-                            </div>
-                            <div class="col-md-6 text-right">
-                                <?php if ($corte_calificado): ?>
-                                    <button type="button" class="btn btn-default" id="btn_guardar_rubrica" disabled style="font-weight: 600;">
-                                        <i class="fa fa-lock"></i> Rúbrica Bloqueada
-                                    </button>
-                                <?php else: ?>
-                                    <button type="button" class="btn btn-success" id="btn_guardar_rubrica" disabled style="font-weight: 600;">
-                                        <i class="fa fa-save"></i> Guardar Rúbrica
-                                    </button>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-
                     <?php endif; ?>
+
+                    <?php if ($corte_calificado): ?>
+                        <div class="alert alert-warning" style="margin-bottom: 15px;">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <i class="fa fa-lock"></i> <strong>Rúbrica Inhabilitada:</strong> Este corte ya fue calificado y cerrado. Para modificar o eliminar esta rúbrica, primero debes desbloquear el corte.
+                                </div>
+                                <div class="col-md-4 text-right">
+                                    <button type="button" class="btn btn-warning btn-sm" onclick="confirmarDesbloquearCorte('<?php echo $tipo_previo; ?>', '<?php echo htmlspecialchars($nombreCorteActual); ?>')">
+                                        <i class="fa fa-unlock"></i> Desbloquear Corte
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm" style="margin-left: 5px;" onclick="confirmarEliminarRubrica('<?php echo $tipo_previo; ?>', '<?php echo htmlspecialchars($nombreCorteActual); ?>')">
+                                        <i class="fa fa-trash"></i> Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Corte a Editar / Configurar:</label>
+                                <select id="select_corte" class="form-control">
+                                    <option value="1" <?php echo ($tipo_previo == '1') ? 'selected' : ''; ?>>Primer Previo</option>
+                                    <option value="2" <?php echo ($tipo_previo == '2') ? 'selected' : ''; ?>>Segundo Previo</option>
+                                    <option value="3" <?php echo ($tipo_previo == '3') ? 'selected' : ''; ?>>Tercer Previo</option>
+                                    <option value="FINAL" <?php echo ($tipo_previo == 'FINAL') ? 'selected' : ''; ?>>Examen Final</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label>Ponderacion Actual (Total: <span id="total_porcentaje_txt">0%</span> / 100%):</label>
+                            <div class="progress progress-sm active" style="margin-top: 5px;">
+                                <div id="barra_progreso" class="progress-bar progress-bar-yellow" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div id="alerta_porcentaje" class="text-sm text-yellow">
+                                <i class="fa fa-info-circle"></i> La suma de porcentajes debe ser exactamente 100%.
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr style="margin-top: 5px; margin-bottom: 15px;">
+
+                    <div id="mensaje_ajax" style="display: none;"></div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped" id="tabla_rubrica">
+                            <thead>
+                                <tr class="bg-gray-light">
+                                    <th style="width: 50px; text-align: center;">#</th>
+                                    <th>Actividad</th>
+                                    <th style="width: 140px; text-align: center;">Tipo</th>
+                                    <th style="width: 160px; text-align: center;">Porcentaje (%)</th>
+                                    <th style="width: 60px; text-align: center;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody_rubrica">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="row" style="margin-top: 15px;">
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-default" id="btn_agregar_fila" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
+                                <i class="fa fa-plus"></i> Agregar Actividad Moodle
+                            </button>
+                            <button type="button" class="btn btn-warning" id="btn_agregar_manual" style="margin-left: 8px;" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
+                                <i class="fa fa-pencil"></i> Agregar Actividad Manual
+                            </button>
+                            <?php if (!$corte_calificado && !empty($rubrica_actual)): ?>
+                                <button type="button" class="btn btn-danger" id="btn_eliminar_rubrica_actual" style="margin-left: 8px;">
+                                    <i class="fa fa-trash"></i> Eliminar Rúbrica
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <?php if ($corte_calificado): ?>
+                                <button type="button" class="btn btn-default" id="btn_guardar_rubrica" disabled style="font-weight: 600;">
+                                    <i class="fa fa-lock"></i> Rúbrica Bloqueada
+                                </button>
+                            <?php else: ?>
+                                <button type="button" class="btn btn-success" id="btn_guardar_rubrica" disabled style="font-weight: 600;">
+                                    <i class="fa fa-save"></i> Guardar Rúbrica
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
 
                 </div>
             </div>
@@ -333,7 +339,14 @@ document.addEventListener("DOMContentLoaded", function() {
     var btnAgregar = document.getElementById("btn_agregar_fila");
     if (btnAgregar && !corteCalificado) {
         btnAgregar.addEventListener("click", function() {
-            agregarFilaRubrica(null, 0);
+            agregarFilaRubrica(null, 0, false, "");
+        });
+    }
+
+    var btnAgregarManual = document.getElementById("btn_agregar_manual");
+    if (btnAgregarManual && !corteCalificado) {
+        btnAgregarManual.addEventListener("click", function() {
+            agregarFilaRubrica(0, 0, true, "");
         });
     }
 
@@ -355,15 +368,30 @@ document.addEventListener("DOMContentLoaded", function() {
     if (rubricaGuardada && rubricaGuardada.length > 0) {
         for (var i = 0; i < rubricaGuardada.length; i++) {
             var r = rubricaGuardada[i];
-            agregarFilaRubrica(r.ID_ACTIVIDAD_MOODLE, r.PORCENTAJE);
+            var esMan = (parseInt(r.ID_ACTIVIDAD_MOODLE, 10) === 0 || (r.TIPO_ACTIVIDAD && String(r.TIPO_ACTIVIDAD).toLowerCase() === "manual"));
+            if (esMan) {
+                agregarFilaRubrica(0, r.PORCENTAJE, true, r.NOMBRE_ACTIVIDAD);
+            } else {
+                agregarFilaRubrica(r.ID_ACTIVIDAD_MOODLE, r.PORCENTAJE, false, "");
+            }
         }
     } else {
-        agregarFilaRubrica(null, 0);
+        agregarFilaRubrica(null, 0, false, "");
     }
 
     actualizarOpcionesDisponibles();
     recalcularTotales();
 });
+
+function escapeHtml(text) {
+    if (!text) return "";
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
 function irAConfigurarCorte(corte) {
     var selectCorte = document.getElementById("select_corte");
@@ -376,7 +404,7 @@ function irAConfigurarCorte(corte) {
     }
 }
 
-function agregarFilaRubrica(actividadSeleccionada, porcentaje) {
+function agregarFilaRubrica(actividadSeleccionada, porcentaje, esManual, nombreManual) {
     var tbody = document.getElementById("tbody_rubrica");
     if (!tbody) return;
 
@@ -384,32 +412,50 @@ function agregarFilaRubrica(actividadSeleccionada, porcentaje) {
     var tr = document.createElement("tr");
 
     var disAttr = corteCalificado ? ' disabled' : '';
-    var selectHtml = '<select class="form-control select-actividad" required onchange="onActividadChange(this)"' + disAttr + '>';
-    selectHtml += '<option value="">-- Seleccione una actividad --</option>';
+    esManual = (esManual === true || String(actividadSeleccionada) === "0");
 
-    for (var i = 0; i < actividadesDisponibles.length; i++) {
-        var act = actividadesDisponibles[i];
-        var selected = (actividadSeleccionada && String(act.id) === String(actividadSeleccionada)) ? 'selected' : '';
-        selectHtml += '<option value="' + act.id + '" data-tipo="' + act.tipo + '" data-nombre="' + act.nombre.replace(/"/g, '&quot;') + '" ' + selected + '>';
-        selectHtml += act.nombre + ' (' + act.tipo + ')';
-        selectHtml += '</option>';
-    }
-    selectHtml += '</select>';
+    var actividadHtml = "";
+    var tipoBadgeHtml = "";
 
-    var tipoActividad = "";
-    if (actividadSeleccionada) {
-        for (var k = 0; k < actividadesDisponibles.length; k++) {
-            if (String(actividadesDisponibles[k].id) === String(actividadSeleccionada)) {
-                tipoActividad = actividadesDisponibles[k].tipo;
-                break;
+    if (esManual) {
+        tr.setAttribute("data-manual", "1");
+        actividadHtml = 
+            '<div class="input-group">' +
+                '<span class="input-group-addon" style="background-color: #f39c12; color: #fff; border-color: #e08e0b;"><i class="fa fa-pencil"></i></span>' +
+                '<input type="text" class="form-control input-nombre-manual" placeholder="Nombre de la actividad manual (ej. Exposición, Taller en clase, Quiz)..." value="' + (nombreManual ? escapeHtml(nombreManual) : "") + '" oninput="recalcularTotales()"' + disAttr + ' required>' +
+            '</div>';
+        tipoBadgeHtml = '<span class="label label-warning badge-tipo"><i class="fa fa-pencil"></i> manual</span>';
+    } else {
+        tr.setAttribute("data-manual", "0");
+        var selectHtml = '<select class="form-control select-actividad" required onchange="onActividadChange(this)"' + disAttr + '>';
+        selectHtml += '<option value="">-- Seleccione una actividad de Moodle --</option>';
+
+        for (var i = 0; i < actividadesDisponibles.length; i++) {
+            var act = actividadesDisponibles[i];
+            var selected = (actividadSeleccionada && String(act.id) === String(actividadSeleccionada)) ? 'selected' : '';
+            selectHtml += '<option value="' + act.id + '" data-tipo="' + act.tipo + '" data-nombre="' + act.nombre.replace(/"/g, '&quot;') + '" ' + selected + '>';
+            selectHtml += act.nombre + ' (' + act.tipo + ')';
+            selectHtml += '</option>';
+        }
+        selectHtml += '</select>';
+        actividadHtml = selectHtml;
+
+        var tipoActividad = "";
+        if (actividadSeleccionada) {
+            for (var k = 0; k < actividadesDisponibles.length; k++) {
+                if (String(actividadesDisponibles[k].id) === String(actividadSeleccionada)) {
+                    tipoActividad = actividadesDisponibles[k].tipo;
+                    break;
+                }
             }
         }
+        tipoBadgeHtml = '<span class="label label-info badge-tipo">' + (tipoActividad || '-') + '</span>';
     }
 
     tr.innerHTML = 
         '<td style="text-align: center; vertical-align: middle;" class="row-num">' + index + '</td>' +
-        '<td>' + selectHtml + '</td>' +
-        '<td style="text-align: center; vertical-align: middle;"><span class="label label-info badge-tipo">' + (tipoActividad || '-') + '</span></td>' +
+        '<td>' + actividadHtml + '</td>' +
+        '<td style="text-align: center; vertical-align: middle;">' + tipoBadgeHtml + '</td>' +
         '<td>' +
             '<div class="input-group">' +
                 '<input type="number" class="form-control input-porcentaje text-right" min="1" max="100" step="0.5" value="' + (porcentaje > 0 ? porcentaje : '') + '" placeholder="0" oninput="recalcularTotales()" required' + disAttr + '>' +
@@ -486,18 +532,29 @@ function actualizarOpcionesDisponibles() {
 }
 
 function recalcularTotales() {
-    var inputs = document.querySelectorAll(".input-porcentaje");
-    var selects = document.querySelectorAll(".select-actividad");
+    var rows = document.querySelectorAll("#tbody_rubrica tr");
     var total = 0;
     var completas = 0;
 
-    for (var i = 0; i < inputs.length; i++) {
-        var val = parseFloat(inputs[i].value);
+    for (var i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        var inputPct = r.querySelector(".input-porcentaje");
+        var val = inputPct ? parseFloat(inputPct.value) : 0;
         if (!isNaN(val) && val > 0) {
             total += val;
         }
-        if (selects[i] && selects[i].value && !isNaN(val) && val > 0) {
-            completas++;
+
+        var isMan = (r.getAttribute("data-manual") === "1");
+        if (isMan) {
+            var inputNom = r.querySelector(".input-nombre-manual");
+            if (inputNom && inputNom.value.trim().length > 0 && !isNaN(val) && val > 0) {
+                completas++;
+            }
+        } else {
+            var selAct = r.querySelector(".select-actividad");
+            if (selAct && selAct.value && !isNaN(val) && val > 0) {
+                completas++;
+            }
         }
     }
 
@@ -528,7 +585,7 @@ function recalcularTotales() {
             alerta.className = "text-sm text-yellow";
             alerta.innerHTML = '<i class="fa fa-lock"></i> Rúbrica calificada y cerrada. Modo solo lectura.';
             btnGuardar.disabled = true;
-        } else if (total === 100 && completas === inputs.length && inputs.length > 0) {
+        } else if (total === 100 && completas === rows.length && rows.length > 0) {
             alerta.className = "text-sm text-green";
             alerta.innerHTML = '<i class="fa fa-check-circle"></i> Ponderacion completa (100%). Lista para guardar.';
             btnGuardar.disabled = false;
@@ -552,26 +609,48 @@ function guardarRubrica() {
     var items = [];
 
     for (var i = 0; i < rows.length; i++) {
-        var select = rows[i].querySelector(".select-actividad");
-        var input = rows[i].querySelector(".input-porcentaje");
+        var r = rows[i];
+        var inputPct = r.querySelector(".input-porcentaje");
+        if (!inputPct) continue;
+        var pct = parseFloat(inputPct.value);
 
-        if (!select || !input) continue;
+        var isMan = (r.getAttribute("data-manual") === "1");
+        if (isMan) {
+            var inputNom = r.querySelector(".input-nombre-manual");
+            var nomManual = inputNom ? inputNom.value.trim() : "";
+            if (!nomManual || isNaN(pct) || pct <= 0) {
+                mostrarAlertaApp("Todas las actividades manuales deben tener un nombre y un porcentaje mayor a 0.", "warning", "Datos Incompletos");
+                return;
+            }
+            items.push({
+                id_actividad_moodle: 0,
+                nombre_actividad: nomManual,
+                tipo_actividad: "manual",
+                porcentaje: pct
+            });
+        } else {
+            var selectAct = r.querySelector(".select-actividad");
+            if (!selectAct) continue;
+            var opt = selectAct.options[selectAct.selectedIndex];
+            var idAct = selectAct.value;
 
-        var opt = select.options[select.selectedIndex];
-        var idAct = select.value;
-        var pct = parseFloat(input.value);
+            if (!idAct || isNaN(pct) || pct <= 0) {
+                mostrarAlertaApp("Todas las actividades de Moodle deben estar seleccionadas y tener un porcentaje mayor a 0.", "warning", "Datos Incompletos");
+                return;
+            }
 
-        if (!idAct || isNaN(pct) || pct <= 0) {
-            mostrarAlertaApp("Todas las filas deben tener una actividad seleccionada y un porcentaje mayor a 0.", "warning", "Datos Incompletos");
-            return;
+            items.push({
+                id_actividad_moodle: idAct,
+                nombre_actividad: opt.getAttribute("data-nombre"),
+                tipo_actividad: opt.getAttribute("data-tipo"),
+                porcentaje: pct
+            });
         }
+    }
 
-        items.push({
-            id_actividad_moodle: idAct,
-            nombre_actividad: opt.getAttribute("data-nombre"),
-            tipo_actividad: opt.getAttribute("data-tipo"),
-            porcentaje: pct
-        });
+    if (items.length === 0) {
+        mostrarAlertaApp("Debe agregar al menos una actividad a la rúbrica.", "warning", "Datos Incompletos");
+        return;
     }
 
     var corte = document.getElementById("select_corte").value;

@@ -347,6 +347,7 @@ class Dashboard extends CMS_Controller {
                 }
             }
 
+            $yaGuardado = isset($subnotasGuardadas[$codEstudiante]);
             $desglose = array();
             $notaSugerida = 0.0;
 
@@ -356,29 +357,45 @@ class Dashboard extends CMS_Controller {
                     $nomAct  = trim($itemRubrica->NOMBRE_ACTIVIDAD);
                     $nomNorm = strtolower($nomAct);
                     $pct     = (float)$itemRubrica->PORCENTAJE;
-
-                    $calEncontrada = null;
-                    if (isset($calificacionesPorId[$idAct])) {
-                        $calEncontrada = $calificacionesPorId[$idAct];
-                    } elseif (isset($calificacionesPorNombre[$nomNorm])) {
-                        $calEncontrada = $calificacionesPorNombre[$nomNorm];
-                    } else {
-                        foreach ($calificacionesPorNombre as $calNom => $calObj) {
-                            if (strpos($calNom, $nomNorm) !== false || strpos($nomNorm, $calNom) !== false) {
-                                $calEncontrada = $calObj;
-                                break;
-                            }
-                        }
-                    }
+                    $tipoAct = isset($itemRubrica->TIPO_ACTIVIDAD) ? trim($itemRubrica->TIPO_ACTIVIDAD) : '';
+                    $esManual = ($idAct === 0 || strtolower($tipoAct) === 'manual');
 
                     $notaOriginal = 0.0;
                     $notaMax = 5.0;
                     $presento = false;
 
-                    if ($calEncontrada !== null) {
-                        $presento = isset($calEncontrada['presento']) ? (bool)$calEncontrada['presento'] : true;
-                        $notaOriginal = (float)$calEncontrada['nota_final'];
-                        $notaMax = (float)$calEncontrada['nota_maxima'];
+                    if ($esManual) {
+                        if ($yaGuardado && isset($subnotasGuardadas[$codEstudiante]['items'])) {
+                            foreach ($subnotasGuardadas[$codEstudiante]['items'] as $sItem) {
+                                $sNom = isset($sItem->NOMBRE_ACTIVIDAD) ? trim($sItem->NOMBRE_ACTIVIDAD) : '';
+                                if (strcasecmp($sNom, $nomAct) === 0 || ((int)$sItem->ID_ACTIVIDAD_MOODLE === 0 && (int)$idAct === 0 && count($rubrica) === 1)) {
+                                    $notaOriginal = isset($sItem->NOTA_ORIGINAL) ? (float)$sItem->NOTA_ORIGINAL : 0.0;
+                                    $notaMax = isset($sItem->NOTA_MAXIMA) ? (float)$sItem->NOTA_MAXIMA : 5.0;
+                                    $presento = ($notaOriginal > 0);
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        $calEncontrada = null;
+                        if (isset($calificacionesPorId[$idAct])) {
+                            $calEncontrada = $calificacionesPorId[$idAct];
+                        } elseif (isset($calificacionesPorNombre[$nomNorm])) {
+                            $calEncontrada = $calificacionesPorNombre[$nomNorm];
+                        } else {
+                            foreach ($calificacionesPorNombre as $calNom => $calObj) {
+                                if (strpos($calNom, $nomNorm) !== false || strpos($nomNorm, $calNom) !== false) {
+                                    $calEncontrada = $calObj;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if ($calEncontrada !== null) {
+                            $presento = isset($calEncontrada['presento']) ? (bool)$calEncontrada['presento'] : true;
+                            $notaOriginal = (float)$calEncontrada['nota_final'];
+                            $notaMax = (float)$calEncontrada['nota_maxima'];
+                        }
                     }
 
                     if ($notaMax > 0 && abs($notaMax - 5.0) > 0.01) {
@@ -393,6 +410,8 @@ class Dashboard extends CMS_Controller {
                     $desglose[] = array(
                         'id_actividad_moodle' => $idAct,
                         'nombre_actividad'    => $nomAct,
+                        'tipo_actividad'      => $tipoAct,
+                        'es_manual'           => $esManual,
                         'nota_original'       => $notaOriginal,
                         'nota_maxima'         => $notaMax,
                         'nota_normalizada'    => $notaNormalizada,
@@ -405,7 +424,6 @@ class Dashboard extends CMS_Controller {
 
             $notaSugerida = min(5.0, max(0.0, round($notaSugerida, 2)));
 
-            $yaGuardado = isset($subnotasGuardadas[$codEstudiante]);
             $estadoActual = 'SUGERIDA';
             $notaDefinitiva = $notaSugerida;
 

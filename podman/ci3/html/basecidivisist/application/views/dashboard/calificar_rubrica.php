@@ -161,7 +161,7 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                                         </button>
                                     </td>
                                     <td style="text-align: center; vertical-align: middle;">
-                                        <span class="label <?php echo $badgeColor; ?>" style="font-size: 13px; padding: 4px 8px;">
+                                        <span class="label <?php echo $badgeColor; ?> badge-sug" data-index="<?php echo $idx; ?>" style="font-size: 13px; padding: 4px 8px;">
                                             <?php echo number_format($sug, 2); ?>
                                         </span>
                                     </td>
@@ -243,7 +243,7 @@ $nombreCorteActual = isset($nombresPrevios[$tipo_previo]) ? $nombresPrevios[$tip
                         <thead>
                             <tr class="bg-gray-light">
                                 <th style="width: 40px; text-align: center;">#</th>
-                                <th>Actividad Moodle</th>
+                                <th>Actividad</th>
                                 <th style="width: 140px; text-align: center;">Nota Original</th>
                                 <th style="width: 150px; text-align: center;">Nota Base (0.0-5.0)</th>
                                 <th style="width: 110px; text-align: center;">Peso (%)</th>
@@ -447,23 +447,121 @@ function restablecerTodasSugerencias() {
     }
 }
 
+function escapeHtml(text) {
+    if (!text) return "";
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function actualizarCabeceraModalDesglose(est) {
+    var elNotaTotal = document.getElementById("modal_nota_total");
+    if (elNotaTotal) {
+        var notaSug = parseFloat(est.nota_sugerida).toFixed(2);
+        elNotaTotal.innerText = notaSug;
+        elNotaTotal.style.color = (parseFloat(notaSug) >= 3.0) ? "#00a65a" : "#dd4b39";
+    }
+}
+
+function actualizarFilaEstudianteUI(idx) {
+    var est = ESTUDIANTES_DATA[idx];
+    if (!est) return;
+
+    var badgeSug = document.querySelector('.badge-sug[data-index="' + idx + '"]');
+    var inputNota = document.querySelector('.input-nota[data-index="' + idx + '"]');
+    var badgeEstado = document.querySelector('.badge-estado[data-index="' + idx + '"]');
+    var btnAceptar = document.querySelector('.btn-aceptar-ind[data-index="' + idx + '"]');
+
+    if (badgeSug) {
+        badgeSug.innerText = parseFloat(est.nota_sugerida).toFixed(2);
+        badgeSug.className = "label badge-sug " + (parseFloat(est.nota_sugerida) >= 3.0 ? "bg-green" : "bg-red");
+    }
+
+    if (inputNota) {
+        inputNota.value = parseFloat(est.nota_definitiva).toFixed(2);
+    }
+
+    if (badgeEstado) {
+        if (est.estado === "ACEPTADA") {
+            badgeEstado.className = "label label-success badge-estado";
+            badgeEstado.innerText = "ACEPTADA";
+        } else if (est.estado === "MODIFICADA") {
+            badgeEstado.className = "label label-primary badge-estado";
+            badgeEstado.innerText = "MODIFICADA";
+        } else {
+            badgeEstado.className = "label label-warning badge-estado";
+            badgeEstado.innerText = "SUGERIDA";
+        }
+    }
+
+    if (btnAceptar) {
+        btnAceptar.disabled = (est.estado === "ACEPTADA");
+    }
+}
+
+function onCambioNotaManual(inputElem) {
+    var estIdx = parseInt(inputElem.getAttribute("data-est-idx"), 10);
+    var itemIdx = parseInt(inputElem.getAttribute("data-item-idx"), 10);
+
+    if (!ESTUDIANTES_DATA[estIdx]) return;
+    var est = ESTUDIANTES_DATA[estIdx];
+    if (!est.desglose || !est.desglose[itemIdx]) return;
+    var d = est.desglose[itemIdx];
+
+    var val = parseFloat(inputElem.value);
+    if (isNaN(val)) val = 0.0;
+    if (val < 0) val = 0.0;
+    if (val > 5) val = 5.0;
+
+    d.nota_original = val;
+    d.nota_maxima = 5.0;
+    d.nota_normalizada = val;
+    d.presento = (val > 0);
+    d.subnota = Math.round((val * (parseFloat(d.porcentaje) / 100)) * 100) / 100;
+
+    var tr = inputElem.closest("tr");
+    if (tr) {
+        var cellSub = tr.querySelector(".cell-subnota");
+        if (cellSub) cellSub.innerText = d.subnota.toFixed(2);
+    }
+
+    var nuevoSug = 0;
+    for (var k = 0; k < est.desglose.length; k++) {
+        nuevoSug += (parseFloat(est.desglose[k].subnota) || 0);
+    }
+    nuevoSug = Math.min(5.0, Math.max(0.0, Math.round(nuevoSug * 100) / 100));
+    est.nota_sugerida = nuevoSug;
+
+    var totalSubnotaEl = document.getElementById("modal_total_subnota");
+    if (totalSubnotaEl) {
+        totalSubnotaEl.innerText = nuevoSug.toFixed(2);
+    }
+
+    actualizarCabeceraModalDesglose(est);
+
+    if (est.estado !== "MODIFICADA") {
+        est.nota_definitiva = nuevoSug;
+        est.estado = "ACEPTADA";
+    }
+
+    actualizarFilaEstudianteUI(estIdx);
+}
+
 function abrirModalDesglose(idx) {
     if (!ESTUDIANTES_DATA[idx]) return;
     var est = ESTUDIANTES_DATA[idx];
 
     var elNombre = document.getElementById("modal_estudiante_nombre");
     var elCodigo = document.getElementById("modal_estudiante_codigo");
-    var elNotaTotal = document.getElementById("modal_nota_total");
     var tbody = document.getElementById("modal_tbody_desglose");
     var totalSubnotaEl = document.getElementById("modal_total_subnota");
 
     if (elNombre) elNombre.innerText = est.nombre_completo;
     if (elCodigo) elCodigo.innerText = est.codigo;
-    if (elNotaTotal) {
-        var notaSug = parseFloat(est.nota_sugerida).toFixed(2);
-        elNotaTotal.innerText = notaSug;
-        elNotaTotal.style.color = (parseFloat(notaSug) >= 3.0) ? "#00a65a" : "#dd4b39";
-    }
+    actualizarCabeceraModalDesglose(est);
 
     if (tbody) {
         tbody.innerHTML = "";
@@ -474,21 +572,41 @@ function abrirModalDesglose(idx) {
             var d = desglose[i];
             var tr = document.createElement("tr");
 
-            var notaOrigTxt = parseFloat(d.nota_original).toFixed(2) + " / " + parseFloat(d.nota_maxima).toFixed(2);
-            if (!d.presento) {
-                notaOrigTxt = '<span class="text-muted"><i class="fa fa-minus-circle"></i> Sin calificar</span>';
-            }
-
             var sub = parseFloat(d.subnota) || 0;
             sumaSub += sub;
 
+            var actNombreHtml = '<strong>' + escapeHtml(d.nombre_actividad) + '</strong>';
+            if (d.es_manual) {
+                actNombreHtml += ' <span class="label label-warning" style="font-size: 10px; margin-left: 5px;"><i class="fa fa-pencil"></i> Manual</span>';
+            }
+
+            var colNotaOrig = "";
+            var colNotaBase = "";
+
+            if (d.es_manual && !CORTE_CALIFICADO) {
+                colNotaOrig = '<span class="text-muted"><i class="fa fa-pencil"></i> Directa</span>';
+                colNotaBase = 
+                    '<input type="number" min="0" max="5" step="0.1" class="form-control input-sm input-manual-cal" ' +
+                    'data-est-idx="' + idx + '" data-item-idx="' + i + '" ' +
+                    'value="' + parseFloat(d.nota_normalizada || 0).toFixed(2) + '" ' +
+                    'oninput="onCambioNotaManual(this)" ' +
+                    'style="width: 85px; margin: 0 auto; text-align: center; font-weight: bold; border-color: #f39c12;">';
+            } else {
+                var notaOrigTxt = parseFloat(d.nota_original).toFixed(2) + " / " + parseFloat(d.nota_maxima).toFixed(2);
+                if (!d.presento) {
+                    notaOrigTxt = '<span class="text-muted"><i class="fa fa-minus-circle"></i> Sin calificar</span>';
+                }
+                colNotaOrig = notaOrigTxt;
+                colNotaBase = parseFloat(d.nota_normalizada).toFixed(2);
+            }
+
             tr.innerHTML = 
-                '<td style="text-align: center;">' + (i + 1) + '</td>' +
-                '<td><strong>' + d.nombre_actividad + '</strong></td>' +
-                '<td style="text-align: center;">' + notaOrigTxt + '</td>' +
-                '<td style="text-align: center;">' + parseFloat(d.nota_normalizada).toFixed(2) + '</td>' +
-                '<td style="text-align: center;"><span class="badge bg-blue">' + parseFloat(d.porcentaje).toFixed(1) + '%</span></td>' +
-                '<td style="text-align: center; font-weight: bold; color: #0073b7;">' + sub.toFixed(2) + '</td>';
+                '<td style="text-align: center; vertical-align: middle;">' + (i + 1) + '</td>' +
+                '<td style="vertical-align: middle;">' + actNombreHtml + '</td>' +
+                '<td style="text-align: center; vertical-align: middle;">' + colNotaOrig + '</td>' +
+                '<td style="text-align: center; vertical-align: middle;">' + colNotaBase + '</td>' +
+                '<td style="text-align: center; vertical-align: middle;"><span class="badge bg-blue">' + parseFloat(d.porcentaje).toFixed(1) + '%</span></td>' +
+                '<td style="text-align: center; vertical-align: middle; font-weight: bold; color: #0073b7;" class="cell-subnota">' + sub.toFixed(2) + '</td>';
 
             tbody.appendChild(tr);
         }
