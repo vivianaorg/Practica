@@ -109,8 +109,7 @@
                                                 <thead>
                                                     <tr>
                                                         <th>Actividad</th>
-                                                        <th style="width: 90px; text-align: center;">Tipo</th>
-                                                        <th style="width: 90px; text-align: right;">Peso</th>
+                                                        <th style="width: 100px; text-align: right;">Peso</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -121,13 +120,6 @@
                                                                 <i class="fa <?php echo $esItemManual ? 'fa-pencil text-yellow' : 'fa-check-square-o text-green'; ?>"></i> 
                                                                 <?php echo htmlspecialchars($it->NOMBRE_ACTIVIDAD); ?>
                                                             </td>
-                                                            <td style="text-align: center;">
-                                                                <?php if ($esItemManual): ?>
-                                                                    <span class="label label-warning">manual</span>
-                                                                <?php else: ?>
-                                                                    <span class="label label-info"><?php echo htmlspecialchars($it->TIPO_ACTIVIDAD ? $it->TIPO_ACTIVIDAD : 'moodle'); ?></span>
-                                                                <?php endif; ?>
-                                                            </td>
                                                             <td style="text-align: right; font-weight: bold;">
                                                                 <?php echo htmlspecialchars($it->PORCENTAJE); ?>%
                                                             </td>
@@ -136,7 +128,7 @@
                                                 </tbody>
                                                 <tfoot>
                                                     <tr class="bg-gray-light">
-                                                        <th colspan="2" style="text-align: right;">Total Asignado:</th>
+                                                        <th style="text-align: right;">Total Asignado:</th>
                                                         <th style="text-align: right; font-weight: bold; color: <?php echo $corteEstaCalificado ? '#777' : ($estaCompleto ? 'green' : 'orange'); ?>;">
                                                             <?php echo $totalPorcentajeCorte; ?>%
                                                         </th>
@@ -190,16 +182,16 @@
                     <?php endif; ?>
 
                     <?php if ($corte_calificado): ?>
-                        <div class="alert alert-warning" style="margin-bottom: 15px;">
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <i class="fa fa-lock"></i> <strong>Rúbrica Inhabilitada:</strong> Este corte ya fue calificado y cerrado. Para modificar o eliminar esta rúbrica, primero debes desbloquear el corte.
+                        <div class="alert alert-warning" style="margin-bottom: 15px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <div class="row" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                                <div class="col-md-8 col-sm-7" style="margin-bottom: 5px;">
+                                    <i class="fa fa-lock" style="font-size: 16px; margin-right: 5px;"></i> <strong>Rúbrica Inhabilitada:</strong> Este corte ya fue calificado y cerrado. Para modificar o eliminar esta rúbrica, primero debes desbloquear el corte.
                                 </div>
-                                <div class="col-md-4 text-right">
-                                    <button type="button" class="btn btn-warning btn-sm" onclick="confirmarDesbloquearCorte('<?php echo $tipo_previo; ?>', '<?php echo htmlspecialchars($nombreCorteActual); ?>')">
+                                <div class="col-md-4 col-sm-5 text-right" style="margin-bottom: 5px;">
+                                    <button type="button" class="btn btn-primary btn-sm" style="font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.2);" onclick="confirmarDesbloquearCorte('<?php echo $tipo_previo; ?>', '<?php echo htmlspecialchars($nombreCorteActual); ?>')">
                                         <i class="fa fa-unlock"></i> Desbloquear Corte
                                     </button>
-                                    <button type="button" class="btn btn-danger btn-sm" style="margin-left: 5px;" onclick="confirmarEliminarRubrica('<?php echo $tipo_previo; ?>', '<?php echo htmlspecialchars($nombreCorteActual); ?>')">
+                                    <button type="button" class="btn btn-danger btn-sm" style="margin-left: 6px; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.2);" onclick="confirmarEliminarRubrica('<?php echo $tipo_previo; ?>', '<?php echo htmlspecialchars($nombreCorteActual); ?>')">
                                         <i class="fa fa-trash"></i> Eliminar
                                     </button>
                                 </div>
@@ -251,30 +243,35 @@
                         </table>
                     </div>
 
-                    <div class="row" style="margin-top: 15px;">
-                        <div class="col-md-6">
-                            <button type="button" class="btn btn-default" id="btn_agregar_fila" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
-                                <i class="fa fa-plus"></i> Agregar Actividad Moodle
-                            </button>
-                            <button type="button" class="btn btn-warning" id="btn_agregar_manual" style="margin-left: 8px;" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
-                                <i class="fa fa-pencil"></i> Agregar Actividad Manual
-                            </button>
-                            <?php if (!$corte_calificado && !empty($rubrica_actual)): ?>
-                                <button type="button" class="btn btn-danger" id="btn_eliminar_rubrica_actual" style="margin-left: 8px;">
-                                    <i class="fa fa-trash"></i> Eliminar Rúbrica
+                    <div style="margin-top: 20px; padding: 14px 18px; background-color: #fcfcfc; border: 1px solid #e3e7eb; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <!-- Acciones para agregar actividades -->
+                            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                <button type="button" class="btn btn-primary" id="btn_agregar_fila" <?php echo ($corte_calificado ? 'disabled' : ''); ?> style="font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+                                    <i class="fa fa-plus-circle"></i> Agregar Actividad de Moodle
                                 </button>
-                            <?php endif; ?>
-                        </div>
-                        <div class="col-md-6 text-right">
-                            <?php if ($corte_calificado): ?>
-                                <button type="button" class="btn btn-default" id="btn_guardar_rubrica" disabled style="font-weight: 600;">
-                                    <i class="fa fa-lock"></i> Rúbrica Bloqueada
+                                <button type="button" class="btn btn-info" id="btn_agregar_manual" <?php echo ($corte_calificado ? 'disabled' : ''); ?> style="font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+                                    <i class="fa fa-pencil-square-o"></i> Agregar Actividad Manual
                                 </button>
-                            <?php else: ?>
-                                <button type="button" class="btn btn-success" id="btn_guardar_rubrica" disabled style="font-weight: 600;">
-                                    <i class="fa fa-save"></i> Guardar Rúbrica
-                                </button>
-                            <?php endif; ?>
+                            </div>
+
+                            <!-- Acciones generales de la rúbrica -->
+                            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                <?php if (!$corte_calificado && !empty($rubrica_actual)): ?>
+                                    <button type="button" class="btn btn-danger" id="btn_eliminar_rubrica_actual" style="font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+                                        <i class="fa fa-trash"></i> Eliminar Rúbrica
+                                    </button>
+                                <?php endif; ?>
+                                <?php if ($corte_calificado): ?>
+                                    <button type="button" class="btn btn-default" id="btn_guardar_rubrica" disabled style="font-weight: 600;">
+                                        <i class="fa fa-lock"></i> Rúbrica Bloqueada
+                                    </button>
+                                <?php else: ?>
+                                    <button type="button" class="btn btn-success" id="btn_guardar_rubrica" disabled style="font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08);">
+                                        <i class="fa fa-save"></i> Guardar Rúbrica
+                                    </button>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
 
