@@ -479,4 +479,40 @@ class Subnotas_model extends CI_Model
 
         return $agrupadas;
     }
+
+    /**
+     * Obtiene los cursos (materia, grupo, semestre) y cortes que tienen rúbricas
+     * configuradas para un profesor específico.
+     *
+     * @param string $codProfesor
+     * @return array
+     */
+    public function obtener_cursos_con_rubricas($codProfesor)
+    {
+        $codProfesor = trim($codProfesor);
+        $sql = "SELECT COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, COUNT(*) AS TOTAL_ITEMS
+                FROM CONFIG_RUBRICA 
+                WHERE COD_PROFESOR = '{$codProfesor}' 
+                GROUP BY COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO 
+                ORDER BY SEMESTRE DESC, COD_MATERIA ASC, GRUPO ASC, TIPO_PREVIO ASC";
+
+        $arr = array();
+        $this->database2->get_obj_array($sql, $arr);
+        return $arr;
+    }
+
+    /**
+     * Obtiene los ítems detallados de una rúbrica origen.
+     *
+     * @param string $codProfesor
+     * @param string $codMateria
+     * @param string $grupo
+     * @param string $semestre
+     * @param string $tipoPrevio
+     * @return array
+     */
+    public function obtener_rubrica_origen($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
+    {
+        return $this->obtener_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
+    }
 }

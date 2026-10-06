@@ -72,6 +72,10 @@ $route['calificaciones/guardar_rubrica_ajax'] = 'calificaciones/guardar_rubrica_
 $route['calificaciones/eliminar_rubrica_ajax'] = 'calificaciones/eliminar_rubrica_ajax';
 $route['calificaciones/desbloquear_corte_ajax'] = 'calificaciones/desbloquear_corte_ajax';
 $route['calificaciones/guardar_calificaciones_corte_ajax'] = 'calificaciones/guardar_calificaciones_corte_ajax';
+$route['calificaciones/listar_cursos_rubricas_ajax'] = 'calificaciones/listar_cursos_rubricas_ajax';
+$route['calificaciones/obtener_items_rubrica_ajax'] = 'calificaciones/obtener_items_rubrica_ajax';
+$route['dashboard/listar_cursos_rubricas_ajax'] = 'calificaciones/listar_cursos_rubricas_ajax';
+$route['dashboard/obtener_items_rubrica_ajax'] = 'calificaciones/obtener_items_rubrica_ajax';
 
 $route['calificaciones/configurar_rubrica'] = 'calificaciones/configurar_rubrica';
 $route['calificaciones/configurar_rubrica/(:any)'] = 'calificaciones/configurar_rubrica/$1';

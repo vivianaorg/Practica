@@ -189,8 +189,8 @@
 
                     <div class="row">
                         <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Corte a Editar / Configurar:</label>
+                            <div class="form-group" style="margin-bottom: 5px;">
+                                <label><i class="fa fa-calendar-check-o text-primary"></i> Corte a Editar / Configurar:</label>
                                 <select id="select_corte" class="form-control">
                                     <option value="1" <?php echo ($tipo_previo == '1') ? 'selected' : ''; ?>>Primer Previo</option>
                                     <option value="2" <?php echo ($tipo_previo == '2') ? 'selected' : ''; ?>>Segundo Previo</option>
@@ -201,7 +201,70 @@
                         </div>
                     </div>
 
+                    <!-- Sección: Cargar / Reutilizar Rúbrica de otro Curso -->
+                    <div class="box box-info" id="box_reutilizar_rubrica" style="margin-top: 15px; margin-bottom: 20px; border-radius: 4px; border-left: 3px solid #00c0ef; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+                        <div class="box-header with-border" style="background-color: #f8fafc; padding: 10px 15px;">
+                            <h3 class="box-title" style="font-size: 14px; font-weight: 600; color: #0073b7;">
+                                <i class="fa fa-clone" style="margin-right: 6px;"></i> Cargar / Reutilizar Rúbrica de otro Curso
+                            </h3>
+                            <div class="box-tools pull-right">
+                                <button type="button" class="btn btn-box-tool" data-widget="collapse" title="Minimizar / Expandir">
+                                    <i class="fa fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="box-body" style="padding: 15px; background-color: #ffffff;">
+                            <p class="text-muted" style="margin-bottom: 12px; font-size: 13px;">
+                                <i class="fa fa-info-circle text-info"></i> Seleccione un curso y corte previamente configurado para importar sus actividades y porcentajes a este corte actual. El sistema intentará emparejar automáticamente cada actividad por su nombre exacto en Moodle.
+                            </p>
+                            <div class="row">
+                                <div class="col-md-5 col-sm-6">
+                                    <div class="form-group" style="margin-bottom: 10px;">
+                                        <label for="select_curso_origen" style="font-weight: 600; font-size: 12px;">
+                                            <i class="fa fa-book text-muted"></i> Curso Origen:
+                                        </label>
+                                        <select id="select_curso_origen" class="form-control input-sm" style="border-radius: 3px;" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
+                                            <option value="">-- Cargando cursos con rúbricas... --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-sm-6">
+                                    <div class="form-group" style="margin-bottom: 10px;">
+                                        <label for="select_corte_origen" style="font-weight: 600; font-size: 12px;">
+                                            <i class="fa fa-calendar-check-o text-muted"></i> Corte Evaluativo Origen:
+                                        </label>
+                                        <select id="select_corte_origen" class="form-control input-sm" style="border-radius: 3px;" disabled>
+                                            <option value="">-- Seleccione curso primero --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-12" style="display: flex; align-items: flex-end; margin-bottom: 10px;">
+                                    <button type="button" class="btn btn-primary btn-sm btn-block" id="btn_aplicar_rubrica_importada" disabled style="font-weight: 600; padding: 6px 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                                        <i class="fa fa-arrow-circle-down"></i> Aplicar a este corte
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="alerta_importacion_feedback" style="display: none; margin-top: 10px; margin-bottom: 0;" class="alert">
+                            </div>
+                        </div>
+                    </div>
+
                     <hr style="margin-top: 5px; margin-bottom: 15px;">
+
+                    <!-- Barra de progreso de ponderación en tiempo real -->
+                    <div style="margin-bottom: 15px; padding: 10px 14px; background: #fdfdfd; border: 1px solid #e9ecef; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-size: 12px; font-weight: 600; color: #444;">
+                                <i class="fa fa-tasks text-muted"></i> Ponderación Total de la Rúbrica (Objetivo: 100%):
+                            </span>
+                            <span id="badge_progreso_porcentaje" class="label label-default" style="font-size: 12px; font-weight: bold; padding: 3px 8px;">0%</span>
+                        </div>
+                        <div class="progress progress-sm" style="margin-bottom: 0; height: 16px; border-radius: 3px; background-color: #e9ecef; box-shadow: inset 0 1px 2px rgba(0,0,0,0.08);">
+                            <div id="barra_progreso_porcentaje" class="progress-bar progress-bar-yellow" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%; font-size: 11px; line-height: 16px; font-weight: bold; transition: width 0.3s ease;">
+                                0%
+                            </div>
+                        </div>
+                    </div>
 
                     <div id="mensaje_ajax" style="display: none;"></div>
 
@@ -300,6 +363,7 @@ var codMateria = "<?php echo htmlspecialchars($cod_materia); ?>";
 var grupo = "<?php echo htmlspecialchars($grupo); ?>";
 var semestre = "<?php echo htmlspecialchars($semestre); ?>";
 var corteCalificado = <?php echo ($corte_calificado ? 'true' : 'false'); ?>;
+var cursosConRubricasData = [];
 
 document.addEventListener("DOMContentLoaded", function() {
 
@@ -347,6 +411,81 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
+    // Inicializar carga de cursos con rúbricas disponibles para reutilización
+    cargarCursosConRubricas();
+
+    var selectCursoOrigen = document.getElementById("select_curso_origen");
+    var selectCorteOrigen = document.getElementById("select_corte_origen");
+    var btnAplicarImportada = document.getElementById("btn_aplicar_rubrica_importada");
+
+    var nombresCortes = {
+        "1": "Primer Previo",
+        "2": "Segundo Previo",
+        "3": "Tercer Previo",
+        "FINAL": "Examen Final"
+    };
+
+    if (selectCursoOrigen) {
+        selectCursoOrigen.addEventListener("change", function() {
+            var val = this.value;
+            if (!val) {
+                selectCorteOrigen.innerHTML = '<option value="">-- Seleccione curso primero --</option>';
+                selectCorteOrigen.disabled = true;
+                if (btnAplicarImportada) btnAplicarImportada.disabled = true;
+                return;
+            }
+
+            var idx = this.options[this.selectedIndex].getAttribute("data-index");
+            var cursoObj = cursosConRubricasData[idx];
+            if (!cursoObj || !cursoObj.cortes || cursoObj.cortes.length === 0) {
+                selectCorteOrigen.innerHTML = '<option value="">-- Sin cortes configurados --</option>';
+                selectCorteOrigen.disabled = true;
+                if (btnAplicarImportada) btnAplicarImportada.disabled = true;
+                return;
+            }
+
+            var corteActual = document.getElementById("select_corte").value;
+            var esMismoCurso = (cursoObj.cod_materia === codMateria && cursoObj.grupo === grupo && cursoObj.semestre === semestre);
+
+            var corteHtml = '<option value="">-- Seleccionar corte evaluativo --</option>';
+            var cortesValidos = 0;
+
+            for (var k = 0; k < cursoObj.cortes.length; k++) {
+                var cInfo = cursoObj.cortes[k];
+                var cClave = cInfo.tipo_previo;
+                var cNom = nombresCortes[cClave] || ("Corte " + cClave);
+                var cItems = cInfo.total_items ? (" (" + cInfo.total_items + " act.)") : "";
+
+                var esMismoCorteActual = (esMismoCurso && cClave === corteActual);
+                if (esMismoCorteActual) {
+                    corteHtml += '<option value="' + cClave + '" disabled>' + cNom + cItems + ' (Corte actual en edición)</option>';
+                } else {
+                    corteHtml += '<option value="' + cClave + '">' + cNom + cItems + '</option>';
+                    cortesValidos++;
+                }
+            }
+
+            selectCorteOrigen.innerHTML = corteHtml;
+            selectCorteOrigen.disabled = (cortesValidos === 0 || corteCalificado);
+            if (btnAplicarImportada) btnAplicarImportada.disabled = true;
+        });
+    }
+
+    if (selectCorteOrigen) {
+        selectCorteOrigen.addEventListener("change", function() {
+            var corteVal = this.value;
+            if (btnAplicarImportada) {
+                btnAplicarImportada.disabled = (!corteVal || corteCalificado);
+            }
+        });
+    }
+
+    if (btnAplicarImportada && !corteCalificado) {
+        btnAplicarImportada.addEventListener("click", function() {
+            aplicarRubricaImportada();
+        });
+    }
+
     if (rubricaGuardada && rubricaGuardada.length > 0) {
         for (var i = 0; i < rubricaGuardada.length; i++) {
             var r = rubricaGuardada[i];
@@ -373,6 +512,238 @@ function escapeHtml(text) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+function normalizarTexto(texto) {
+    if (!texto) return "";
+    return texto
+        .toString()
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
+function cargarCursosConRubricas() {
+    var selectCurso = document.getElementById("select_curso_origen");
+    if (!selectCurso) return;
+
+    var url = "<?php echo site_url('calificaciones/listar_cursos_rubricas_ajax'); ?>";
+    fetch(url)
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (!data || !data.exito || !data.cursos || data.cursos.length === 0) {
+            selectCurso.innerHTML = '<option value="">-- No se encontraron cursos con rúbricas registradas --</option>';
+            return;
+        }
+
+        cursosConRubricasData = data.cursos;
+        var html = '<option value="">-- Seleccionar curso origen --</option>';
+
+        for (var i = 0; i < data.cursos.length; i++) {
+            var c = data.cursos[i];
+            var esMismoCurso = (c.cod_materia === codMateria && c.grupo === grupo && c.semestre === semestre);
+            var etiqueta = escapeHtml(c.etiqueta);
+            if (esMismoCurso) {
+                etiqueta += " (Este Curso)";
+            }
+            html += '<option value="' + escapeHtml(c.clave) + '" data-index="' + i + '">' + etiqueta + '</option>';
+        }
+
+        selectCurso.innerHTML = html;
+        selectCurso.disabled = corteCalificado ? true : false;
+    })
+    .catch(function(err) {
+        console.error("Error al cargar cursos con rúbricas:", err);
+        selectCurso.innerHTML = '<option value="">-- Error al cargar cursos del docente --</option>';
+    });
+}
+
+function aplicarRubricaImportada() {
+    if (corteCalificado) return;
+
+    var selectCurso = document.getElementById("select_curso_origen");
+    var selectCorte = document.getElementById("select_corte_origen");
+    if (!selectCurso || !selectCorte) return;
+
+    var claveCurso = selectCurso.value;
+    var corteOrigen = selectCorte.value;
+
+    if (!claveCurso || !corteOrigen) {
+        mostrarAlertaApp("Por favor seleccione tanto el curso como el corte evaluativo de origen.", "warning", "Datos Incompletos");
+        return;
+    }
+
+    var idx = selectCurso.selectedIndex;
+    var optCurso = selectCurso.options[idx];
+    var cursoIdx = optCurso.getAttribute("data-index");
+    var cursoObj = cursosConRubricasData[cursoIdx];
+    if (!cursoObj) return;
+
+    var corteActual = document.getElementById("select_corte").value;
+    var esMismoCurso = (cursoObj.cod_materia === codMateria && cursoObj.grupo === grupo && cursoObj.semestre === semestre);
+    if (esMismoCurso && corteOrigen === corteActual) {
+        mostrarAlertaApp("No es necesario importar el mismo corte que ya está editando actualmente.", "info", "Mismo Corte");
+        return;
+    }
+
+    var tbody = document.getElementById("tbody_rubrica");
+    var filasActuales = tbody ? tbody.querySelectorAll("tr").length : 0;
+    var tieneDatos = false;
+    if (filasActuales > 0) {
+        var inputsPct = tbody.querySelectorAll(".input-porcentaje");
+        for (var p = 0; p < inputsPct.length; p++) {
+            if (parseFloat(inputsPct[p].value) > 0) {
+                tieneDatos = true;
+                break;
+            }
+        }
+    }
+
+    var proceder = function() {
+        ejecutarImportacionRubrica(cursoObj, corteOrigen);
+    };
+
+    if (tieneDatos) {
+        var textoCorteOrigen = selectCorte.options[selectCorte.selectedIndex].text;
+        mostrarConfirmacionApp(
+            "¿Desea cargar la rúbrica de <strong>" + escapeHtml(optCurso.text) + " (" + escapeHtml(textoCorteOrigen) + ")</strong>?<br><br><span class='text-warning'><i class='fa fa-exclamation-triangle'></i> Se reemplazarán las actividades y porcentajes actuales de este corte en el formulario.</span><br><small class='text-muted'>Los cambios solo se guardarán en la base de datos cuando haga clic en 'Guardar Rúbrica'.</small>",
+            proceder,
+            {
+                tipo: "warning",
+                titulo: "Reemplazar Rúbrica Actual",
+                btnTexto: "Sí, Cargar Rúbrica",
+                btnClase: "btn-warning",
+                icono: "fa-arrow-circle-down"
+            }
+        );
+    } else {
+        proceder();
+    }
+}
+
+function ejecutarImportacionRubrica(cursoObj, corteOrigen) {
+    var btnAplicar = document.getElementById("btn_aplicar_rubrica_importada");
+    if (btnAplicar) {
+        btnAplicar.disabled = true;
+        btnAplicar.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Cargando...';
+    }
+
+    var formData = new FormData();
+    formData.append("cod_profesor", codProfesor);
+    formData.append("cod_materia", cursoObj.cod_materia);
+    formData.append("grupo", cursoObj.grupo);
+    formData.append("semestre", cursoObj.semestre);
+    formData.append("tipo_previo", corteOrigen);
+
+    fetch("<?php echo site_url('calificaciones/obtener_items_rubrica_ajax'); ?>", {
+        method: "POST",
+        body: formData
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (btnAplicar) {
+            btnAplicar.disabled = false;
+            btnAplicar.innerHTML = '<i class="fa fa-arrow-circle-down"></i> Aplicar a este corte';
+        }
+
+        if (!data || !data.exito) {
+            mostrarAlertaApp((data && data.mensaje) ? data.mensaje : "Error al consultar la rúbrica origen.", "danger", "Error");
+            return;
+        }
+
+        var items = data.items || [];
+        if (items.length === 0) {
+            mostrarAlertaApp("La rúbrica seleccionada no contiene actividades registradas.", "warning", "Sin Actividades");
+            return;
+        }
+
+        // Limpiar la tabla actual
+        var tbody = document.getElementById("tbody_rubrica");
+        if (tbody) tbody.innerHTML = "";
+
+        var totalItems = items.length;
+        var autoCoincidentes = 0;
+        var manuales = 0;
+        var pendientesManual = 0;
+        var idsUsados = [];
+
+        // Auto-matching: Normalizar nombre y buscar coincidencia exacta
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var esManual = (parseInt(item.id_actividad_moodle, 10) === 0 || String(item.tipo_actividad).toLowerCase() === "manual");
+            var pct = parseFloat(item.porcentaje);
+            var nombreOrigen = item.nombre_actividad || "";
+
+            if (esManual) {
+                manuales++;
+                agregarFilaRubrica(0, pct, true, nombreOrigen);
+            } else {
+                var normOrigen = normalizarTexto(nombreOrigen);
+                var actEncontrada = null;
+
+                for (var j = 0; j < actividadesDisponibles.length; j++) {
+                    var actDisp = actividadesDisponibles[j];
+                    var actDispIdStr = String(actDisp.id);
+                    if (idsUsados.indexOf(actDispIdStr) === -1 && normalizarTexto(actDisp.nombre) === normOrigen) {
+                        actEncontrada = actDisp;
+                        idsUsados.push(actDispIdStr);
+                        break;
+                    }
+                }
+
+                if (actEncontrada) {
+                    autoCoincidentes++;
+                    agregarFilaRubrica(actEncontrada.id, pct, false, "");
+                } else {
+                    pendientesManual++;
+                    // Si no coincide: precargar fila con porcentaje pero selector en blanco
+                    agregarFilaRubrica(null, pct, false, "");
+                }
+            }
+        }
+
+        actualizarOpcionesDisponibles();
+        recalcularTotales();
+
+        // Mostrar notificación y feedback descriptivo
+        var feedbackDiv = document.getElementById("alerta_importacion_feedback");
+        if (feedbackDiv) {
+            feedbackDiv.style.display = "block";
+            if (pendientesManual > 0) {
+                feedbackDiv.className = "alert alert-warning";
+                feedbackDiv.innerHTML = '<i class="fa fa-exclamation-circle"></i> ' +
+                    'Rúbrica cargada: <strong>' + autoCoincidentes + '</strong> actividades vinculadas automáticamente y <strong>' + pendientesManual + '</strong> requieren selección manual de la actividad en Moodle.';
+            } else {
+                feedbackDiv.className = "alert alert-success";
+                feedbackDiv.innerHTML = '<i class="fa fa-check-circle"></i> ' +
+                    'Rúbrica cargada con éxito: las <strong>' + totalItems + '</strong> actividades fueron vinculadas al 100%.';
+            }
+        }
+
+        var detalleMsg = "Se cargó la rúbrica con un total de <strong>" + totalItems + "</strong> actividad(es):<br><ul style='margin-top: 8px;'>";
+        if (autoCoincidentes > 0) {
+            detalleMsg += "<li><strong style='color: #00a65a;'>" + autoCoincidentes + "</strong> actividad(es) vinculada(s) automáticamente por nombre.</li>";
+        }
+        if (pendientesManual > 0) {
+            detalleMsg += "<li><strong style='color: #e08e0b;'>" + pendientesManual + "</strong> actividad(es) con porcentaje cargado pero pendientes por seleccionar en el menú desplegable.</li>";
+        }
+        if (manuales > 0) {
+            detalleMsg += "<li><strong style='color: #0073b7;'>" + manuales + "</strong> actividad(es) manual(es).</li>";
+        }
+        detalleMsg += "</ul>";
+        detalleMsg += "<small class='text-muted'>Revise la tabla y haga clic en <strong>'Guardar Rúbrica'</strong> para almacenar los cambios en la base de datos.</small>";
+
+        mostrarAlertaApp(detalleMsg, (pendientesManual > 0 ? "warning" : "success"), "Rúbrica Importada");
+    })
+    .catch(function(err) {
+        console.error("Error al obtener ítems de la rúbrica:", err);
+        if (btnAplicar) {
+            btnAplicar.disabled = false;
+            btnAplicar.innerHTML = '<i class="fa fa-arrow-circle-down"></i> Aplicar a este corte';
+        }
+        mostrarAlertaApp("Error de comunicación al intentar cargar la rúbrica: " + err.message, "danger", "Error");
+    });
 }
 
 function irAConfigurarCorte(corte) {
@@ -544,6 +915,35 @@ function recalcularTotales() {
 
     var tfootTotal = document.getElementById("tfoot_total_porcentaje");
     var btnGuardar = document.getElementById("btn_guardar_rubrica");
+    var barraProgreso = document.getElementById("barra_progreso_porcentaje");
+    var badgeProgreso = document.getElementById("badge_progreso_porcentaje");
+
+    // Actualizar barra de progreso en tiempo real
+    if (barraProgreso) {
+        var pctAncho = Math.min(Math.max(total, 0), 100);
+        barraProgreso.style.width = pctAncho + "%";
+        barraProgreso.textContent = total + "%";
+
+        if (total === 100) {
+            barraProgreso.className = "progress-bar progress-bar-success";
+            if (badgeProgreso) {
+                badgeProgreso.className = "label label-success";
+                badgeProgreso.textContent = "100% Completo";
+            }
+        } else if (total > 100) {
+            barraProgreso.className = "progress-bar progress-bar-danger";
+            if (badgeProgreso) {
+                badgeProgreso.className = "label label-danger";
+                badgeProgreso.textContent = total + "% (Excedido)";
+            }
+        } else {
+            barraProgreso.className = "progress-bar progress-bar-yellow";
+            if (badgeProgreso) {
+                badgeProgreso.className = "label label-warning";
+                badgeProgreso.textContent = total + "% (Incompleto)";
+            }
+        }
+    }
 
     // Actualizar el total ponderado en el pie de la tabla
     if (tfootTotal) {
@@ -553,7 +953,7 @@ function recalcularTotales() {
         } else if (total > 100) {
             tfootTotal.style.color = "#dd4b39";
         } else {
-            tfootTotal.style.color = "#333333";
+            tfootTotal.style.color = "#f39c12";
         }
     }
 
