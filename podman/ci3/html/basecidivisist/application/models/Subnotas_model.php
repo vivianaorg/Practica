@@ -13,118 +13,21 @@ class Subnotas_model extends CI_Model
         }
     }
 
-    public function guardar_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio, $items)
+    private function _normalizar_grupo($grupo)
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
-        $this->eliminar_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
-
-        if (empty($items) || !is_array($items)) {
-            return false;
-        }
-
-        $exito = true;
-        foreach ($items as $item) {
-            $idActividad = isset($item['id_actividad_moodle']) ? $item['id_actividad_moodle'] : 0;
-            $nombre      = isset($item['nombre_actividad']) ? $item['nombre_actividad'] : '';
-            $tipo        = isset($item['tipo_actividad']) ? $item['tipo_actividad'] : '';
-            $porcentaje  = isset($item['porcentaje']) ? (float)$item['porcentaje'] : 0;
-
-            $objId = null;
-            $this->database2->get_sql_object("SELECT NVL(MAX(ID), 0) + 1 AS NEXT_ID FROM CONFIG_RUBRICA", $objId);
-            $nextId = ($objId && isset($objId->NEXT_ID)) ? (int)$objId->NEXT_ID : 1;
-
-            $dataInsert = array(
-                'ID'                  => $nextId,
-                'COD_PROFESOR'        => $codProfesor,
-                'COD_MATERIA'         => $codMateria,
-                'GRUPO'               => $grupo,
-                'SEMESTRE'            => $semestre,
-                'TIPO_PREVIO'         => $tipoPrevio,
-                'ID_ACTIVIDAD_MOODLE' => $idActividad,
-                'NOMBRE_ACTIVIDAD'    => $nombre,
-                'TIPO_ACTIVIDAD'      => $tipo,
-                'PORCENTAJE'          => $porcentaje,
-            );
-
-            $res = $this->database2->insert('CONFIG_RUBRICA', $dataInsert);
-            if (!$res) {
-                $conn = $this->database2->get_conn();
-                $err = oci_error($conn);
-                $this->ultimo_error = isset($err['message']) ? $err['message'] : 'Error en insercion CONFIG_RUBRICA';
-                $exito = false;
-            }
-        }
-
-        return $exito;
+        return (!empty($grupo) && $grupo !== '') ? $grupo : '-';
     }
 
-    public function obtener_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
+    private function _obtener_siguiente_id()
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
-
-        $sql = "SELECT ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, 
-                       ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE 
-                FROM CONFIG_RUBRICA 
-                WHERE COD_MATERIA = '{$codMateria}' 
-                  AND GRUPO       = '{$grupo}' 
-                  AND SEMESTRE    = '{$semestre}' 
-                  AND TIPO_PREVIO = '{$tipoPrevio}' 
-                ORDER BY ID ASC";
-
-        $arr = array();
-        $this->database2->get_obj_array($sql, $arr);
-        return $arr;
-    }
-
-    public function obtener_todas_rubricas_curso($codProfesor, $codMateria, $grupo, $semestre)
-    {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
-
-        $sql = "SELECT ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, 
-                       ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE 
-                FROM CONFIG_RUBRICA 
-                WHERE COD_MATERIA = '{$codMateria}' 
-                  AND GRUPO       = '{$grupo}' 
-                  AND SEMESTRE    = '{$semestre}' 
-                ORDER BY TIPO_PREVIO ASC, ID ASC";
-
-        $arr = array();
-        $this->database2->get_obj_array($sql, $arr);
-
-        $agrupadas = array(
-            '1'     => array(),
-            '2'     => array(),
-            '3'     => array(),
-            'FINAL' => array(),
-        );
-
-        if (!empty($arr) && is_array($arr)) {
-            foreach ($arr as $row) {
-                $previo = isset($row->TIPO_PREVIO) ? $row->TIPO_PREVIO : '1';
-                if (!isset($agrupadas[$previo])) {
-                    $agrupadas[$previo] = array();
-                }
-                $agrupadas[$previo][] = $row;
-            }
-        }
-
-        return $agrupadas;
-    }
-
-    public function eliminar_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
-    {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
-        $sql = "DELETE FROM CONFIG_RUBRICA 
-                WHERE COD_MATERIA = '{$codMateria}' 
-                  AND GRUPO       = '{$grupo}' 
-                  AND SEMESTRE    = '{$semestre}' 
-                  AND TIPO_PREVIO = '{$tipoPrevio}'";
-        return $this->database2->get_sql_bool($sql);
+        $objId = null;
+        $this->database2->get_sql_object("SELECT NVL(MAX(ID), 0) + 1 AS NEXT_ID FROM SUBNOTAS", $objId);
+        return ($objId && isset($objId->NEXT_ID)) ? (int)$objId->NEXT_ID : 1;
     }
 
     public function eliminar_subnotas_corte($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $grupo = $this->_normalizar_grupo($grupo);
         $sql = "DELETE FROM SUBNOTAS 
                 WHERE COD_MATERIA = '{$codMateria}' 
                   AND GRUPO       = '{$grupo}' 
@@ -135,7 +38,7 @@ class Subnotas_model extends CI_Model
 
     public function corte_esta_calificado($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $grupo = $this->_normalizar_grupo($grupo);
         $sql = "SELECT COUNT(*) AS TOTAL FROM SUBNOTAS 
                 WHERE COD_MATERIA = '{$codMateria}' 
                   AND GRUPO       = '{$grupo}' 
@@ -149,7 +52,7 @@ class Subnotas_model extends CI_Model
 
     public function obtener_cortes_calificados($codProfesor, $codMateria, $grupo, $semestre)
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $grupo = $this->_normalizar_grupo($grupo);
         $sql = "SELECT TIPO_PREVIO, COUNT(*) AS TOTAL FROM SUBNOTAS 
                 WHERE COD_MATERIA = '{$codMateria}' 
                   AND GRUPO       = '{$grupo}' 
@@ -174,7 +77,7 @@ class Subnotas_model extends CI_Model
 
     public function guardar_subnotas_estudiante($codProfesor, $codMateria, $grupo, $semestre, $codEstudiante, $tipoPrevio, $desgloseSubnotas, $estado = 'SUGERIDA')
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $grupo = $this->_normalizar_grupo($grupo);
         $this->eliminar_subnotas_estudiante($codEstudiante, $codMateria, $grupo, $semestre, $tipoPrevio);
 
         if (empty($desgloseSubnotas) || !is_array($desgloseSubnotas)) {
@@ -190,9 +93,7 @@ class Subnotas_model extends CI_Model
             $porcentaje    = isset($item['porcentaje']) ? (float)$item['porcentaje'] : 0.0;
             $subnota       = isset($item['subnota']) ? (float)$item['subnota'] : 0.0;
 
-            $objId = null;
-            $this->database2->get_sql_object("SELECT NVL(MAX(ID), 0) + 1 AS NEXT_ID FROM SUBNOTAS", $objId);
-            $nextId = ($objId && isset($objId->NEXT_ID)) ? (int)$objId->NEXT_ID : 1;
+            $nextId = $this->_obtener_siguiente_id();
 
             $dataInsert = array(
                 'ID'                  => $nextId,
@@ -225,7 +126,7 @@ class Subnotas_model extends CI_Model
 
     public function obtener_subnotas_estudiante($codEstudiante, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $grupo = $this->_normalizar_grupo($grupo);
         $sql = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
                        NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
                 FROM SUBNOTAS 
@@ -243,7 +144,7 @@ class Subnotas_model extends CI_Model
 
     public function eliminar_subnotas_estudiante($codEstudiante, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $grupo = $this->_normalizar_grupo($grupo);
         $sql = "DELETE FROM SUBNOTAS 
                 WHERE COD_ESTUDIANTE = '{$codEstudiante}' 
                   AND COD_MATERIA    = '{$codMateria}' 
@@ -256,7 +157,7 @@ class Subnotas_model extends CI_Model
 
     public function obtener_resumen_grupo($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $grupo = $this->_normalizar_grupo($grupo);
         $sql = "SELECT COD_ESTUDIANTE, 
                        ROUND(SUM(SUBNOTA), 2) AS NOTA_SUGERIDA,
                        COUNT(ID) AS TOTAL_ACTIVIDADES,
@@ -276,7 +177,7 @@ class Subnotas_model extends CI_Model
 
     public function actualizar_estado_grupo($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio, $nuevoEstado)
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $grupo = $this->_normalizar_grupo($grupo);
         $sql = "UPDATE SUBNOTAS SET ESTADO = '{$nuevoEstado}' 
                 WHERE COD_MATERIA = '{$codMateria}' 
                   AND GRUPO       = '{$grupo}' 
@@ -288,7 +189,7 @@ class Subnotas_model extends CI_Model
 
     public function obtener_todas_subnotas_grupo($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $grupo = $this->_normalizar_grupo($grupo);
         $sql = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
                        NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
                 FROM SUBNOTAS 
@@ -372,9 +273,7 @@ class Subnotas_model extends CI_Model
                     $subnotaFinal = $subnotaBase;
                 }
 
-                $objId = null;
-                $this->database2->get_sql_object("SELECT NVL(MAX(ID), 0) + 1 AS NEXT_ID FROM SUBNOTAS", $objId);
-                $nextId = ($objId && isset($objId->NEXT_ID)) ? (int)$objId->NEXT_ID : 1;
+                $nextId = $this->_obtener_siguiente_id();
 
                 $dataInsert = array(
                     'ID'                  => $nextId,
@@ -408,7 +307,7 @@ class Subnotas_model extends CI_Model
 
     public function obtener_calificaciones_todos_cortes($codProfesor, $codMateria, $grupo, $semestre)
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $grupo = $this->_normalizar_grupo($grupo);
 
         $sql = "SELECT COD_ESTUDIANTE, TIPO_PREVIO, 
                        ROUND(SUM(SUBNOTA), 2) AS NOTA_CORTE,
@@ -447,7 +346,7 @@ class Subnotas_model extends CI_Model
 
     public function obtener_todas_subnotas_curso($codProfesor, $codMateria, $grupo, $semestre)
     {
-        $grupo = (!empty($grupo) && $grupo !== '') ? $grupo : '-';
+        $grupo = $this->_normalizar_grupo($grupo);
 
         $sql = "SELECT ID, COD_ESTUDIANTE, TIPO_PREVIO, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
                        NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO 
@@ -478,41 +377,5 @@ class Subnotas_model extends CI_Model
         }
 
         return $agrupadas;
-    }
-
-    /**
-     * Obtiene los cursos (materia, grupo, semestre) y cortes que tienen rúbricas
-     * configuradas para un profesor específico.
-     *
-     * @param string $codProfesor
-     * @return array
-     */
-    public function obtener_cursos_con_rubricas($codProfesor)
-    {
-        $codProfesor = trim($codProfesor);
-        $sql = "SELECT COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, COUNT(*) AS TOTAL_ITEMS
-                FROM CONFIG_RUBRICA 
-                WHERE COD_PROFESOR = '{$codProfesor}' 
-                GROUP BY COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO 
-                ORDER BY SEMESTRE DESC, COD_MATERIA ASC, GRUPO ASC, TIPO_PREVIO ASC";
-
-        $arr = array();
-        $this->database2->get_obj_array($sql, $arr);
-        return $arr;
-    }
-
-    /**
-     * Obtiene los ítems detallados de una rúbrica origen.
-     *
-     * @param string $codProfesor
-     * @param string $codMateria
-     * @param string $grupo
-     * @param string $semestre
-     * @param string $tipoPrevio
-     * @return array
-     */
-    public function obtener_rubrica_origen($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
-    {
-        return $this->obtener_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
     }
 }

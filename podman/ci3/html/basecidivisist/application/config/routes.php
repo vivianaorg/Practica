@@ -67,15 +67,17 @@ $route['moodle/actividades/(:any)'] = 'moodle/actividades/$1';
 $route['calificaciones'] = 'calificaciones/index';
 $route['calificaciones/index'] = 'calificaciones/index';
 $route['calificaciones/index/(:any)'] = 'calificaciones/index/$1';
-// Endpoints AJAX para Calificaciones y Rúbricas
-$route['calificaciones/guardar_rubrica_ajax'] = 'calificaciones/guardar_rubrica_ajax';
-$route['calificaciones/eliminar_rubrica_ajax'] = 'calificaciones/eliminar_rubrica_ajax';
-$route['calificaciones/desbloquear_corte_ajax'] = 'calificaciones/desbloquear_corte_ajax';
-$route['calificaciones/guardar_calificaciones_corte_ajax'] = 'calificaciones/guardar_calificaciones_corte_ajax';
-$route['calificaciones/listar_cursos_rubricas_ajax'] = 'calificaciones/listar_cursos_rubricas_ajax';
-$route['calificaciones/obtener_items_rubrica_ajax'] = 'calificaciones/obtener_items_rubrica_ajax';
-$route['dashboard/listar_cursos_rubricas_ajax'] = 'calificaciones/listar_cursos_rubricas_ajax';
-$route['dashboard/obtener_items_rubrica_ajax'] = 'calificaciones/obtener_items_rubrica_ajax';
+// Endpoints AJAX para Rúbricas (nuevo controlador separado)
+$route['calificaciones/guardar_rubrica_ajax'] = 'calificaciones_rubrica_ajax/guardar_rubrica_ajax';
+$route['calificaciones/eliminar_rubrica_ajax'] = 'calificaciones_rubrica_ajax/eliminar_rubrica_ajax';
+$route['calificaciones/desbloquear_corte_ajax'] = 'calificaciones_rubrica_ajax/desbloquear_corte_ajax';
+$route['calificaciones/listar_cursos_rubricas_ajax'] = 'calificaciones_rubrica_ajax/listar_cursos_rubricas_ajax';
+$route['calificaciones/obtener_items_rubrica_ajax'] = 'calificaciones_rubrica_ajax/obtener_items_rubrica_ajax';
+// Endpoints AJAX para Calificaciones de notas (nuevo controlador separado)
+$route['calificaciones/guardar_calificaciones_corte_ajax'] = 'calificaciones_notas_ajax/guardar_calificaciones_corte_ajax';
+// Retrocompatibilidad con dashboard/ para AJAX de rúbricas
+$route['dashboard/listar_cursos_rubricas_ajax'] = 'calificaciones_rubrica_ajax/listar_cursos_rubricas_ajax';
+$route['dashboard/obtener_items_rubrica_ajax'] = 'calificaciones_rubrica_ajax/obtener_items_rubrica_ajax';
 
 $route['calificaciones/configurar_rubrica'] = 'calificaciones/configurar_rubrica';
 $route['calificaciones/configurar_rubrica/(:any)'] = 'calificaciones/configurar_rubrica/$1';
@@ -93,14 +95,14 @@ $route['dashboard/actividades_moodle/(:any)'] = 'moodle/actividades/$1';
 $route['dashboard/configurar_rubrica'] = 'calificaciones/configurar_rubrica';
 $route['dashboard/configurar_rubrica/(:any)'] = 'calificaciones/configurar_rubrica/$1';
 $route['dashboard/configurar_rubrica/(:any)/(:any)'] = 'calificaciones/configurar_rubrica/$1/$2';
-$route['dashboard/guardar_rubrica_ajax'] = 'calificaciones/guardar_rubrica_ajax';
-$route['dashboard/eliminar_rubrica_ajax'] = 'calificaciones/eliminar_rubrica_ajax';
-$route['dashboard/desbloquear_corte_ajax'] = 'calificaciones/desbloquear_corte_ajax';
+$route['dashboard/guardar_rubrica_ajax'] = 'calificaciones_rubrica_ajax/guardar_rubrica_ajax';
+$route['dashboard/eliminar_rubrica_ajax'] = 'calificaciones_rubrica_ajax/eliminar_rubrica_ajax';
+$route['dashboard/desbloquear_corte_ajax'] = 'calificaciones_rubrica_ajax/desbloquear_corte_ajax';
 
 $route['dashboard/calificar_rubrica'] = 'calificaciones/calificar_rubrica';
 $route['dashboard/calificar_rubrica/(:any)'] = 'calificaciones/calificar_rubrica/$1';
 $route['dashboard/calificar_rubrica/(:any)/(:any)'] = 'calificaciones/calificar_rubrica/$1/$2';
-$route['dashboard/guardar_calificaciones_corte_ajax'] = 'calificaciones/guardar_calificaciones_corte_ajax';
+$route['dashboard/guardar_calificaciones_corte_ajax'] = 'calificaciones_notas_ajax/guardar_calificaciones_corte_ajax';
 
 $route['dashboard/calificaciones'] = 'calificaciones/index';
 $route['dashboard/calificaciones/(:any)'] = 'calificaciones/index/$1';

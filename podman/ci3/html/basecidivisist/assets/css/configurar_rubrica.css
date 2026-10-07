@@ -1,0 +1,267 @@
+/* ============================================================
+ * configurar_rubrica.css — Estilos para la vista de configuración de rúbricas
+ * ============================================================ */
+
+/* --- Layout de tarjetas de cortes (Tab Resumen) --- */
+.cortes-grid {
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.corte-card {
+    display: flex;
+    margin-bottom: 20px;
+}
+
+.corte-card__box {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.corte-card__box--locked {
+    border: 1px solid #d2d6de;
+    background-color: #f8f9fa;
+    opacity: 0.88;
+}
+
+.corte-card__header--locked {
+    background-color: #ededed;
+    color: #555;
+}
+
+.corte-card__calificado-label {
+    color: #777;
+    font-weight: 500;
+}
+
+.corte-card__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.corte-card__empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 35px 20px;
+}
+
+.corte-card__empty-icon {
+    opacity: 0.6;
+    margin-bottom: 8px;
+}
+
+.corte-card__footer {
+    padding: 10px 12px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.corte-card__footer--locked {
+    background: #f0f0f0;
+    border-top-color: #e4e4e4;
+}
+
+.corte-card__footer--open {
+    background: #fafafa;
+}
+
+.corte-card__actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* --- Sección de Importación de Rúbrica --- */
+.importar-rubrica {
+    margin-top: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    border-left: 3px solid #00c0ef;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.importar-rubrica__header {
+    background-color: #f8fafc;
+    padding: 10px 15px;
+}
+
+.importar-rubrica__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0073b7;
+}
+
+.importar-rubrica__title-icon {
+    margin-right: 6px;
+}
+
+.importar-rubrica__body {
+    padding: 15px;
+    background-color: #ffffff;
+}
+
+.importar-rubrica__hint {
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+
+/* --- Barra de Progreso de Ponderación --- */
+.progreso-ponderacion {
+    margin-bottom: 15px;
+    padding: 10px 14px;
+    background: #fdfdfd;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+}
+
+.progreso-ponderacion__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.progreso-ponderacion__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #444;
+}
+
+.progreso-ponderacion__badge {
+    font-size: 12px;
+    font-weight: bold;
+    padding: 3px 8px;
+}
+
+.progreso-barra {
+    margin-bottom: 0;
+    height: 16px;
+    border-radius: 3px;
+    background-color: #e9ecef;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.08);
+}
+
+.progreso-barra__fill {
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: bold;
+    transition: width 0.3s ease;
+}
+
+/* --- Barra de Acciones --- */
+.acciones-bar {
+    margin-top: 20px;
+    padding: 14px 18px;
+    background-color: #fcfcfc;
+    border: 1px solid #e3e7eb;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.acciones-bar__content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.acciones-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* --- Modal de la Aplicación --- */
+.modal-app__dialog {
+    max-width: 480px;
+    margin-top: 10%;
+}
+
+.modal-app__content {
+    border-radius: 6px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    border: none;
+    overflow: hidden;
+}
+
+.modal-app__header {
+    padding: 12px 16px;
+    color: #fff;
+    background-color: #3c8dbc;
+}
+
+.modal-app__close {
+    color: #fff;
+    opacity: 0.85;
+}
+
+.modal-app__title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.modal-app__body {
+    padding: 20px;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.5;
+}
+
+.modal-app__footer {
+    padding: 10px 16px;
+    background-color: #f9f9f9;
+    border-top: 1px solid #eee;
+}
+
+/* --- Alerta de corte cerrado --- */
+.alerta-corte-cerrado {
+    margin-bottom: 15px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.alerta-corte-cerrado__content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+/* --- Estilos para filas dinámicas del JS --- */
+.rubrica-manual-addon {
+    background-color: #f39c12;
+    color: #fff;
+    border-color: #e08e0b;
+}
+
+.rubrica-cell-center {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* --- Botones con sombra sutil --- */
+.btn-shadow-subtle {
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+.btn-shadow-primary {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.btn-font-bold {
+    font-weight: 600;
+}
