@@ -1,24 +1,26 @@
 # Bitácora Día 5: Reutilización e Importación de Rúbricas entre Cursos/Grupos
 
-Este documento describe la arquitectura técnica, lógica de auto-matching, flujo de persistencia y componentes de interfaz implementados durante la jornada del Día 5 para permitir a los docentes reutilizar o importar rúbricas configuradas previamente entre distintos cursos, grupos y cortes evaluativos en Divisist.
+Este documento describe la arquitectura técnica, la lógica de auto-matching, el flujo de persistencia, la experiencia de usuario y los componentes de interfaz desarrollados para permitir a los docentes reutilizar e importar rúbricas configuradas previamente entre distintos cursos, grupos y cortes evaluativos en Divisist.
 
 ---
 
 ## 1. Objetivo de la Jornada
-Implementar una solución integral para que el docente pueda:
-1. **Reutilizar rúbricas evaluativas** previamente configuradas en otros de sus cursos/grupos o cortes académicos hacia el curso y corte actual.
-2. **Consultar de manera dinámica** los cursos y cortes que poseen rúbricas registradas mediante llamadas asíncronas (AJAX).
-3. **Mapear automáticamente actividades entre cursos de Moodle** utilizando un algoritmo de *Auto-Matching por Equals Normalizado*, resolviendo la incompatibilidad de IDs distintos por curso en Moodle.
-4. **Manejar discrepancias de actividades**: si una actividad no coincide en nombre, conservar su porcentaje ponderado y permitir al docente seleccionarla manualmente.
-5. **Monitorear en tiempo real la ponderación** mediante una barra de progreso interactiva hasta alcanzar exactamente el 100%.
-6. **Preservar la integridad transaccional**: la importación opera como precarga en la interfaz; la persistencia en Oracle (`CONFIG_RUBRICA`) solo se ejecuta cuando el docente revisa y confirma haciendo clic en *"Guardar Rúbrica"*.
+Implementar una solución ergonómica e integral para que el docente pueda:
+1. **Reutilizar rúbricas evaluativas** previamente configuradas en otros de sus cursos/grupos o cortes académicos hacia el corte actual.
+2. **Acceder mediante una interfaz limpia y estética** a través de un botón dedicado y un modal flotante no intrusivo, evitando sobrecargar el espacio visual de trabajo.
+3. **Consultar de manera dinámica** los cursos y cortes que poseen rúbricas registradas mediante llamadas asíncronas (AJAX).
+4. **Mapear automáticamente actividades entre cursos de Moodle** utilizando un algoritmo de *Auto-Matching por Equals Normalizado*, resolviendo la discrepancia de IDs entre asignaturas.
+5. **Manejar discrepancias de actividades**: si una actividad no coincide en nombre, conservar su porcentaje ponderado y permitir al docente seleccionarla manualmente.
+6. **Optimizar la presentación visual**: consolidar el cálculo de porcentaje directamente en el pie de tabla, eliminando elementos visuales redundantes.
+7. **Garantizar la estabilidad de la interfaz**: prevenir bloqueos de pantalla o capas oscuras residuales (*backdrop overlay*) durante el cierre o apertura de modales.
+8. **Preservar la integridad transaccional**: la importación opera como precarga en el formulario; la persistencia en Oracle (`CONFIG_RUBRICA`) solo se ejecuta cuando el docente revisa y confirma haciendo clic en *"Guardar Rúbrica"*.
 
 ---
 
 ## 2. Mecanismo de Auto-Matching (Equals Normalizado)
 
 ### 2.1 Problema Identificado
-En Moodle, cada curso asigna identificadores numéricos únicos e independientes (`id` de actividad/módulo). Por tanto, copiar IDs directamente desde un curso origen generaba inconsistencias o actividades inválidas en el curso destino.
+En Moodle, cada curso asigna identificadores numéricos independientes (`id` de actividad/módulo). Por tanto, copiar IDs directamente desde un curso origen generaba inconsistencias o actividades inválidas en el curso destino.
 
 ### 2.2 Algoritmo de Coincidencia Exacta Normalizada
 Para resolver la discrepancia de IDs, se diseñó e implementó un algoritmo en JavaScript del lado del cliente que compara el nombre de las actividades origen contra las actividades disponibles en Moodle para el curso actual (`actividadesDisponibles`):
@@ -31,7 +33,7 @@ function normalizarTexto(texto) {
         .trim()
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, ""); // Remueve acentos y tildes
+        .replace(/[\u0300-\u036f]/g, "");
 }
 ```
 
@@ -47,10 +49,44 @@ function normalizarTexto(texto) {
 
 ---
 
-## 3. Componentes Desarrollados y Modificados
+## 3. Diseño de la Interfaz y Componentes Desarrollados
 
-### 3.1 Modelo: `application/models/Subnotas_model.php`
-* **`obtener_cursos_con_rubricas($codProfesor)`:**
+### 3.1 Botón Estético de Acción Rápida
+En lugar de cajas fijas que consumen espacio vertical en la pantalla, la funcionalidad se integró como un botón complementario en la barra de acciones:
+- **Estilo Visual**: Tono suave y neutro (`#f4f6f8` con borde `#d0d7de`), armonizando con los botones de *"Agregar Actividad de Moodle"* y *"Agregar Actividad Manual"*.
+- **Comportamiento**: Abre de forma dinámica el modal flotante de selección de origen.
+
+### 3.2 Modal Flotante de Reutilización (`#modal_reutilizar_rubrica`)
+Componente modular que contiene:
+- Selector asíncrono de **Curso Origen**.
+- Selector dependiente de **Corte Evaluativo Origen** (muestra la cantidad de actividades configuradas).
+- Validación de corte: si se selecciona el curso en edición, deshabilita el mismo corte para evitar importaciones redundantes, pero permite seleccionar otros cortes del mismo curso.
+- Botón **"Aplicar a este corte"** con validación y confirmación previa si ya existen actividades con porcentaje en la tabla.
+
+### 3.3 Control y Limpieza de Modales (Prevención de Pantalla Negra)
+Para evitar el error recurrente de Bootstrap donde capas `.modal-backdrop` huérfanas bloquean y oscurecen la pantalla tras cerrar diálogos, se implementó una rutina de saneamiento en JavaScript:
+
+```javascript
+function limpiarBackdropsModal() {
+    var backdrops = document.querySelectorAll(".modal-backdrop");
+    for (var i = 0; i < backdrops.length; i++) {
+        if (backdrops[i] && backdrops[i].parentNode) {
+            backdrops[i].parentNode.removeChild(backdrops[i]);
+        }
+    }
+    document.body.classList.remove("modal-open");
+    document.body.style.paddingRight = "";
+}
+```
+
+Esta rutina se ejecuta de forma sincronizada en los cierres de modales y en el evento `hidden.bs.modal`, garantizando que la tabla y el contenido permanezcan inmediatamente accesibles y visibles.
+
+---
+
+## 4. Componentes del Backend
+
+### 4.1 Modelo: `application/models/Subnotas_model.php`
+- **`obtener_cursos_con_rubricas($codProfesor)`:**
   Consulta en Oracle (`CONFIG_RUBRICA`) las asignaturas, grupos, semestres y cortes configurados para el profesor:
   ```sql
   SELECT COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, COUNT(*) AS TOTAL_ITEMS
@@ -59,19 +95,17 @@ function normalizarTexto(texto) {
   GROUP BY COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO 
   ORDER BY SEMESTRE DESC, COD_MATERIA ASC, GRUPO ASC, TIPO_PREVIO ASC
   ```
-* **`obtener_rubrica_origen($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)`:**
+- **`obtener_rubrica_origen($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)`:**
   Recupera el detalle de actividades, tipos y porcentajes del curso y corte seleccionados como origen.
 
-### 3.2 Controladores: `Dashboard.php` y `Calificaciones.php`
-* **`listar_cursos_rubricas_ajax()`:**
-  - Consulta las rúbricas registradas por el docente en Oracle.
-  - Se comunica con la API de Moodle (`Moodle_model->listar_cursos()`) para asociar el nombre descriptivo institucional de cada asignatura (ej. *"ESTRUCTURAS DE DATOS - Grupo A (2026-1)"*).
-  - Devuelve la lista estructurada con los cortes que tienen rúbricas disponibles para importación.
-* **`obtener_items_rubrica_ajax()`:**
-  - Valida parámetros y retorna en formato JSON el conjunto de actividades y porcentajes de la rúbrica seleccionada.
+### 4.2 Controladores: `Dashboard.php` y `Calificaciones.php`
+- **`listar_cursos_rubricas_ajax()`:**
+  Consulta las rúbricas registradas por el docente en Oracle y obtiene los nombres descriptivos desde la API de Moodle para estructurar la lista del selector.
+- **`obtener_items_rubrica_ajax()`:**
+  Retorna en formato JSON las actividades y porcentajes de la rúbrica seleccionada.
 
-### 3.3 Rutas: `application/config/routes.php`
-Se registraron los endpoints para compatibilidad con las llamadas desde `calificaciones/` y `dashboard/`:
+### 4.3 Rutas: `application/config/routes.php`
+Endpoints registrados para comunicación AJAX:
 ```php
 $route['calificaciones/listar_cursos_rubricas_ajax'] = 'calificaciones/listar_cursos_rubricas_ajax';
 $route['calificaciones/obtener_items_rubrica_ajax']   = 'calificaciones/obtener_items_rubrica_ajax';
@@ -79,50 +113,40 @@ $route['dashboard/listar_cursos_rubricas_ajax']        = 'calificaciones/listar_
 $route['dashboard/obtener_items_rubrica_ajax']         = 'calificaciones/obtener_items_rubrica_ajax';
 ```
 
-### 3.4 Vista: `application/views/dashboard/configurar_rubrica.php`
-* **Panel de Reutilización:** Caja colapsable AdminLTE en la pestaña de configuración con:
-  - Selector de **Curso Origen** (cargado vía AJAX).
-  - Selector dinámico de **Corte Evaluativo Origen** (se habilita al seleccionar el curso y muestra los cortes disponibles junto con su cantidad de actividades).
-  - Botón **"Aplicar a este corte"** con validación y confirmación modal previa en caso de que existan datos en la tabla.
-  - Restricción: Si el usuario selecciona el curso actual, deshabilita el mismo corte que se está editando para evitar importaciones redundantes, pero permite seleccionar los demás cortes del mismo curso.
-* **Barra de Progreso en Tiempo Real:** Componente visual interactivo (`.progress-bar`) con badge de estado (`label`):
-  - Amarillo / Incompleto si es inferior al 100%.
-  - Verde / Completo cuando alcanza exactamente el 100%.
-  - Rojo / Excedido si la sumatoria sobrepasa el 100%.
-* **Mensajes de Retroalimentación:** Muestra alertas informativas con el resumen de la importación (número de actividades emparejadas automáticamente vs. número de actividades pendientes por selección manual).
-
 ---
 
-## 4. Flujo de Trabajo del Docente (Paso a Paso)
+## 5. Flujo de Trabajo del Docente
 
 ```mermaid
 flowchart TD
     A[Docente ingresa a Configurar Rúbrica] --> B[Selecciona corte actual a configurar]
-    B --> C[Abre panel: Cargar / Reutilizar Rúbrica]
-    C --> D[Elige Curso Origen de su listado]
-    D --> E[Elige Corte Evaluativo Origen]
+    B --> C[Clic en botón 'Reutilizar Rúbrica']
+    C --> D[Se abre Modal Flotante de Reutilización]
+    D --> E[Elige Curso y Corte Evaluativo Origen]
     E --> F[Clic en 'Aplicar a este corte']
-    F --> G{¿Hay actividades cargadas?}
+    F --> G{¿Hay datos en la tabla?}
     G -- Sí --> H[Modal solicita confirmación de reemplazo]
     G -- No --> I[Llamada AJAX para obtener items origen]
     H -- Confirmado --> I
-    I --> J[Ejecución de Auto-Matching Normalizado]
-    J --> K[Precarga de filas y porcentajes en tabla]
-    K --> L[Barra de ponderación se actualiza a 100%]
-    L --> M{¿Actividades pendientes por vincular?}
-    M -- Sí --> N[Docente selecciona actividades faltantes]
-    M -- No --> O[Habilitación de botón 'Guardar Rúbrica']
-    N --> O
-    O --> P[Docente guarda en Oracle CONFIG_RUBRICA]
+    I --> J[Cierre limpio de modales y saneamiento de backdrop]
+    J --> K[Ejecución de Auto-Matching Normalizado]
+    K --> L[Precarga inmediata de filas y porcentajes en tabla]
+    L --> M[Desplazamiento automático y alerta visual en pantalla]
+    M --> N{¿Actividades pendientes por vincular?}
+    N -- Sí --> O[Docente selecciona actividades homólogas]
+    N -- No --> P[Habilitación de botón 'Guardar Rúbrica']
+    O --> P
+    P --> Q[Docente guarda en Oracle CONFIG_RUBRICA]
 ```
 
 ---
 
-## 5. Comandos de Sincronización en la Máquina Virtual
+## 6. Comandos de Sincronización en la Máquina Virtual
 
-Para sincronizar los archivos modificados en la máquina virtual Linux en la ruta `$HOME/Documentos/podman/ci3/html/basecidivisist`:
+Para sincronizar los archivos en la máquina virtual Linux en la ruta `$HOME/Documentos/podman/ci3/html/basecidivisist`:
 
 ```bash
+TOKEN="tu_token_aqui"
 BASE_URL="https://raw.githubusercontent.com/vivianaorg/Practica/main/podman/ci3/html/basecidivisist"
 DESTINO="$HOME/Documentos/podman/ci3/html/basecidivisist"
 
@@ -131,6 +155,7 @@ curl -H "Authorization: token $TOKEN" -sSL "$BASE_URL/application/controllers/Da
 curl -H "Authorization: token $TOKEN" -sSL "$BASE_URL/application/controllers/Calificaciones.php" -o "$DESTINO/application/controllers/Calificaciones.php"
 curl -H "Authorization: token $TOKEN" -sSL "$BASE_URL/application/config/routes.php" -o "$DESTINO/application/config/routes.php"
 curl -H "Authorization: token $TOKEN" -sSL "$BASE_URL/application/views/dashboard/configurar_rubrica.php" -o "$DESTINO/application/views/dashboard/configurar_rubrica.php"
+curl -H "Authorization: token $TOKEN" -sSL "$BASE_URL/assets/js/configurar_rubrica.js" -o "$DESTINO/assets/js/configurar_rubrica.js"
+curl -H "Authorization: token $TOKEN" -sSL "$BASE_URL/application/views/dashboard/calificar_rubrica_js.php" -o "$DESTINO/application/views/dashboard/calificar_rubrica_js.php"
+curl -H "Authorization: token $TOKEN" -sSL "$BASE_URL/application/views/dashboard/calificar_rubrica_modal_dialog.php" -o "$DESTINO/application/views/dashboard/calificar_rubrica_modal_dialog.php"
 ```
-
-> **Nota:** Se utiliza la variable `$HOME` en lugar de la tilde `"~"` entre comillas para garantizar que la ruta absoluta se expanda correctamente en entornos Linux/Bash sin causar errores de escritura en cURL.
