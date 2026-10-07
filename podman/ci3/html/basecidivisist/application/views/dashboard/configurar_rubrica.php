@@ -201,54 +201,6 @@
                         </div>
                     </div>
 
-                    <!-- Sección: Cargar / Reutilizar Rúbrica de otro Curso -->
-                    <div class="box box-info" id="box_reutilizar_rubrica" style="margin-top: 15px; margin-bottom: 20px; border-radius: 4px; border-left: 3px solid #00c0ef; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
-                        <div class="box-header with-border" style="background-color: #f8fafc; padding: 10px 15px;">
-                            <h3 class="box-title" style="font-size: 14px; font-weight: 600; color: #0073b7;">
-                                <i class="fa fa-clone" style="margin-right: 6px;"></i> Cargar / Reutilizar Rúbrica de otro Curso
-                            </h3>
-                            <div class="box-tools pull-right">
-                                <button type="button" class="btn btn-box-tool" data-widget="collapse" title="Minimizar / Expandir">
-                                    <i class="fa fa-minus"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="box-body" style="padding: 15px; background-color: #ffffff;">
-                            <p class="text-muted" style="margin-bottom: 12px; font-size: 13px;">
-                                <i class="fa fa-info-circle text-info"></i> Seleccione un curso y corte previamente configurado para importar sus actividades y porcentajes a este corte actual. El sistema intentará emparejar automáticamente cada actividad por su nombre exacto en Moodle.
-                            </p>
-                            <div class="row">
-                                <div class="col-md-5 col-sm-6">
-                                    <div class="form-group" style="margin-bottom: 10px;">
-                                        <label for="select_curso_origen" style="font-weight: 600; font-size: 12px;">
-                                            <i class="fa fa-book text-muted"></i> Curso Origen:
-                                        </label>
-                                        <select id="select_curso_origen" class="form-control input-sm" style="border-radius: 3px;" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
-                                            <option value="">-- Cargando cursos con rúbricas... --</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-sm-6">
-                                    <div class="form-group" style="margin-bottom: 10px;">
-                                        <label for="select_corte_origen" style="font-weight: 600; font-size: 12px;">
-                                            <i class="fa fa-calendar-check-o text-muted"></i> Corte Evaluativo Origen:
-                                        </label>
-                                        <select id="select_corte_origen" class="form-control input-sm" style="border-radius: 3px;" disabled>
-                                            <option value="">-- Seleccione curso primero --</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-sm-12" style="display: flex; align-items: flex-end; margin-bottom: 10px;">
-                                    <button type="button" class="btn btn-primary btn-sm btn-block" id="btn_aplicar_rubrica_importada" disabled style="font-weight: 600; padding: 6px 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-                                        <i class="fa fa-arrow-circle-down"></i> Aplicar a este corte
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="alerta_importacion_feedback" style="display: none; margin-top: 10px; margin-bottom: 0;" class="alert">
-                            </div>
-                        </div>
-                    </div>
-
                     <div id="mensaje_ajax" style="display: none; margin-top: 15px;"></div>
 
                     <div class="table-responsive">
@@ -276,13 +228,15 @@
 
                     <div style="margin-top: 20px; padding: 14px 18px; background-color: #fcfcfc; border: 1px solid #e3e7eb; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <!-- Acciones para agregar actividades -->
                             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
                                 <button type="button" class="btn btn-primary" id="btn_agregar_fila" <?php echo ($corte_calificado ? 'disabled' : ''); ?> style="font-weight: 600; box-shadow: 0 1px 2px #caf0f8;">
                                     <i class="fa fa-plus-circle"></i> Agregar Actividad de Moodle
                                 </button>
                                 <button type="button" class="btn btn-info" id="btn_agregar_manual" <?php echo ($corte_calificado ? 'disabled' : ''); ?> style="font-weight: 600; box-shadow: 0 1px 2px #c0d6df;">
                                     <i class="fa fa-pencil-square-o"></i> Agregar Actividad Manual
+                                </button>
+                                <button type="button" class="btn btn-default" id="btn_abrir_modal_reutilizar" <?php echo ($corte_calificado ? 'disabled' : ''); ?> style="font-weight: 600; background-color: #f4f6f8; color: #3b5998; border: 1px solid #d0d7de; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                                    <i class="fa fa-clone"></i> Reutilizar Rúbrica
                                 </button>
                             </div>
 
@@ -307,6 +261,51 @@
                     </div>
 
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal_reutilizar_rubrica" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 520px; margin-top: 8%;">
+        <div class="modal-content" style="border-radius: 6px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); border: none; overflow: hidden;">
+            <div class="modal-header" style="padding: 12px 18px; color: #334e68; background-color: #f0f4f8; border-bottom: 1px solid #d9e2ec;">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #627d98; opacity: 0.85;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" style="font-size: 15px; font-weight: 600; color: #243b53;">
+                    <i class="fa fa-clone text-muted" style="margin-right: 6px;"></i> Reutilizar Rúbrica de otro Curso o Corte
+                </h4>
+            </div>
+            <div class="modal-body" style="padding: 20px; font-size: 13px; color: #334e68; line-height: 1.5;">
+                <p class="text-muted" style="margin-bottom: 15px;">
+                    Seleccione un curso y corte previamente configurado para importar sus actividades y porcentajes a este corte.
+                </p>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="select_curso_origen" style="font-weight: 600; font-size: 12px; color: #486581;">
+                        <i class="fa fa-book text-muted"></i> Curso Origen:
+                    </label>
+                    <select id="select_curso_origen" class="form-control" style="border-radius: 4px;" <?php echo ($corte_calificado ? 'disabled' : ''); ?>>
+                        <option value="">-- Cargando cursos con rúbricas... --</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="select_corte_origen" style="font-weight: 600; font-size: 12px; color: #486581;">
+                        <i class="fa fa-calendar-check-o text-muted"></i> Corte Evaluativo Origen:
+                    </label>
+                    <select id="select_corte_origen" class="form-control" style="border-radius: 4px;" disabled>
+                        <option value="">-- Seleccione curso primero --</option>
+                    </select>
+                </div>
+                <div id="alerta_importacion_feedback" style="display: none; margin-top: 10px; margin-bottom: 0;" class="alert"></div>
+            </div>
+            <div class="modal-footer" style="padding: 12px 18px; background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
+                <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">
+                    <i class="fa fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" id="btn_aplicar_rubrica_importada" disabled style="font-weight: 600; padding: 6px 14px;">
+                    <i class="fa fa-arrow-circle-down"></i> Aplicar a este corte
+                </button>
             </div>
         </div>
     </div>

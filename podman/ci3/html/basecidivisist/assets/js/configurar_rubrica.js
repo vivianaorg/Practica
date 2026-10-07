@@ -76,6 +76,13 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
+    var btnAbrirReutilizar = document.getElementById("btn_abrir_modal_reutilizar");
+    if (btnAbrirReutilizar && !corteCalificado) {
+        btnAbrirReutilizar.addEventListener("click", function() {
+            abrirModalReutilizar();
+        });
+    }
+
     var btnGuardar = document.getElementById("btn_guardar_rubrica");
     if (btnGuardar && !corteCalificado) {
         btnGuardar.addEventListener("click", guardarRubrica);
@@ -280,23 +287,27 @@ function aplicarRubricaImportada() {
         }
     }
 
+    cerrarModalReutilizar();
+
     var proceder = function() {
         ejecutarImportacionRubrica(cursoObj, corteOrigen);
     };
 
     if (tieneDatos) {
         var textoCorteOrigen = selectCorte.options[selectCorte.selectedIndex].text;
-        mostrarConfirmacionApp(
-            "¿Desea cargar la rúbrica de <strong>" + escapeHtml(optCurso.text) + " (" + escapeHtml(textoCorteOrigen) + ")</strong>?<br><br><span class='text-warning'><i class='fa fa-exclamation-triangle'></i> Se reemplazarán las actividades y porcentajes actuales de este corte en el formulario.</span><br><small class='text-muted'>Los cambios solo se guardarán en la base de datos cuando haga clic en 'Guardar Rúbrica'.</small>",
-            proceder,
-            {
-                tipo: "warning",
-                titulo: "Reemplazar Rúbrica Actual",
-                btnTexto: "Aceptar",
-                btnClase: "btn-warning",
-                icono: "fa-arrow-circle-down"
-            }
-        );
+        setTimeout(function() {
+            mostrarConfirmacionApp(
+                "¿Desea cargar la rúbrica de <strong>" + escapeHtml(optCurso.text) + " (" + escapeHtml(textoCorteOrigen) + ")</strong>?<br><br><span class='text-warning'><i class='fa fa-exclamation-triangle'></i> Se reemplazarán las actividades y porcentajes actuales de este corte en el formulario.</span><br><small class='text-muted'>Los cambios solo se guardarán en la base de datos cuando haga clic en 'Guardar Rúbrica'.</small>",
+                proceder,
+                {
+                    tipo: "warning",
+                    titulo: "Reemplazar Rúbrica Actual",
+                    btnTexto: "Aceptar",
+                    btnClase: "btn-warning",
+                    icono: "fa-arrow-circle-down"
+                }
+            );
+        }, 150);
     } else {
         proceder();
     }
@@ -923,4 +934,33 @@ if (typeof $ !== "undefined") {
     $(document).on("hidden.bs.modal", "#modal_app_dialog", function() {
         limpiarBackdropsModal();
     });
+    $(document).on("hidden.bs.modal", "#modal_reutilizar_rubrica", function() {
+        limpiarBackdropsModal();
+    });
+}
+
+function abrirModalReutilizar() {
+    limpiarBackdropsModal();
+    if (typeof $ !== "undefined" && $("#modal_reutilizar_rubrica").modal) {
+        $("#modal_reutilizar_rubrica").modal("show");
+    } else {
+        var m = document.getElementById("modal_reutilizar_rubrica");
+        if (m) {
+            m.style.display = "block";
+            m.className = "modal fade in";
+        }
+    }
+}
+
+function cerrarModalReutilizar() {
+    if (typeof $ !== "undefined" && $("#modal_reutilizar_rubrica").modal) {
+        $("#modal_reutilizar_rubrica").modal("hide");
+    }
+    var m = document.getElementById("modal_reutilizar_rubrica");
+    if (m) {
+        m.style.display = "none";
+        m.className = "modal fade";
+        m.setAttribute("aria-hidden", "true");
+    }
+    limpiarBackdropsModal();
 }
