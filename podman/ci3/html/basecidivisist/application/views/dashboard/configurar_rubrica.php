@@ -249,24 +249,7 @@
                         </div>
                     </div>
 
-                    <hr style="margin-top: 5px; margin-bottom: 15px;">
-
-                    <!-- Barra de progreso de ponderación en tiempo real -->
-                    <div style="margin-bottom: 15px; padding: 10px 14px; background: #fdfdfd; border: 1px solid #e9ecef; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <span style="font-size: 12px; font-weight: 600; color: #444;">
-                                <i class="fa fa-tasks text-muted"></i> Ponderación Total de la Rúbrica (Objetivo: 100%):
-                            </span>
-                            <span id="badge_progreso_porcentaje" class="label label-default" style="font-size: 12px; font-weight: bold; padding: 3px 8px;">0%</span>
-                        </div>
-                        <div class="progress progress-sm" style="margin-bottom: 0; height: 16px; border-radius: 3px; background-color: #e9ecef; box-shadow: inset 0 1px 2px rgba(0,0,0,0.08);">
-                            <div id="barra_progreso_porcentaje" class="progress-bar progress-bar-yellow" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%; font-size: 11px; line-height: 16px; font-weight: bold; transition: width 0.3s ease;">
-                                0%
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="mensaje_ajax" style="display: none;"></div>
+                    <div id="mensaje_ajax" style="display: none; margin-top: 15px;"></div>
 
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped" id="tabla_rubrica">
@@ -346,7 +329,7 @@
                 <button type="button" class="btn btn-default btn-sm" id="modal_app_btn_cancelar" data-dismiss="modal">
                     <i class="fa fa-times"></i> Cancelar
                 </button>
-                <button type="button" class="btn btn-primary btn-sm" id="modal_app_btn_confirmar">
+                <button type="button" class="btn btn-primary btn-sm" id="modal_app_btn_confirmar" data-dismiss="modal">
                     <i class="fa fa-check"></i> Aceptar
                 </button>
             </div>

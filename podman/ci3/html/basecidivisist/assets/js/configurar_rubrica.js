@@ -292,7 +292,7 @@ function aplicarRubricaImportada() {
             {
                 tipo: "warning",
                 titulo: "Reemplazar Rúbrica Actual",
-                btnTexto: "Sí, Cargar Rúbrica",
+                btnTexto: "Aceptar",
                 btnClase: "btn-warning",
                 icono: "fa-arrow-circle-down"
             }
@@ -386,7 +386,6 @@ function ejecutarImportacionRubrica(cursoObj, corteOrigen) {
         actualizarOpcionesDisponibles();
         recalcularTotales();
 
-        // Mostrar notificación y feedback descriptivo
         var feedbackDiv = document.getElementById("alerta_importacion_feedback");
         if (feedbackDiv) {
             feedbackDiv.style.display = "block";
@@ -397,24 +396,26 @@ function ejecutarImportacionRubrica(cursoObj, corteOrigen) {
             } else {
                 feedbackDiv.className = "alert alert-success";
                 feedbackDiv.innerHTML = '<i class="fa fa-check-circle"></i> ' +
-                    'Rúbrica cargada con éxito: las <strong>' + totalItems + '</strong> actividades fueron vinculadas al 100%.';
+                    'Rúbrica cargada con éxito: las <strong>' + totalItems + '</strong> actividades fueron vinculadas.';
             }
         }
 
-        var detalleMsg = "Se cargó la rúbrica con un total de <strong>" + totalItems + "</strong> actividad(es):<br><ul style='margin-top: 8px;'>";
-        if (autoCoincidentes > 0) {
-            detalleMsg += "<li><strong style='color: #00a65a;'>" + autoCoincidentes + "</strong> actividad(es) vinculada(s) automáticamente por nombre.</li>";
+        var msgDiv = document.getElementById("mensaje_ajax");
+        if (msgDiv) {
+            msgDiv.style.display = "block";
+            if (pendientesManual > 0) {
+                msgDiv.className = "alert alert-warning";
+                msgDiv.innerHTML = '<i class="fa fa-exclamation-circle"></i> Rúbrica cargada con <strong>' + totalItems + '</strong> actividades (<strong>' + autoCoincidentes + '</strong> automáticas y <strong>' + pendientesManual + '</strong> por seleccionar). Recuerde hacer clic en <strong>Guardar Rúbrica</strong> al finalizar.';
+            } else {
+                msgDiv.className = "alert alert-success";
+                msgDiv.innerHTML = '<i class="fa fa-check-circle"></i> Rúbrica cargada con éxito con <strong>' + totalItems + '</strong> actividades vinculadas. Recuerde hacer clic en <strong>Guardar Rúbrica</strong> para guardar.';
+            }
         }
-        if (pendientesManual > 0) {
-            detalleMsg += "<li><strong style='color: #e08e0b;'>" + pendientesManual + "</strong> actividad(es) con porcentaje cargado pero pendientes por seleccionar en el menú desplegable.</li>";
-        }
-        if (manuales > 0) {
-            detalleMsg += "<li><strong style='color: #0073b7;'>" + manuales + "</strong> actividad(es) manual(es).</li>";
-        }
-        detalleMsg += "</ul>";
-        detalleMsg += "<small class='text-muted'>Revise la tabla y haga clic en <strong>'Guardar Rúbrica'</strong> para almacenar los cambios en la base de datos.</small>";
 
-        mostrarAlertaApp(detalleMsg, (pendientesManual > 0 ? "warning" : "success"), "Rúbrica Importada");
+        var tablaEl = document.getElementById("tabla_rubrica");
+        if (tablaEl) {
+            tablaEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
     })
     .catch(function(err) {
         console.error("Error al obtener ítems de la rúbrica:", err);
@@ -595,35 +596,7 @@ function recalcularTotales() {
 
     var tfootTotal = document.getElementById("tfoot_total_porcentaje");
     var btnGuardar = document.getElementById("btn_guardar_rubrica");
-    var barraProgreso = document.getElementById("barra_progreso_porcentaje");
-    var badgeProgreso = document.getElementById("badge_progreso_porcentaje");
 
-    // Actualizar barra de progreso en tiempo real
-    if (barraProgreso) {
-        var pctAncho = Math.min(Math.max(total, 0), 100);
-        barraProgreso.style.width = pctAncho + "%";
-        barraProgreso.textContent = total + "%";
-
-        if (total === 100) {
-            barraProgreso.className = "progress-bar progress-bar-success";
-            if (badgeProgreso) {
-                badgeProgreso.className = "label label-success";
-                badgeProgreso.textContent = "100% Completo";
-            }
-        } else if (total > 100) {
-            barraProgreso.className = "progress-bar progress-bar-danger";
-            if (badgeProgreso) {
-                badgeProgreso.className = "label label-danger";
-                badgeProgreso.textContent = total + "% (Excedido)";
-            }
-        } else {
-            barraProgreso.className = "progress-bar progress-bar-yellow";
-            if (badgeProgreso) {
-                badgeProgreso.className = "label label-warning";
-                badgeProgreso.textContent = total + "% (Incompleto)";
-            }
-        }
-    }
 
     // Actualizar el total ponderado en el pie de la tabla
     if (tfootTotal) {
@@ -853,8 +826,12 @@ function mostrarAlertaApp(mensaje, tipo, titulo, onCerrar) {
         btnConfirmar.onclick = function() {
             cerrarModalApp();
             if (typeof _modalAppCallbackCerrar === "function") {
-                _modalAppCallbackCerrar();
+                var cb = _modalAppCallbackCerrar;
                 _modalAppCallbackCerrar = null;
+                setTimeout(function() {
+                    limpiarBackdropsModal();
+                    cb();
+                }, 100);
             }
         };
     }
@@ -892,8 +869,12 @@ function mostrarConfirmacionApp(mensaje, onConfirmar, opciones) {
         btnConfirmar.onclick = function() {
             cerrarModalApp();
             if (typeof _modalAppCallbackConfirmar === "function") {
-                _modalAppCallbackConfirmar();
+                var cb = _modalAppCallbackConfirmar;
                 _modalAppCallbackConfirmar = null;
+                setTimeout(function() {
+                    limpiarBackdropsModal();
+                    cb();
+                }, 100);
             }
         };
     }
@@ -901,7 +882,19 @@ function mostrarConfirmacionApp(mensaje, onConfirmar, opciones) {
     abrirModalApp();
 }
 
+function limpiarBackdropsModal() {
+    var backdrops = document.querySelectorAll(".modal-backdrop");
+    for (var i = 0; i < backdrops.length; i++) {
+        if (backdrops[i] && backdrops[i].parentNode) {
+            backdrops[i].parentNode.removeChild(backdrops[i]);
+        }
+    }
+    document.body.classList.remove("modal-open");
+    document.body.style.paddingRight = "";
+}
+
 function abrirModalApp() {
+    limpiarBackdropsModal();
     if (typeof $ !== "undefined" && $("#modal_app_dialog").modal) {
         $("#modal_app_dialog").modal("show");
     } else {
@@ -916,11 +909,18 @@ function abrirModalApp() {
 function cerrarModalApp() {
     if (typeof $ !== "undefined" && $("#modal_app_dialog").modal) {
         $("#modal_app_dialog").modal("hide");
-    } else {
-        var m = document.getElementById("modal_app_dialog");
-        if (m) {
-            m.style.display = "none";
-            m.className = "modal fade";
-        }
     }
+    var m = document.getElementById("modal_app_dialog");
+    if (m) {
+        m.style.display = "none";
+        m.className = "modal fade";
+        m.setAttribute("aria-hidden", "true");
+    }
+    limpiarBackdropsModal();
+}
+
+if (typeof $ !== "undefined") {
+    $(document).on("hidden.bs.modal", "#modal_app_dialog", function() {
+        limpiarBackdropsModal();
+    });
 }

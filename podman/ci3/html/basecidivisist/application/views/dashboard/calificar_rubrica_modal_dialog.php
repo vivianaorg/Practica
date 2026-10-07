@@ -15,7 +15,7 @@
                 <button type="button" class="btn btn-default btn-sm" id="modal_app_btn_cancelar" data-dismiss="modal">
                     <i class="fa fa-times"></i> Cancelar
                 </button>
-                <button type="button" class="btn btn-primary btn-sm" id="modal_app_btn_confirmar">
+                <button type="button" class="btn btn-primary btn-sm" id="modal_app_btn_confirmar" data-dismiss="modal">
                     <i class="fa fa-check"></i> Aceptar
                 </button>
             </div>

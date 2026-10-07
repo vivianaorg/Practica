@@ -558,7 +558,19 @@ function mostrarConfirmacionApp(mensaje, onConfirmar, opciones) {
     abrirModalApp();
 }
 
+function limpiarBackdropsModal() {
+    var backdrops = document.querySelectorAll(".modal-backdrop");
+    for (var i = 0; i < backdrops.length; i++) {
+        if (backdrops[i] && backdrops[i].parentNode) {
+            backdrops[i].parentNode.removeChild(backdrops[i]);
+        }
+    }
+    document.body.classList.remove("modal-open");
+    document.body.style.paddingRight = "";
+}
+
 function abrirModalApp() {
+    limpiarBackdropsModal();
     if (typeof $ !== "undefined" && $("#modal_app_dialog").modal) {
         $("#modal_app_dialog").modal("show");
     } else {
@@ -573,12 +585,19 @@ function abrirModalApp() {
 function cerrarModalApp() {
     if (typeof $ !== "undefined" && $("#modal_app_dialog").modal) {
         $("#modal_app_dialog").modal("hide");
-    } else {
-        var m = document.getElementById("modal_app_dialog");
-        if (m) {
-            m.style.display = "none";
-            m.className = "modal fade";
-        }
     }
+    var m = document.getElementById("modal_app_dialog");
+    if (m) {
+        m.style.display = "none";
+        m.className = "modal fade";
+        m.setAttribute("aria-hidden", "true");
+    }
+    limpiarBackdropsModal();
+}
+
+if (typeof $ !== "undefined") {
+    $(document).on("hidden.bs.modal", "#modal_app_dialog", function() {
+        limpiarBackdropsModal();
+    });
 }
 </script>
