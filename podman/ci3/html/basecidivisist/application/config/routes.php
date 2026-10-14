@@ -63,6 +63,17 @@ $route['moodle/cursos'] = 'moodle/cursos';
 $route['moodle/actividades'] = 'moodle/actividades';
 $route['moodle/actividades/(:any)'] = 'moodle/actividades/$1';
 
+// Rutas Docente
+$route['docente'] = 'docente/grupos_asignados';
+$route['docente/grupos_asignados'] = 'docente/grupos_asignados';
+$route['docente/(:any)'] = 'docente/$1';
+
+// Rutas Estudiante (Información Académica)
+$route['informacion_academica'] = 'informacion_academica/materias';
+$route['informacion_academica/materias'] = 'informacion_academica/materias';
+$route['informacion_academica/obtener_subnotas_rubrica'] = 'informacion_academica/obtener_subnotas_rubrica';
+$route['informacion_academica/(:any)'] = 'informacion_academica/$1';
+
 // Rutas amigables Calificaciones y Rubricas
 $route['calificaciones'] = 'calificaciones/index';
 $route['calificaciones/index'] = 'calificaciones/index';
