@@ -26,7 +26,7 @@
         </div>
         <ul class="sidebar-menu">
             <li class="header">NAVEGACION PRINCIPAL</li>
-            <li class="<?php echo (in_array($item_sidebar_active, array("dashboard", "nevegacion2", "nevegacion3", "nevegacion4", "actividades_moodle"))) ? "active" : ""; ?> treeview">
+            <li class="<?php echo (in_array($item_sidebar_active, array("dashboard", "nevegacion2", "nevegacion3", "nevegacion4", "actividades_moodle", "materias"))) ? "active" : ""; ?> treeview">
                 <a href="#">
                     <i class="fa fa-info-circle"></i> <span>Grupo de enlaces</span> <i class="fa fa-angle-left pull-right"></i>
                 </a>
@@ -45,6 +45,9 @@
                     </li>
                     <li class="hvr-icon-back2 <?php echo ($item_sidebar_active == "actividades_moodle") ? "active" : ""; ?>">
                         <a href="<?php echo site_url('moodle'); ?>"> Cursos Moodle <small class="label pull-right bg-blue">NPLad</small> </a>
+                    </li>
+                    <li class="hvr-icon-back2 <?php echo ($item_sidebar_active == "materias") ? "active" : ""; ?>">
+                        <a href="<?php echo site_url('informacion_academica/materias'); ?>"> Materias Matriculadas <small class="label pull-right bg-green">Estudiante</small> </a>
                     </li>
                 </ul>
             </li>            
