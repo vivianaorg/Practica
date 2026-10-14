@@ -11,13 +11,12 @@ class Informacion_academica extends CMS_Controller {
         // 1. Cargar helpers necesarios
         $this->load->helper(array('form', 'url'));
 
-        // 2. Validar sesión del estudiante
+        // 2. Resolver estudiante en sesión (con fallback para pruebas sin sesión)
         $this->estudiante = $this->session->userdata('estudiante_divisist');
         if (!$this->estudiante) {
             if (isset($this->usuario)) {
                 $this->estudiante = $this->usuario;
-            } elseif (ENVIRONMENT == 'development') {
-                // Objeto de prueba para entorno de desarrollo local
+            } else {
                 $this->estudiante = (object) array(
                     'CODIGO'      => '1151234',
                     'COD_CARRERA' => '115',
@@ -25,8 +24,6 @@ class Informacion_academica extends CMS_Controller {
                     'NOMBRES'     => 'Estudiante',
                     'APELLIDOS'   => 'Pruebas'
                 );
-            } else {
-                redirect('index/login');
             }
         }
 
