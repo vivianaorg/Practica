@@ -29,6 +29,15 @@ class Docente extends CMS_Controller {
             } elseif (isset($this->usuario->CODIGO)) {
                 $this->docente->COD_PROFESOR = $this->usuario->CODIGO;
             }
+        } else {
+            $this->usuario = (object) array(
+                'CODIGO'       => $this->docente->COD_PROFESOR,
+                'COD_PROFESOR' => $this->docente->COD_PROFESOR,
+                'NOMBRES'      => 'Docente',
+                'APELLIDOS'    => 'Pruebas',
+                'LLAVE_IMAGEN' => null
+            );
+            $this->template->set('informacion_usuario', $this->usuario);
         }
 
         // 4. Configurar plantilla AdminLTE
@@ -44,6 +53,10 @@ class Docente extends CMS_Controller {
     public function grupos_asignados() {
         $consultargruposasignados = $this->grupo_model->gruposAsignados($this->docente->COD_PROFESOR);
         $presencial = $this->grupo_model->gruposAsignadosTipo($this->docente->COD_PROFESOR, 'P', '01');
+
+        if (!empty($presencial['CODIGO']) && !isset($presencial['ROL_PROFESOR'])) {
+            $presencial['ROL_PROFESOR'] = array_fill(0, count($presencial['CODIGO']), 'PRINCIPAL');
+        }
 
         $carga_notas_P = (!empty($presencial['CODIGO'])) ? $this->_inclusionGrupo($presencial) : array();
 

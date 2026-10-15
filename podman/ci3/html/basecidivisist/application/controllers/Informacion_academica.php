@@ -25,9 +25,10 @@ class Informacion_academica extends CMS_Controller {
                     'APELLIDOS'   => 'Pruebas'
                 );
             }
+        if (!isset($this->usuario)) {
+            $this->usuario = $this->estudiante;
+            $this->template->set('informacion_usuario', $this->usuario);
         }
-
-        // 3. Cargar modelos
         $this->load->model('Materia_model', 'materia_model');
         $this->load->model('Subnotas_model');
 

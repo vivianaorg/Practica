@@ -14,7 +14,7 @@ if (!function_exists('obtener_cod_profesor')) {
      */
     function obtener_cod_profesor($ci_instance) {
         $codProfesor = (isset($ci_instance->usuario) && isset($ci_instance->usuario->CODIGO)) 
-            ? $ci_instance->usuario->CODIGO : '04608';
+            ? $ci_instance->usuario->CODIGO : '07109';
         if ($ci_instance->input->post('cod_profesor')) {
             $codProfesor = $ci_instance->input->post('cod_profesor');
         } elseif ($ci_instance->input->get('cod_profesor')) {
