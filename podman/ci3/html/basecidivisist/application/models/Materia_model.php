@@ -21,8 +21,128 @@ class Materia_model extends CI_Model {
             $this->database2->get_sql($sql, $nrows, $output);
         }
 
-        // Fallback para pruebas si no existe la vista en Oracle o no hay registros para el alumno
-        if (empty($output) || !isset($output['CODCARMAT'])) {
+        // Si no existen registros en la vista de matrícula, consultar si tiene notas en la tabla SUBNOTAS de Oracle
+        if (empty($output) || !isset($output['CODCARMAT']) || empty($output['CODCARMAT'])) {
+            $subnotas = array();
+            $sqlSub = "SELECT COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, ROUND(SUM(SUBNOTA), 2) AS NOTA, MAX(ESTADO) AS ESTADO 
+                       FROM SUBNOTAS 
+                       WHERE COD_ESTUDIANTE = '{$codigo}' 
+                       GROUP BY COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO";
+            
+            if (isset($this->database2)) {
+                $this->database2->get_obj_array($sqlSub, $subnotas);
+            }
+
+            if (!empty($subnotas)) {
+                $materiasMap = array();
+                foreach ($subnotas as $row) {
+                    $mKey = $row->COD_MATERIA . '_' . $row->GRUPO;
+                    if (!isset($materiasMap[$mKey])) {
+                        $materiasMap[$mKey] = array(
+                            'COD_MATERIA' => $row->COD_MATERIA,
+                            'GRUPO'       => $row->GRUPO,
+                            'SEMESTRE'    => isset($row->SEMESTRE) ? $row->SEMESTRE : '2026-1',
+                            'NOTA1'       => 0.0, 'EST_NOTA1' => 'S',
+                            'NOTA2'       => 0.0, 'EST_NOTA2' => 'S',
+                            'NOTA3'       => 0.0, 'EST_NOTA3' => 'S',
+                            'EXA'         => 0.0, 'EST_EXA'   => 'S'
+                        );
+                    }
+                    $corte = trim($row->TIPO_PREVIO);
+                    $notaVal = floatval($row->NOTA);
+                    if ($corte === '1' || $corte === '1P' || $corte === 'NOTA1') {
+                        $materiasMap[$mKey]['NOTA1'] = $notaVal;
+                        $materiasMap[$mKey]['EST_NOTA1'] = 'V';
+                    } elseif ($corte === '2' || $corte === '2P' || $corte === 'NOTA2') {
+                        $materiasMap[$mKey]['NOTA2'] = $notaVal;
+                        $materiasMap[$mKey]['EST_NOTA2'] = 'V';
+                    } elseif ($corte === '3' || $corte === '3P' || $corte === 'NOTA3') {
+                        $materiasMap[$mKey]['NOTA3'] = $notaVal;
+                        $materiasMap[$mKey]['EST_NOTA3'] = 'V';
+                    } elseif ($corte === 'FINAL' || $corte === 'EX' || $corte === 'EXA') {
+                        $materiasMap[$mKey]['EXA'] = $notaVal;
+                        $materiasMap[$mKey]['EST_EXA'] = 'V';
+                    }
+                }
+
+                $output = array(
+                    'CODCARMAT'  => array(),
+                    'CODMAT'     => array(),
+                    'CODMATMAT'  => array(),
+                    'NOMBREMAT'  => array(),
+                    'GRUPO'      => array(),
+                    'CREDITOS'   => array(),
+                    'SEMESTRE'   => array(),
+                    'DEF'        => array(),
+                    'ID_MICRO'   => array(),
+                    'CONTENIDO'  => array(),
+                    'BIBLIOGRAFIA' => array(),
+                    'EMAIL'      => array(),
+                    'SECCIONAL'  => array(),
+                    'RUBRICA'    => array(),
+                    'NOTA1'      => array(),
+                    'EST_NOTA1'  => array(),
+                    'NOTA2'      => array(),
+                    'EST_NOTA2'  => array(),
+                    'NOTA3'      => array(),
+                    'EST_NOTA3'  => array(),
+                    'EXA'        => array(),
+                    'EST_EXA'    => array(),
+                    'HAB'        => array(),
+                    'EST_HAB'    => array(),
+                    'OPC'        => array(),
+                    'EST_OPC'    => array(),
+                    'CLASES'     => array()
+                );
+
+                foreach ($materiasMap as $m) {
+                    $codMat = $m['COD_MATERIA'];
+                    $codCarrera = strlen($codMat) >= 7 ? substr($codMat, 0, 3) : substr($codigo, 0, 3);
+                    $codMatPura = strlen($codMat) >= 7 ? substr($codMat, 3) : $codMat;
+
+                    $def = 0.0;
+                    $cnt = 0;
+                    if ($m['EST_NOTA1'] === 'V') { $def += $m['NOTA1'] * 0.25; $cnt++; }
+                    if ($m['EST_NOTA2'] === 'V') { $def += $m['NOTA2'] * 0.25; $cnt++; }
+                    if ($m['EST_NOTA3'] === 'V') { $def += $m['NOTA3'] * 0.25; $cnt++; }
+                    if ($m['EST_EXA'] === 'V')   { $def += $m['EXA'] * 0.25; $cnt++; }
+                    if ($cnt > 0) {
+                        $def = round($def / ($cnt * 0.25), 1);
+                    }
+
+                    $output['CODCARMAT'][]  = $codCarrera;
+                    $output['CODMAT'][]     = $codMatPura;
+                    $output['CODMATMAT'][]  = $codMatPura;
+                    $output['NOMBREMAT'][]  = 'ANALISIS Y DISENO DE SISTEMAS';
+                    $output['GRUPO'][]      = $m['GRUPO'];
+                    $output['CREDITOS'][]   = 3;
+                    $output['SEMESTRE'][]   = 6;
+                    $output['DEF'][]        = $def;
+                    $output['ID_MICRO'][]   = 101;
+                    $output['CONTENIDO'][]  = "Unidad 1: Modelado de Requisitos\nUnidad 2: Diagramas UML y Patrones\nUnidad 3: Arquitectura Limpia";
+                    $output['BIBLIOGRAFIA'][] = "Sommerville, Software Engineering 10th Ed.\nPressman, Ingenieria de Software 7ma Ed.";
+                    $output['EMAIL'][]      = 'profesor.sistemas@ufps.edu.co';
+                    $output['SECCIONAL'][]  = '01';
+                    $output['RUBRICA'][]    = 1;
+                    $output['NOTA1'][]      = $m['NOTA1'];
+                    $output['EST_NOTA1'][]  = $m['EST_NOTA1'];
+                    $output['NOTA2'][]      = $m['NOTA2'];
+                    $output['EST_NOTA2'][]  = $m['EST_NOTA2'];
+                    $output['NOTA3'][]      = $m['NOTA3'];
+                    $output['EST_NOTA3'][]  = $m['EST_NOTA3'];
+                    $output['EXA'][]        = $m['EXA'];
+                    $output['EST_EXA'][]    = $m['EST_EXA'];
+                    $output['HAB'][]        = 0.0;
+                    $output['EST_HAB'][]    = 'S';
+                    $output['OPC'][]        = 0.0;
+                    $output['EST_OPC'][]    = 'S';
+                    $output['CLASES'][]     = array('ID' => array(1), 'FECHA_INI' => array('2026-02-15 08:00'), 'URL_REUNION' => array('https://meet.google.com/abc-defg-hij'));
+                }
+            }
+        }
+
+        // Fallback final para pruebas si no existe la vista en Oracle o no hay registros para el alumno
+        if (empty($output) || !isset($output['CODCARMAT']) || empty($output['CODCARMAT'])) {
             $output = array(
                 'CODCARMAT'  => array('115', '115'),
                 'CODMAT'     => array('5304', '5305'),
