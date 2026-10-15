@@ -25,10 +25,13 @@ class Informacion_academica extends CMS_Controller {
                     'APELLIDOS'   => 'Pruebas'
                 );
             }
+        }
+
         if (!isset($this->usuario)) {
             $this->usuario = $this->estudiante;
             $this->template->set('informacion_usuario', $this->usuario);
         }
+
         $this->load->model('Materia_model', 'materia_model');
         $this->load->model('Subnotas_model');
 
@@ -38,11 +41,24 @@ class Informacion_academica extends CMS_Controller {
         $this->template->add_css('css/adminlte/skins/_all-skins.min');
     }
 
-    public function index() {
-        $this->materias();
+    public function index($codigo = null) {
+        $this->materias($codigo);
     }
 
-    public function materias() {
+    public function materias($codigo = null) {
+        if ($codigo !== null && trim($codigo) !== '') {
+            $codigo = trim($codigo);
+            $this->estudiante = (object) array(
+                'CODIGO'      => $codigo,
+                'COD_CARRERA' => substr($codigo, 0, 3),
+                'COD_ALUMNO'  => substr($codigo, 3, 4),
+                'NOMBRES'     => 'Estudiante',
+                'APELLIDOS'   => $codigo
+            );
+            $this->session->set_userdata('estudiante_divisist', $this->estudiante);
+            $this->usuario = $this->estudiante;
+            $this->template->set('informacion_usuario', $this->usuario);
+        }
         $materiaspresenciales = $this->materia_model->materiasMatriculadasPensum($this->estudiante->CODIGO);
         $codigo_proyecto = $this->materia_model->codigo_proyecto($this->estudiante->COD_CARRERA, $this->estudiante->COD_ALUMNO);
 
@@ -113,7 +129,10 @@ class Informacion_academica extends CMS_Controller {
         );
 
         $previoId = isset($mapaPrevios[$tipoPrevio]) ? $mapaPrevios[$tipoPrevio] : $tipoPrevio;
-        $codEstudiante = isset($this->estudiante->CODIGO) ? $this->estudiante->CODIGO : '';
+        $codEstudiante = $this->input->get_post('cod_estudiante');
+        if (empty($codEstudiante)) {
+            $codEstudiante = isset($this->estudiante->CODIGO) ? $this->estudiante->CODIGO : '';
+        }
 
         $subnotas = $this->Subnotas_model->obtener_subnotas_estudiante($codEstudiante, $codMateria, $grupo, $semestre, $previoId);
 

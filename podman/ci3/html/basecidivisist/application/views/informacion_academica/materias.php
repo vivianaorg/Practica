@@ -5,6 +5,9 @@ $carrera = isset($carrera) ? $carrera : '';
     <div class="box-header with-border">
         <i class="fa fa-file-text"></i>
         <h2 class="box-title">Materias Matriculadas</h2>
+        <span class="pull-right text-muted" style="font-size: 13px; margin-top: 5px;">
+            <i class="fa fa-user"></i> Estudiante: <span class="badge bg-blue"><?php echo isset($this->estudiante->CODIGO) ? $this->estudiante->CODIGO : '1151234'; ?></span>
+        </span>
     </div>
     <div class="box-body table-responsive no-padding">
         <?php if (isset($materiasmatriculadas['CODCARMAT']) && count($materiasmatriculadas['CODCARMAT'])) : ?>
@@ -390,7 +393,8 @@ function rubrica(codcarmat, codmatmat, grupo, seccional, tipo, tmp_nota) {
         data: {
             cod_materia: codmatmat,
             grupo: grupo,
-            tipo_previo: tipo
+            tipo_previo: tipo,
+            cod_estudiante: '<?php echo isset($this->estudiante->CODIGO) ? $this->estudiante->CODIGO : ""; ?>'
         },
         dataType: 'json',
         success: function(resp) {
