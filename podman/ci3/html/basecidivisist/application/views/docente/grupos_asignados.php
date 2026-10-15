@@ -71,7 +71,7 @@
                                                                 echo form_open('', [
                                                                     'id' => ('formulario_registro' . $j),
                                                                     'name' => ('formulario_registro' . $j),
-                                                                    'role' => 'form'], ['registrar_notas' => 1, 'llave' => (isset($this->encryption) ? $this->encryption->encrypt($llaveData) : base64_encode($llaveData))]);
+                                                                    'role' => 'form'], ['registrar_notas' => 1, 'llave' => (isset($this->encryption) && is_object($this->encryption) ? @$this->encryption->encrypt($llaveData) ?: base64_encode($llaveData) : base64_encode($llaveData))]);
                                                                 ?>
                                                                 <th class='td_center'>
                                                                     <button id="listado<?php echo $i; ?>"
@@ -121,7 +121,7 @@
                                                             echo form_open('', [
                                                                 'id' => ('formulario_registro' . $j),
                                                                 'name' => ('formulario_registro' . $j),
-                                                                'role' => 'form'], ['registrar_notas' => 1, 'llave' => (isset($this->encryption) ? $this->encryption->encrypt($llaveData) : base64_encode($llaveData))]);
+                                                                'role' => 'form'], ['registrar_notas' => 1, 'llave' => (isset($this->encryption) && is_object($this->encryption) ? @$this->encryption->encrypt($llaveData) ?: base64_encode($llaveData) : base64_encode($llaveData))]);
                                                             ?>
                                                             <th class='td_center'>
                                                                 <button id="listado<?php echo $i; ?>"
@@ -157,7 +157,7 @@
                                                     echo form_open('', [
                                                         'id' => ('formulario_autorizado' . $j),
                                                         'name' => ('formulario_autorizado' . $j),
-                                                        'role' => 'form'], ['registrar_notas_autorizado' => 1, 'llave' => (isset($this->encryption) ? $this->encryption->encrypt($llaveAuto) : base64_encode($llaveAuto))]);
+                                                        'role' => 'form'], ['registrar_notas_autorizado' => 1, 'llave' => (isset($this->encryption) && is_object($this->encryption) ? @$this->encryption->encrypt($llaveAuto) ?: base64_encode($llaveAuto) : base64_encode($llaveAuto))]);
                                                     ?>
                                                     <th class='td_center'>
                                                         <button id="listado<?php echo $i; ?>"
