@@ -71,6 +71,7 @@ $route['docente/(:any)'] = 'docente/$1';
 // Rutas Estudiante (Información Académica)
 $route['informacion_academica'] = 'informacion_academica/materias';
 $route['informacion_academica/materias'] = 'informacion_academica/materias';
+$route['informacion_academica/materias/(:any)'] = 'informacion_academica/materias/$1';
 $route['informacion_academica/obtener_subnotas_rubrica'] = 'informacion_academica/obtener_subnotas_rubrica';
 $route['informacion_academica/(:any)'] = 'informacion_academica/$1';
 
