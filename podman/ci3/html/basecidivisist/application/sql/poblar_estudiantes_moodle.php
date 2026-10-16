@@ -56,8 +56,8 @@ imprimir("Conexion exitosa con Oracle.", 'OK');
 
 // 1. Limpieza de subnotas anteriores de estos dos estudiantes
 $limpieza = array(
-    "DELETE FROM SUBNOTAS WHERE COD_ESTUDIANTE IN ('1152001', '1152002') AND COD_MATERIA = '1155304'",
-    "DELETE FROM CONFIG_RUBRICA WHERE COD_PROFESOR = '04608' AND COD_MATERIA = '1155304' AND GRUPO = 'A' AND SEMESTRE = '2026-1'"
+    "DELETE FROM SUBNOTAS WHERE COD_ESTUDIANTE IN ('1152001', '1152002') AND COD_MATERIA IN ('1155304', 'biologia_111')",
+    "DELETE FROM CONFIG_RUBRICA WHERE COD_PROFESOR = '04608' AND COD_MATERIA IN ('1155304', 'biologia_111') AND GRUPO IN ('A', '-') AND SEMESTRE = '2026-1'"
 );
 
 foreach ($limpieza as $sql) {
@@ -101,6 +101,24 @@ $rubricas = array(
         (SELECT NVL(MAX(ID), 0) + 1 FROM CONFIG_RUBRICA),
         '04608', '1155304', 'A', '2026-1', '2',
         202, 'Laboratorio Práctico: Implementación Hexagonal', 'assign', 50.0, SYSDATE
+    )",
+
+    // Biología (biologia_111) - Corte 1 (1P)
+    "INSERT INTO CONFIG_RUBRICA (
+        ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO,
+        ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE, FECHA_CREACION
+    ) VALUES (
+        (SELECT NVL(MAX(ID), 0) + 1 FROM CONFIG_RUBRICA),
+        '04608', 'biologia_111', '-', '2026-1', '1',
+        9, 'Tercer Previo', 'assign', 50.0, SYSDATE
+    )",
+    "INSERT INTO CONFIG_RUBRICA (
+        ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO,
+        ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE, FECHA_CREACION
+    ) VALUES (
+        (SELECT NVL(MAX(ID), 0) + 1 FROM CONFIG_RUBRICA),
+        '04608', 'biologia_111', '-', '2026-1', '1',
+        10, 'Taller General', 'assign', 50.0, SYSDATE
     )"
 );
 
@@ -150,6 +168,22 @@ $subnotas1 = array(
         (SELECT NVL(MAX(ID), 0) + 1 FROM SUBNOTAS),
         '04608', '1155304', 'A', '2026-1', '1152001', '2',
         202, 'Laboratorio Práctico: Implementación Hexagonal', 4.0, 5.0, 50.0, 2.00, 'ACEPTADA', SYSDATE
+    )",
+    "INSERT INTO SUBNOTAS (
+        ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, COD_ESTUDIANTE, TIPO_PREVIO,
+        ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO
+    ) VALUES (
+        (SELECT NVL(MAX(ID), 0) + 1 FROM SUBNOTAS),
+        '04608', 'biologia_111', '-', '2026-1', '1152001', '1',
+        9, 'Tercer Previo', 100.0, 100.0, 50.0, 2.50, 'ACEPTADA', SYSDATE
+    )",
+    "INSERT INTO SUBNOTAS (
+        ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, COD_ESTUDIANTE, TIPO_PREVIO,
+        ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO
+    ) VALUES (
+        (SELECT NVL(MAX(ID), 0) + 1 FROM SUBNOTAS),
+        '04608', 'biologia_111', '-', '2026-1', '1152001', '1',
+        10, 'Taller General', 70.0, 100.0, 50.0, 1.75, 'ACEPTADA', SYSDATE
     )"
 );
 
@@ -196,6 +230,22 @@ $subnotas2 = array(
         (SELECT NVL(MAX(ID), 0) + 1 FROM SUBNOTAS),
         '04608', '1155304', 'A', '2026-1', '1152002', '2',
         202, 'Laboratorio Práctico: Implementación Hexagonal', 3.6, 5.0, 50.0, 1.80, 'ACEPTADA', SYSDATE
+    )",
+    "INSERT INTO SUBNOTAS (
+        ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, COD_ESTUDIANTE, TIPO_PREVIO,
+        ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO
+    ) VALUES (
+        (SELECT NVL(MAX(ID), 0) + 1 FROM SUBNOTAS),
+        '04608', 'biologia_111', '-', '2026-1', '1152002', '1',
+        9, 'Tercer Previo', 80.0, 100.0, 50.0, 2.00, 'ACEPTADA', SYSDATE
+    )",
+    "INSERT INTO SUBNOTAS (
+        ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, COD_ESTUDIANTE, TIPO_PREVIO,
+        ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO
+    ) VALUES (
+        (SELECT NVL(MAX(ID), 0) + 1 FROM SUBNOTAS),
+        '04608', 'biologia_111', '-', '2026-1', '1152002', '1',
+        10, 'Taller General', 70.0, 100.0, 50.0, 1.75, 'ACEPTADA', SYSDATE
     )"
 );
 

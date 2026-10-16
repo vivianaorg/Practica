@@ -147,9 +147,11 @@ class Informacion_academica extends CMS_Controller {
                         $cId    = isset($curso['id']) ? (string)$curso['id'] : '';
                         $match  = false;
 
-                        if ($cShort === $codMateria || $cId === (string)$codMateria) {
+                        $cShortLow = strtolower($cShort);
+                        $cMatLow   = strtolower($codMateria);
+                        if ($cShortLow === $cMatLow || $cId === (string)$codMateria || 'curso_' . $cId === $cMatLow) {
                             $match = true;
-                        } elseif (stripos($codMateria, $cShort) !== false || stripos($cShort, $codMateria) !== false) {
+                        } elseif (stripos($cMatLow, $cShortLow) !== false || stripos($cShortLow, $cMatLow) !== false) {
                             $match = true;
                         }
 
@@ -160,7 +162,8 @@ class Informacion_academica extends CMS_Controller {
                             foreach ($curso['actividades'] as $idx => $act) {
                                 $notaOrig = isset($act['nota_final']) ? floatval($act['nota_final']) : 0.0;
                                 $notaMax  = isset($act['nota_maxima']) ? floatval($act['nota_maxima']) : 5.0;
-                                $subnota  = round(($notaOrig * $porcEach) / 100.0, 2);
+                                $notaNorm = ($notaMax > 0 && $notaMax != 5.0) ? ($notaOrig / $notaMax) * 5.0 : $notaOrig;
+                                $subnota  = round(($notaNorm * $porcEach) / 100.0, 2);
 
                                 $subnotas[] = (object) array(
                                     'ID'                  => isset($act['grade_item_id']) ? $act['grade_item_id'] : ($idx + 1),

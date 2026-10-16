@@ -187,6 +187,9 @@ if (!empty($courses)) {
                         } elseif ($gr->rawgrade !== null) {
                             $catGrade = round((float)$gr->rawgrade, 2);
                         }
+                        if ($catGrade !== null && !empty($gr->grademax) && (float)$gr->grademax > 5.0) {
+                            $catGrade = round(($catGrade / (float)$gr->grademax) * 5.0, 2);
+                        }
                         if ($catGrade !== null) {
                             if (strpos($itemName, '1') !== false || strpos($itemName, 'primer') !== false) {
                                 $nota1 = $catGrade;
@@ -213,7 +216,8 @@ if (!empty($courses)) {
                         $notaMin = ($gr->grademin !== null) ? round((float)$gr->grademin, 2) : 0.0;
 
                         if ($presento && $finalGrade !== null) {
-                            $totalNotaMods += $finalGrade;
+                            $finalGradeNorm = ($notaMax > 0 && $notaMax != 5.0) ? round(($finalGrade / $notaMax) * 5.0, 2) : $finalGrade;
+                            $totalNotaMods += $finalGradeNorm;
                             $countModsGraded++;
                         }
 
@@ -245,7 +249,14 @@ if (!empty($courses)) {
             }
         }
 
+        if ($nota1 !== null && $nota1 > 5.0 && $nota1 <= 100.0) {
+            $nota1 = round(($nota1 / 100.0) * 5.0, 1);
+        }
+
         $definitiva = ($courseTotalGrade !== null) ? $courseTotalGrade : (($nota1 !== null) ? $nota1 : 0.0);
+        if ($definitiva !== null && $definitiva > 5.0 && $definitiva <= 100.0) {
+            $definitiva = round(($definitiva / 100.0) * 5.0, 1);
+        }
         $summaryText = !empty($c->summary) ? strip_tags((string)$c->summary) : '';
 
         $cursosData[] = array(

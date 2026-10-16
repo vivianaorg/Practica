@@ -131,10 +131,14 @@ class Subnotas_model extends CI_Model
                        NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
                 FROM SUBNOTAS 
                 WHERE COD_ESTUDIANTE = '{$codEstudiante}' 
-                  AND COD_MATERIA    = '{$codMateria}' 
-                  AND GRUPO          = '{$grupo}' 
-                  AND SEMESTRE       = '{$semestre}' 
-                  AND TIPO_PREVIO    = '{$tipoPrevio}' 
+                  AND (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                       OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                       OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                       OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                       OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                  AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                  AND (TIPO_PREVIO = '{$tipoPrevio}' 
+                       OR ('{$tipoPrevio}' IN ('FINAL', 'EXA', '4') AND TIPO_PREVIO IN ('FINAL', 'EXA', '4'))) 
                 ORDER BY ID ASC";
 
         $arr = array();

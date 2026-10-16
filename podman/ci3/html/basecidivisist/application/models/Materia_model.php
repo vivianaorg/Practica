@@ -33,7 +33,10 @@ class Materia_model extends CI_Model {
 
             if (!empty($subnotas)) {
                 foreach ($subnotas as $row) {
-                    $mKey = trim($row->COD_MATERIA) . '_' . trim($row->GRUPO);
+                    $codMatTrim = strtolower(trim($row->COD_MATERIA));
+                    $grpTrim    = strtoupper(trim($row->GRUPO));
+                    $mKey       = $codMatTrim . '_' . $grpTrim;
+
                     if (!isset($subnotasMap[$mKey])) {
                         $subnotasMap[$mKey] = array(
                             'COD_MATERIA' => $row->COD_MATERIA,
@@ -140,35 +143,78 @@ class Materia_model extends CI_Model {
                         $grupo = 'C';
                     }
 
-                    // Claves posibles para cruzar con SUBNOTAS de Oracle si ya fue calificada
-                    $mKey1 = $shortname . '_' . $grupo;
-                    $mKey2 = $shortname . '_-';
+                    // Buscar si el estudiante tiene notas de rúbrica registradas en Oracle para este curso
+                    $subnotaEncontrada = null;
+                    $candidatos = array(
+                        strtolower($shortname) . '_' . strtoupper($grupo),
+                        strtolower($shortname) . '_-',
+                        'curso_' . $c['id'] . '_' . strtoupper($grupo),
+                        'curso_' . $c['id'] . '_-',
+                        (string)$c['id'] . '_' . strtoupper($grupo),
+                        (string)$c['id'] . '_-'
+                    );
+                    if (!empty($c['idnumber'])) {
+                        $candidatos[] = strtolower(trim($c['idnumber'])) . '_' . strtoupper($grupo);
+                        $candidatos[] = strtolower(trim($c['idnumber'])) . '_-';
+                    }
+
+                    foreach ($candidatos as $cand) {
+                        if (isset($subnotasMap[$cand])) {
+                            $subnotaEncontrada = $subnotasMap[$cand];
+                            break;
+                        }
+                    }
+
+                    if ($subnotaEncontrada === null) {
+                        foreach ($subnotasMap as $sKey => $sVal) {
+                            $matOracle = strtolower(trim($sVal['COD_MATERIA']));
+                            if (stripos($shortname, $matOracle) !== false || stripos($matOracle, $shortname) !== false) {
+                                $subnotaEncontrada = $sVal;
+                                break;
+                            }
+                        }
+                    }
 
                     $nota1 = 0.0; $estNota1 = 'S';
                     $nota2 = 0.0; $estNota2 = 'S';
                     $nota3 = 0.0; $estNota3 = 'S';
                     $exa   = 0.0; $estExa   = 'S';
 
-                    if (isset($subnotasMap[$mKey1])) {
-                        $nota1    = $subnotasMap[$mKey1]['NOTA1'];
-                        $estNota1 = $subnotasMap[$mKey1]['EST_NOTA1'];
-                        $nota2    = $subnotasMap[$mKey1]['NOTA2'];
-                        $estNota2 = $subnotasMap[$mKey1]['EST_NOTA2'];
-                        $nota3    = $subnotasMap[$mKey1]['NOTA3'];
-                        $estNota3 = $subnotasMap[$mKey1]['EST_NOTA3'];
-                        $exa      = $subnotasMap[$mKey1]['EXA'];
-                        $estExa   = $subnotasMap[$mKey1]['EST_EXA'];
-                    } elseif (isset($subnotasMap[$mKey2])) {
-                        $nota1    = $subnotasMap[$mKey2]['NOTA1'];
-                        $estNota1 = $subnotasMap[$mKey2]['EST_NOTA1'];
-                        $nota2    = $subnotasMap[$mKey2]['NOTA2'];
-                        $estNota2 = $subnotasMap[$mKey2]['EST_NOTA2'];
-                        $nota3    = $subnotasMap[$mKey2]['NOTA3'];
-                        $estNota3 = $subnotasMap[$mKey2]['EST_NOTA3'];
-                        $exa      = $subnotasMap[$mKey2]['EXA'];
-                        $estExa   = $subnotasMap[$mKey2]['EST_EXA'];
+                    if ($subnotaEncontrada !== null) {
+                        // PRIORIDAD RÚBRICA ORACLE: Si el docente calificó y guardó la rúbrica en Oracle, se toma esa nota
+                        if ($subnotaEncontrada['EST_NOTA1'] === 'V') {
+                            $nota1    = $subnotaEncontrada['NOTA1'];
+                            $estNota1 = 'V';
+                        } elseif (!empty($c['tiene_nota1'])) {
+                            $nota1    = floatval($c['nota1']);
+                            $estNota1 = 'V';
+                        }
+
+                        if ($subnotaEncontrada['EST_NOTA2'] === 'V') {
+                            $nota2    = $subnotaEncontrada['NOTA2'];
+                            $estNota2 = 'V';
+                        } elseif (!empty($c['tiene_nota2'])) {
+                            $nota2    = floatval($c['nota2']);
+                            $estNota2 = 'V';
+                        }
+
+                        if ($subnotaEncontrada['EST_NOTA3'] === 'V') {
+                            $nota3    = $subnotaEncontrada['NOTA3'];
+                            $estNota3 = 'V';
+                        } elseif (!empty($c['tiene_nota3'])) {
+                            $nota3    = floatval($c['nota3']);
+                            $estNota3 = 'V';
+                        }
+
+                        if ($subnotaEncontrada['EST_EXA'] === 'V') {
+                            $exa    = $subnotaEncontrada['EXA'];
+                            $estExa = 'V';
+                        } elseif (!empty($c['tiene_exa'])) {
+                            $exa    = floatval($c['exa']);
+                            $estExa = 'V';
+                        }
                     } else {
-                        // Usar notas directas devueltas por Moodle
+                        // Si no hay rúbrica en Oracle para este corte, usar notas directas devueltas por Moodle
                         if (!empty($c['tiene_nota1'])) {
                             $nota1    = floatval($c['nota1']);
                             $estNota1 = 'V';
@@ -187,6 +233,12 @@ class Materia_model extends CI_Model {
                         }
                     }
 
+                    // Normalización de seguridad a escala institucional (0.0 a 5.0)
+                    if ($nota1 > 5.0 && $nota1 <= 100.0) { $nota1 = round(($nota1 / 100.0) * 5.0, 1); }
+                    if ($nota2 > 5.0 && $nota2 <= 100.0) { $nota2 = round(($nota2 / 100.0) * 5.0, 1); }
+                    if ($nota3 > 5.0 && $nota3 <= 100.0) { $nota3 = round(($nota3 / 100.0) * 5.0, 1); }
+                    if ($exa   > 5.0 && $exa   <= 100.0) { $exa   = round(($exa   / 100.0) * 5.0, 1); }
+
                     // Cálculo de la definitiva
                     $def = 0.0;
                     $sumCortes = 0;
@@ -199,7 +251,14 @@ class Materia_model extends CI_Model {
                     if ($cantCortes > 0) {
                         $def = round($sumCortes / $cantCortes, 1);
                     } elseif (isset($c['def']) && floatval($c['def']) > 0) {
-                        $def = round(floatval($c['def']), 1);
+                        $rawDef = floatval($c['def']);
+                        if ($rawDef > 5.0 && $rawDef <= 100.0) {
+                            $def = round(($rawDef / 100.0) * 5.0, 1);
+                        } elseif ($rawDef > 100.0) {
+                            $def = round($rawDef / 100.0, 1);
+                        } else {
+                            $def = round($rawDef, 1);
+                        }
                     }
 
                     $profEmail = !empty($c['profesor_email']) ? $c['profesor_email'] : 'docente@ufps.edu.co';
