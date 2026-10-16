@@ -221,6 +221,17 @@ if (!empty($courses)) {
                             $countModsGraded++;
                         }
 
+                        $actNameLow = strtolower(trim($gr->itemname ? (string)$gr->itemname : ''));
+                        if (strpos($actNameLow, 'primer previo') !== false || strpos($actNameLow, '1er previo') !== false || strpos($actNameLow, '1p') !== false) {
+                            if ($finalGrade !== null) { $nota1 = $finalGradeNorm; }
+                        } elseif (strpos($actNameLow, 'segundo previo') !== false || strpos($actNameLow, '2do previo') !== false || strpos($actNameLow, '2p') !== false) {
+                            if ($finalGrade !== null) { $nota2 = $finalGradeNorm; }
+                        } elseif (strpos($actNameLow, 'tercer previo') !== false || strpos($actNameLow, '3er previo') !== false || strpos($actNameLow, '3p') !== false) {
+                            if ($finalGrade !== null) { $nota3 = $finalGradeNorm; }
+                        } elseif (strpos($actNameLow, 'examen final') !== false || strpos($actNameLow, 'evaluacion final') !== false) {
+                            if ($finalGrade !== null) { $exa = $finalGradeNorm; }
+                        }
+
                         $actividades[] = array(
                             'cmid'             => ($gr->cmid !== null) ? (int)$gr->cmid : 0,
                             'grade_item_id'    => (int)$gr->id,
@@ -240,20 +251,34 @@ if (!empty($courses)) {
             // Ignorar error al procesar calificaciones
         }
 
-        // Si no habia categoria explicita para nota1, pero hay actividades calificadas o nota total de curso
-        if ($nota1 === null) {
-            if ($countModsGraded > 0) {
-                $nota1 = round($totalNotaMods / $countModsGraded, 2);
-            } elseif ($courseTotalGrade !== null) {
-                $nota1 = $courseTotalGrade;
-            }
-        }
-
         if ($nota1 !== null && $nota1 > 5.0 && $nota1 <= 100.0) {
             $nota1 = round(($nota1 / 100.0) * 5.0, 1);
         }
+        if ($nota2 !== null && $nota2 > 5.0 && $nota2 <= 100.0) {
+            $nota2 = round(($nota2 / 100.0) * 5.0, 1);
+        }
+        if ($nota3 !== null && $nota3 > 5.0 && $nota3 <= 100.0) {
+            $nota3 = round(($nota3 / 100.0) * 5.0, 1);
+        }
+        if ($exa !== null && $exa > 5.0 && $exa <= 100.0) {
+            $exa = round(($exa / 100.0) * 5.0, 1);
+        }
 
-        $definitiva = ($courseTotalGrade !== null) ? $courseTotalGrade : (($nota1 !== null) ? $nota1 : 0.0);
+        $sumPart = 0.0;
+        $cntPart = 0;
+        if ($nota1 !== null) { $sumPart += $nota1; $cntPart++; }
+        if ($nota2 !== null) { $sumPart += $nota2; $cntPart++; }
+        if ($nota3 !== null) { $sumPart += $nota3; $cntPart++; }
+        if ($exa   !== null) { $sumPart += $exa;   $cntPart++; }
+
+        if ($cntPart > 0) {
+            $definitiva = round($sumPart / $cntPart, 1);
+        } elseif ($courseTotalGrade !== null) {
+            $definitiva = $courseTotalGrade;
+        } else {
+            $definitiva = 0.0;
+        }
+
         if ($definitiva !== null && $definitiva > 5.0 && $definitiva <= 100.0) {
             $definitiva = round(($definitiva / 100.0) * 5.0, 1);
         }

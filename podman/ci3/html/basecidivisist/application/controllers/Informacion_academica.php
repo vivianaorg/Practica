@@ -156,10 +156,31 @@ class Informacion_academica extends CMS_Controller {
                         }
 
                         if ($match && !empty($curso['actividades']) && is_array($curso['actividades'])) {
-                            $totalActs = count($curso['actividades']);
+                            $actsFiltradas = array();
+                            $mapaPalabras = array(
+                                '1'     => array('primer previo', '1er previo', '1p'),
+                                '2'     => array('segundo previo', '2do previo', '2p'),
+                                '3'     => array('tercer previo', '3er previo', '3p'),
+                                'FINAL' => array('examen final', 'evaluacion final', 'final')
+                            );
+
+                            if (isset($mapaPalabras[$previoId])) {
+                                foreach ($curso['actividades'] as $actItem) {
+                                    $nLow = strtolower(trim(isset($actItem['nombre_actividad']) ? $actItem['nombre_actividad'] : ''));
+                                    foreach ($mapaPalabras[$previoId] as $pal) {
+                                        if (strpos($nLow, $pal) !== false) {
+                                            $actsFiltradas[] = $actItem;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            $actsProcesar = !empty($actsFiltradas) ? $actsFiltradas : $curso['actividades'];
+                            $totalActs = count($actsProcesar);
                             $porcEach  = $totalActs > 0 ? round(100.0 / $totalActs, 1) : 0;
 
-                            foreach ($curso['actividades'] as $idx => $act) {
+                            foreach ($actsProcesar as $idx => $act) {
                                 $notaOrig = isset($act['nota_final']) ? floatval($act['nota_final']) : 0.0;
                                 $notaMax  = isset($act['nota_maxima']) ? floatval($act['nota_maxima']) : 5.0;
                                 $notaNorm = ($notaMax > 0 && $notaMax != 5.0) ? ($notaOrig / $notaMax) * 5.0 : $notaOrig;
