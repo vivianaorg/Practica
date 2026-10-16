@@ -136,6 +136,50 @@ class Informacion_academica extends CMS_Controller {
 
         $subnotas = $this->Subnotas_model->obtener_subnotas_estudiante($codEstudiante, $codMateria, $grupo, $semestre, $previoId);
 
+        // Si no existen subnotas en Oracle para este corte y materia, consultar dinámicamente en Moodle
+        if (empty($subnotas)) {
+            $this->load->model('Moodle_model');
+            $resMoodle = $this->Moodle_model->obtener_cursos_estudiante($codEstudiante);
+            if (!empty($resMoodle['exito']) && isset($resMoodle['datos']['cursos']) && is_array($resMoodle['datos']['cursos'])) {
+                foreach ($resMoodle['datos']['cursos'] as $curso) {
+                    $cShort = isset($curso['shortname']) ? trim($curso['shortname']) : '';
+                    $cId    = isset($curso['id']) ? (string)$curso['id'] : '';
+                    $match  = false;
+
+                    if ($cShort === $codMateria || $cId === (string)$codMateria) {
+                        $match = true;
+                    } elseif (stripos($codMateria, $cShort) !== false || stripos($cShort, $codMateria) !== false) {
+                        $match = true;
+                    }
+
+                    if ($match && !empty($curso['actividades']) && is_array($curso['actividades'])) {
+                        $totalActs = count($curso['actividades']);
+                        $porcEach  = $totalActs > 0 ? round(100.0 / $totalActs, 1) : 0;
+
+                        foreach ($curso['actividades'] as $idx => $act) {
+                            $notaOrig = isset($act['nota_final']) ? floatval($act['nota_final']) : 0.0;
+                            $notaMax  = isset($act['nota_maxima']) ? floatval($act['nota_maxima']) : 5.0;
+                            $subnota  = round(($notaOrig * $porcEach) / 100.0, 2);
+
+                            $subnotas[] = (object) array(
+                                'ID'                  => isset($act['grade_item_id']) ? $act['grade_item_id'] : ($idx + 1),
+                                'COD_ESTUDIANTE'      => $codEstudiante,
+                                'ID_ACTIVIDAD_MOODLE' => isset($act['id_actividad']) ? $act['id_actividad'] : 0,
+                                'NOMBRE_ACTIVIDAD'    => isset($act['nombre_actividad']) ? $act['nombre_actividad'] : 'Actividad Moodle',
+                                'NOTA_ORIGINAL'       => $notaOrig,
+                                'NOTA_MAXIMA'         => $notaMax,
+                                'PORCENTAJE'          => $porcEach,
+                                'SUBNOTA'             => $subnota,
+                                'ESTADO'              => 'MOODLE',
+                                'FECHA_REGISTRO'      => date('Y-m-d H:i:s')
+                            );
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
         echo json_encode(array(
             'exito'    => true,
             'subnotas' => $subnotas,

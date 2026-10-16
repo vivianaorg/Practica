@@ -22,23 +22,20 @@ class Materia_model extends CI_Model {
         }
 
         // Si no existen registros en la vista de matrícula, consultar si tiene notas en la tabla SUBNOTAS de Oracle
-        if (empty($output) || !isset($output['CODCARMAT']) || empty($output['CODCARMAT'])) {
+        $subnotasMap = array();
+        if (isset($this->database2)) {
             $subnotas = array();
             $sqlSub = "SELECT COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, ROUND(SUM(SUBNOTA), 2) AS NOTA, MAX(ESTADO) AS ESTADO 
                        FROM SUBNOTAS 
                        WHERE COD_ESTUDIANTE = '{$codigo}' 
                        GROUP BY COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO";
-            
-            if (isset($this->database2)) {
-                $this->database2->get_obj_array($sqlSub, $subnotas);
-            }
+            $this->database2->get_obj_array($sqlSub, $subnotas);
 
             if (!empty($subnotas)) {
-                $materiasMap = array();
                 foreach ($subnotas as $row) {
-                    $mKey = $row->COD_MATERIA . '_' . $row->GRUPO;
-                    if (!isset($materiasMap[$mKey])) {
-                        $materiasMap[$mKey] = array(
+                    $mKey = trim($row->COD_MATERIA) . '_' . trim($row->GRUPO);
+                    if (!isset($subnotasMap[$mKey])) {
+                        $subnotasMap[$mKey] = array(
                             'COD_MATERIA' => $row->COD_MATERIA,
                             'GRUPO'       => $row->GRUPO,
                             'SEMESTRE'    => isset($row->SEMESTRE) ? $row->SEMESTRE : '2026-1',
@@ -51,20 +48,188 @@ class Materia_model extends CI_Model {
                     $corte = trim($row->TIPO_PREVIO);
                     $notaVal = floatval($row->NOTA);
                     if ($corte === '1' || $corte === '1P' || $corte === 'NOTA1') {
-                        $materiasMap[$mKey]['NOTA1'] = $notaVal;
-                        $materiasMap[$mKey]['EST_NOTA1'] = 'V';
+                        $subnotasMap[$mKey]['NOTA1'] = $notaVal;
+                        $subnotasMap[$mKey]['EST_NOTA1'] = 'V';
                     } elseif ($corte === '2' || $corte === '2P' || $corte === 'NOTA2') {
-                        $materiasMap[$mKey]['NOTA2'] = $notaVal;
-                        $materiasMap[$mKey]['EST_NOTA2'] = 'V';
+                        $subnotasMap[$mKey]['NOTA2'] = $notaVal;
+                        $subnotasMap[$mKey]['EST_NOTA2'] = 'V';
                     } elseif ($corte === '3' || $corte === '3P' || $corte === 'NOTA3') {
-                        $materiasMap[$mKey]['NOTA3'] = $notaVal;
-                        $materiasMap[$mKey]['EST_NOTA3'] = 'V';
+                        $subnotasMap[$mKey]['NOTA3'] = $notaVal;
+                        $subnotasMap[$mKey]['EST_NOTA3'] = 'V';
                     } elseif ($corte === 'FINAL' || $corte === 'EX' || $corte === 'EXA') {
-                        $materiasMap[$mKey]['EXA'] = $notaVal;
-                        $materiasMap[$mKey]['EST_EXA'] = 'V';
+                        $subnotasMap[$mKey]['EXA'] = $notaVal;
+                        $subnotasMap[$mKey]['EST_EXA'] = 'V';
                     }
                 }
+            }
+        }
 
+        // Si la vista de matrícula de Oracle no tiene datos, sincronizar dinámicamente con Moodle
+        if (empty($output) || !isset($output['CODCARMAT']) || empty($output['CODCARMAT'])) {
+            $cursosMoodle = array();
+            if ($this->load) {
+                $this->load->model('Moodle_model');
+                $resMoodle = $this->Moodle_model->obtener_cursos_estudiante($codigo);
+                if (!empty($resMoodle['exito']) && isset($resMoodle['datos']['cursos']) && is_array($resMoodle['datos']['cursos'])) {
+                    $cursosMoodle = $resMoodle['datos']['cursos'];
+                }
+                if (!empty($resMoodle['exito']) && isset($resMoodle['datos']['estudiante'])) {
+                    $e = $resMoodle['datos']['estudiante'];
+                    if (isset($this->session)) {
+                        $sessEst = $this->session->userdata('estudiante_divisist');
+                        if ($sessEst) {
+                            if (!empty($e['nombres'])) { $sessEst->NOMBRES = $e['nombres']; }
+                            if (!empty($e['apellidos'])) { $sessEst->APELLIDOS = $e['apellidos']; }
+                            $this->session->set_userdata('estudiante_divisist', $sessEst);
+                        }
+                    }
+                }
+            }
+
+            if (!empty($cursosMoodle)) {
+                $output = array(
+                    'CODCARMAT'    => array(),
+                    'CODMAT'       => array(),
+                    'CODMATMAT'    => array(),
+                    'NOMBREMAT'    => array(),
+                    'GRUPO'        => array(),
+                    'CREDITOS'     => array(),
+                    'SEMESTRE'     => array(),
+                    'DEF'          => array(),
+                    'ID_MICRO'     => array(),
+                    'CONTENIDO'    => array(),
+                    'BIBLIOGRAFIA' => array(),
+                    'EMAIL'        => array(),
+                    'SECCIONAL'    => array(),
+                    'RUBRICA'      => array(),
+                    'NOTA1'        => array(),
+                    'EST_NOTA1'    => array(),
+                    'NOTA2'        => array(),
+                    'EST_NOTA2'    => array(),
+                    'NOTA3'        => array(),
+                    'EST_NOTA3'    => array(),
+                    'EXA'          => array(),
+                    'EST_EXA'      => array(),
+                    'HAB'          => array(),
+                    'EST_HAB'      => array(),
+                    'OPC'          => array(),
+                    'EST_OPC'      => array(),
+                    'CLASES'       => array()
+                );
+
+                $semestreNum = 1;
+                foreach ($cursosMoodle as $c) {
+                    $fullname   = trim($c['fullname']);
+                    $shortname  = trim($c['shortname']);
+                    $codCarrera = strlen($codigo) >= 3 ? substr($codigo, 0, 3) : '115';
+
+                    // Determinar grupo (A, B, etc.)
+                    $grupo = 'A';
+                    if (preg_match('/\bB\b/i', $fullname) || preg_match('/[_-]?B$/i', $shortname)) {
+                        $grupo = 'B';
+                    } elseif (preg_match('/\bC\b/i', $fullname) || preg_match('/[_-]?C$/i', $shortname)) {
+                        $grupo = 'C';
+                    }
+
+                    // Claves posibles para cruzar con SUBNOTAS de Oracle si ya fue calificada
+                    $mKey1 = $shortname . '_' . $grupo;
+                    $mKey2 = $shortname . '_-';
+
+                    $nota1 = 0.0; $estNota1 = 'S';
+                    $nota2 = 0.0; $estNota2 = 'S';
+                    $nota3 = 0.0; $estNota3 = 'S';
+                    $exa   = 0.0; $estExa   = 'S';
+
+                    if (isset($subnotasMap[$mKey1])) {
+                        $nota1    = $subnotasMap[$mKey1]['NOTA1'];
+                        $estNota1 = $subnotasMap[$mKey1]['EST_NOTA1'];
+                        $nota2    = $subnotasMap[$mKey1]['NOTA2'];
+                        $estNota2 = $subnotasMap[$mKey1]['EST_NOTA2'];
+                        $nota3    = $subnotasMap[$mKey1]['NOTA3'];
+                        $estNota3 = $subnotasMap[$mKey1]['EST_NOTA3'];
+                        $exa      = $subnotasMap[$mKey1]['EXA'];
+                        $estExa   = $subnotasMap[$mKey1]['EST_EXA'];
+                    } elseif (isset($subnotasMap[$mKey2])) {
+                        $nota1    = $subnotasMap[$mKey2]['NOTA1'];
+                        $estNota1 = $subnotasMap[$mKey2]['EST_NOTA1'];
+                        $nota2    = $subnotasMap[$mKey2]['NOTA2'];
+                        $estNota2 = $subnotasMap[$mKey2]['EST_NOTA2'];
+                        $nota3    = $subnotasMap[$mKey2]['NOTA3'];
+                        $estNota3 = $subnotasMap[$mKey2]['EST_NOTA3'];
+                        $exa      = $subnotasMap[$mKey2]['EXA'];
+                        $estExa   = $subnotasMap[$mKey2]['EST_EXA'];
+                    } else {
+                        // Usar notas directas devueltas por Moodle
+                        if (!empty($c['tiene_nota1'])) {
+                            $nota1    = floatval($c['nota1']);
+                            $estNota1 = 'V';
+                        }
+                        if (!empty($c['tiene_nota2'])) {
+                            $nota2    = floatval($c['nota2']);
+                            $estNota2 = 'V';
+                        }
+                        if (!empty($c['tiene_nota3'])) {
+                            $nota3    = floatval($c['nota3']);
+                            $estNota3 = 'V';
+                        }
+                        if (!empty($c['tiene_exa'])) {
+                            $exa    = floatval($c['exa']);
+                            $estExa = 'V';
+                        }
+                    }
+
+                    // Cálculo de la definitiva
+                    $def = 0.0;
+                    $sumCortes = 0;
+                    $cantCortes = 0;
+                    if ($estNota1 === 'V') { $sumCortes += $nota1; $cantCortes++; }
+                    if ($estNota2 === 'V') { $sumCortes += $nota2; $cantCortes++; }
+                    if ($estNota3 === 'V') { $sumCortes += $nota3; $cantCortes++; }
+                    if ($estExa   === 'V') { $sumCortes += $exa;   $cantCortes++; }
+
+                    if ($cantCortes > 0) {
+                        $def = round($sumCortes / $cantCortes, 1);
+                    } elseif (isset($c['def']) && floatval($c['def']) > 0) {
+                        $def = round(floatval($c['def']), 1);
+                    }
+
+                    $profEmail = !empty($c['profesor_email']) ? $c['profesor_email'] : 'docente@ufps.edu.co';
+                    $contenido = !empty($c['summary']) ? $c['summary'] : "Curso virtual Moodle: {$fullname}.\nConsulte el aula virtual para más detalles.";
+
+                    $output['CODCARMAT'][]    = $codCarrera;
+                    $output['CODMAT'][]       = $shortname;
+                    $output['CODMATMAT'][]    = $shortname;
+                    $output['NOMBREMAT'][]    = mb_strtoupper($fullname, 'UTF-8');
+                    $output['GRUPO'][]        = $grupo;
+                    $output['CREDITOS'][]     = 3;
+                    $output['SEMESTRE'][]     = $semestreNum;
+                    $output['DEF'][]          = $def;
+                    $output['ID_MICRO'][]     = (int)$c['id'];
+                    $output['CONTENIDO'][]    = $contenido;
+                    $output['BIBLIOGRAFIA'][] = "Recursos y material bibliográfico disponibles en Moodle.";
+                    $output['EMAIL'][]        = $profEmail;
+                    $output['SECCIONAL'][]    = '01';
+                    $output['RUBRICA'][]      = 1;
+                    $output['NOTA1'][]        = $nota1;
+                    $output['EST_NOTA1'][]    = $estNota1;
+                    $output['NOTA2'][]        = $nota2;
+                    $output['EST_NOTA2'][]    = $estNota2;
+                    $output['NOTA3'][]        = $nota3;
+                    $output['EST_NOTA3'][]    = $estNota3;
+                    $output['EXA'][]          = $exa;
+                    $output['EST_EXA'][]      = $estExa;
+                    $output['HAB'][]          = 0.0;
+                    $output['EST_HAB'][]      = 'S';
+                    $output['OPC'][]          = 0.0;
+                    $output['EST_OPC'][]      = 'S';
+                    $output['CLASES'][]       = array(
+                        'ID'          => array((int)$c['id']),
+                        'FECHA_INI'   => array('Aula Virtual Activa'),
+                        'URL_REUNION' => array('http://localhost:10000/course/view.php?id=' . $c['id'])
+                    );
+                }
+            } elseif (!empty($subnotasMap)) {
+                // Si Moodle no respondió pero hay notas en Oracle SUBNOTAS
                 $output = array(
                     'CODCARMAT'  => array(),
                     'CODMAT'     => array(),
@@ -95,7 +260,7 @@ class Materia_model extends CI_Model {
                     'CLASES'     => array()
                 );
 
-                foreach ($materiasMap as $m) {
+                foreach ($subnotasMap as $m) {
                     $codMat = $m['COD_MATERIA'];
                     $codCarrera = strlen($codMat) >= 7 ? substr($codMat, 0, 3) : substr($codigo, 0, 3);
                     $codMatPura = strlen($codMat) >= 7 ? substr($codMat, 3) : $codMat;
@@ -113,15 +278,15 @@ class Materia_model extends CI_Model {
                     $output['CODCARMAT'][]  = $codCarrera;
                     $output['CODMAT'][]     = $codMatPura;
                     $output['CODMATMAT'][]  = $codMatPura;
-                    $output['NOMBREMAT'][]  = 'ANALISIS Y DISENO DE SISTEMAS';
+                    $output['NOMBREMAT'][]  = 'MATERIA ' . $codMatPura;
                     $output['GRUPO'][]      = $m['GRUPO'];
                     $output['CREDITOS'][]   = 3;
                     $output['SEMESTRE'][]   = 6;
                     $output['DEF'][]        = $def;
                     $output['ID_MICRO'][]   = 101;
-                    $output['CONTENIDO'][]  = "Unidad 1: Modelado de Requisitos\nUnidad 2: Diagramas UML y Patrones\nUnidad 3: Arquitectura Limpia";
-                    $output['BIBLIOGRAFIA'][] = "Sommerville, Software Engineering 10th Ed.\nPressman, Ingenieria de Software 7ma Ed.";
-                    $output['EMAIL'][]      = 'profesor.sistemas@ufps.edu.co';
+                    $output['CONTENIDO'][]  = "Unidad 1: Introduccion\nUnidad 2: Desarrollo\nUnidad 3: Evaluacion";
+                    $output['BIBLIOGRAFIA'][] = "Material disponible en la plataforma.";
+                    $output['EMAIL'][]      = 'profesor@ufps.edu.co';
                     $output['SECCIONAL'][]  = '01';
                     $output['RUBRICA'][]    = 1;
                     $output['NOTA1'][]      = $m['NOTA1'];
@@ -141,7 +306,7 @@ class Materia_model extends CI_Model {
             }
         }
 
-        // Fallback final para pruebas si no existe la vista en Oracle o no hay registros para el alumno
+        // Fallback final para pruebas si no existe la vista en Oracle, ni Moodle ni SUBNOTAS
         if (empty($output) || !isset($output['CODCARMAT']) || empty($output['CODCARMAT'])) {
             $output = array(
                 'CODCARMAT'  => array('115', '115'),

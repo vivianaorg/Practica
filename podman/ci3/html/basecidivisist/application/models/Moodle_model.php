@@ -72,6 +72,16 @@ class Moodle_model extends CI_Model
         return $this->_llamar_endpoint($url);
     }
 
+    public function obtener_cursos_estudiante($codigo)
+    {
+        $url = $this->base_url . '/obtener_cursos_estudiante.php?' . http_build_query(array(
+            'token'  => $this->token,
+            'codigo' => $codigo,
+        ));
+
+        return $this->_llamar_endpoint($url);
+    }
+
     private function _llamar_endpoint($url, $timeout = null)
     {
         if ($timeout === null) {
