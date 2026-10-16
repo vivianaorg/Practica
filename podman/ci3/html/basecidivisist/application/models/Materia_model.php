@@ -67,23 +67,30 @@ class Materia_model extends CI_Model {
         // Si la vista de matrícula de Oracle no tiene datos, sincronizar dinámicamente con Moodle
         if (empty($output) || !isset($output['CODCARMAT']) || empty($output['CODCARMAT'])) {
             $cursosMoodle = array();
-            if ($this->load) {
-                $this->load->model('Moodle_model');
-                $resMoodle = $this->Moodle_model->obtener_cursos_estudiante($codigo);
-                if (!empty($resMoodle['exito']) && isset($resMoodle['datos']['cursos']) && is_array($resMoodle['datos']['cursos'])) {
-                    $cursosMoodle = $resMoodle['datos']['cursos'];
+            try {
+                $CI =& get_instance();
+                if (!isset($CI->Moodle_model)) {
+                    $CI->load->model('Moodle_model');
                 }
-                if (!empty($resMoodle['exito']) && isset($resMoodle['datos']['estudiante'])) {
-                    $e = $resMoodle['datos']['estudiante'];
-                    if (isset($this->session)) {
-                        $sessEst = $this->session->userdata('estudiante_divisist');
-                        if ($sessEst) {
-                            if (!empty($e['nombres'])) { $sessEst->NOMBRES = $e['nombres']; }
-                            if (!empty($e['apellidos'])) { $sessEst->APELLIDOS = $e['apellidos']; }
-                            $this->session->set_userdata('estudiante_divisist', $sessEst);
+                if (isset($CI->Moodle_model)) {
+                    $resMoodle = $CI->Moodle_model->obtener_cursos_estudiante($codigo);
+                    if (!empty($resMoodle['exito']) && isset($resMoodle['datos']['cursos']) && is_array($resMoodle['datos']['cursos'])) {
+                        $cursosMoodle = $resMoodle['datos']['cursos'];
+                    }
+                    if (!empty($resMoodle['exito']) && isset($resMoodle['datos']['estudiante'])) {
+                        $e = $resMoodle['datos']['estudiante'];
+                        if (isset($CI->session)) {
+                            $sessEst = $CI->session->userdata('estudiante_divisist');
+                            if ($sessEst) {
+                                if (!empty($e['nombres'])) { $sessEst->NOMBRES = $e['nombres']; }
+                                if (!empty($e['apellidos'])) { $sessEst->APELLIDOS = $e['apellidos']; }
+                                $CI->session->set_userdata('estudiante_divisist', $sessEst);
+                            }
                         }
                     }
                 }
+            } catch (Exception $e) {
+                log_message('error', 'Materia_model Moodle exception: ' . $e->getMessage());
             }
 
             if (!empty($cursosMoodle)) {
@@ -199,7 +206,7 @@ class Materia_model extends CI_Model {
                     $output['CODCARMAT'][]    = $codCarrera;
                     $output['CODMAT'][]       = $shortname;
                     $output['CODMATMAT'][]    = $shortname;
-                    $output['NOMBREMAT'][]    = mb_strtoupper($fullname, 'UTF-8');
+                    $output['NOMBREMAT'][]    = strtoupper($fullname);
                     $output['GRUPO'][]        = $grupo;
                     $output['CREDITOS'][]     = 3;
                     $output['SEMESTRE'][]     = $semestreNum;
