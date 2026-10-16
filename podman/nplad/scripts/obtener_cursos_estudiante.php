@@ -39,8 +39,16 @@ if ($output === null) {
     exit;
 }
 
-$decoded = json_decode($output, true);
-if (json_last_error() !== JSON_ERROR_NONE) {
+$jsonStart = strpos($output, '{');
+$jsonEnd   = strrpos($output, '}');
+if ($jsonStart !== false && $jsonEnd !== false && $jsonEnd >= $jsonStart) {
+    $cleanJson = substr($output, $jsonStart, $jsonEnd - $jsonStart + 1);
+    $decoded = json_decode($cleanJson, true);
+} else {
+    $decoded = json_decode($output, true);
+}
+
+if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
     http_response_code(500);
     echo json_encode(array(
         'exito'   => false,

@@ -1,8 +1,13 @@
 <?php
 define('CLI_SCRIPT', true);
 
+// Desactivar visualizacion de errores y notices para proteger la salida JSON
+error_reporting(0);
+@ini_set('display_errors', '0');
+
 require(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/clilib.php');
+require_once($CFG->dirroot . '/enrol/locallib.php');
 
 \core\cron::setup_user();
 
@@ -27,8 +32,12 @@ if ($options['help'] || empty($options['codigo'])) {
 
 $codigo = trim($options['codigo']);
 
-// Buscar estudiante por idnumber o username
-$user = $DB->get_record_select('user', "(idnumber = :c1 OR username = :c2) AND deleted = 0", array('c1' => $codigo, 'c2' => $codigo));
+// Buscar estudiante por idnumber o username (case-insensitive)
+$user = $DB->get_record_select(
+    'user',
+    "(LOWER(idnumber) = LOWER(:c1) OR LOWER(username) = LOWER(:c2)) AND deleted = 0",
+    array('c1' => $codigo, 'c2' => $codigo)
+);
 
 if (!$user) {
     echo json_encode(array(
@@ -40,83 +49,92 @@ if (!$user) {
 
 $userId = (int)$user->id;
 
-// Consultar cursos en los que el estudiante esta matriculado (excluyendo el sitio id 1)
-$sqlCourses = "SELECT DISTINCT 
-                   c.id, 
-                   c.fullname, 
-                   c.shortname, 
-                   c.idnumber, 
-                   c.summary
-               FROM {course} c
-               WHERE c.id > 1 AND (
-                   c.id IN (
-                       SELECT e.courseid 
-                       FROM {enrol} e 
-                       JOIN {user_enrolments} ue ON ue.enrolid = e.id 
-                       WHERE ue.userid = :u1
-                   )
-                   OR c.id IN (
-                       SELECT ctx.instanceid 
-                       FROM {context} ctx 
-                       JOIN {role_assignments} ra ON ra.contextid = ctx.id 
-                       WHERE ra.userid = :u2 AND ctx.contextlevel = 50
-                   )
-               )
-               ORDER BY c.fullname ASC";
+// 1. Obtener cursos del estudiante usando la funcion nativa de Moodle enrol_get_all_users_courses
+$courses = array();
+try {
+    if (function_exists('enrol_get_all_users_courses')) {
+        // false = incluye todos los cursos independientemente de si ya comenzaron o son futuros
+        $courses = enrol_get_all_users_courses($userId, false);
+    }
+} catch (Exception $e) {
+    $courses = array();
+}
 
-$courses = $DB->get_records_sql($sqlCourses, array('u1' => $userId, 'u2' => $userId));
+// 2. Fallback SQL si la funcion nativa no retorno registros
+if (empty($courses)) {
+    try {
+        $sqlCourses = "SELECT DISTINCT 
+                           c.id, 
+                           c.fullname, 
+                           c.shortname, 
+                           c.idnumber, 
+                           c.summary
+                       FROM {course} c
+                       JOIN {enrol} e ON e.courseid = c.id
+                       JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                       WHERE ue.userid = :userid AND c.id > 1
+                       ORDER BY c.fullname ASC";
+        $courses = $DB->get_records_sql($sqlCourses, array('userid' => $userId));
+    } catch (Exception $e) {
+        $courses = array();
+    }
+}
+
+// 3. Fallback adicional por asignacion de roles en contexto de curso
+if (empty($courses)) {
+    try {
+        $sqlRoles = "SELECT DISTINCT 
+                         c.id, 
+                         c.fullname, 
+                         c.shortname, 
+                         c.idnumber, 
+                         c.summary
+                     FROM {course} c
+                     JOIN {context} ctx ON (ctx.instanceid = c.id AND ctx.contextlevel = 50)
+                     JOIN {role_assignments} ra ON ra.contextid = ctx.id
+                     WHERE ra.userid = :userid AND c.id > 1
+                     ORDER BY c.fullname ASC";
+        $courses = $DB->get_records_sql($sqlRoles, array('userid' => $userId));
+    } catch (Exception $e) {
+        $courses = array();
+    }
+}
 
 $cursosData = array();
 
 if (!empty($courses)) {
     foreach ($courses as $c) {
         $courseId = (int)$c->id;
+        if ($courseId <= 1) {
+            continue; // Ignorar el curso frontal del sitio
+        }
 
         // Obtener profesor del curso si existe
-        $teacherSql = "SELECT u.id, u.firstname, u.lastname, u.email
-                       FROM {role_assignments} ra
-                       JOIN {context} ctx ON ctx.id = ra.contextid
-                       JOIN {user} u ON u.id = ra.userid
-                       JOIN {role} r ON r.id = ra.roleid
-                       WHERE ctx.contextlevel = 50 
-                         AND ctx.instanceid = :courseid
-                         AND (r.shortname = 'editingteacher' OR r.shortname = 'teacher')
-                         AND u.deleted = 0
-                       ORDER BY ra.id ASC";
-        $teachers = $DB->get_records_sql($teacherSql, array('courseid' => $courseId));
         $profEmail = 'docente@ufps.edu.co';
         $profNombre = 'Docente Moodle';
-        if (!empty($teachers)) {
-            $t = reset($teachers);
-            $profEmail = !empty($t->email) ? $t->email : 'docente@ufps.edu.co';
-            $profNombre = trim($t->firstname . ' ' . $t->lastname);
+        try {
+            $teacherSql = "SELECT u.id, u.firstname, u.lastname, u.email
+                           FROM {role_assignments} ra
+                           JOIN {context} ctx ON ctx.id = ra.contextid
+                           JOIN {user} u ON u.id = ra.userid
+                           JOIN {role} r ON r.id = ra.roleid
+                           WHERE ctx.contextlevel = 50 
+                             AND ctx.instanceid = :courseid
+                             AND (r.shortname = 'editingteacher' OR r.shortname = 'teacher')
+                             AND u.deleted = 0
+                           ORDER BY ra.id ASC";
+            $teachers = $DB->get_records_sql($teacherSql, array('courseid' => $courseId));
+            if (!empty($teachers)) {
+                $t = reset($teachers);
+                $profEmail = !empty($t->email) ? $t->email : 'docente@ufps.edu.co';
+                $profNombre = trim($t->firstname . ' ' . $t->lastname);
+            }
+        } catch (Exception $e) {
+            // Ignorar error al buscar profesor
         }
 
         // Obtener items de calificacion y notas del estudiante
-        $gradeSql = "SELECT 
-                        gi.id AS grade_item_id,
-                        gi.itemmodule,
-                        gi.iteminstance,
-                        gi.itemname,
-                        gi.itemtype,
-                        gi.grademax,
-                        gi.grademin,
-                        cm.id AS cmid,
-                        gg.finalgrade,
-                        gg.rawgrade,
-                        gg.timemodified
-                    FROM {grade_items} gi
-                    LEFT JOIN {grade_grades} gg ON (gg.itemid = gi.id AND gg.userid = :userid)
-                    LEFT JOIN {modules} m ON m.name = gi.itemmodule
-                    LEFT JOIN {course_modules} cm ON (cm.course = gi.courseid AND cm.module = m.id AND cm.instance = gi.iteminstance)
-                    WHERE gi.courseid = :courseid
-                    ORDER BY gi.itemtype DESC, gi.sortorder ASC, gi.id ASC";
-
-        $gradeRecords = $DB->get_records_sql($gradeSql, array(
-            'courseid' => $courseId,
-            'userid'   => $userId
-        ));
-
+        // El primer campo DEBE llamarse 'id' para cumplir con Moodle get_records_sql
         $actividades = array();
         $totalNotaMods = 0.0;
         $countModsGraded = 0;
@@ -127,66 +145,95 @@ if (!empty($courses)) {
         $nota3 = null;
         $exa   = null;
 
-        if (!empty($gradeRecords)) {
-            foreach ($gradeRecords as $gr) {
-                if ($gr->itemtype === 'course') {
-                    if ($gr->finalgrade !== null) {
-                        $courseTotalGrade = round((float)$gr->finalgrade, 2);
-                    } elseif ($gr->rawgrade !== null) {
-                        $courseTotalGrade = round((float)$gr->rawgrade, 2);
-                    }
-                } elseif ($gr->itemtype === 'category') {
-                    $itemName = mb_strtolower(trim($gr->itemname));
-                    $catGrade = null;
-                    if ($gr->finalgrade !== null) {
-                        $catGrade = round((float)$gr->finalgrade, 2);
-                    } elseif ($gr->rawgrade !== null) {
-                        $catGrade = round((float)$gr->rawgrade, 2);
-                    }
-                    if ($catGrade !== null) {
-                        if (strpos($itemName, '1') !== false || strpos($itemName, 'primer') !== false) {
-                            $nota1 = $catGrade;
-                        } elseif (strpos($itemName, '2') !== false || strpos($itemName, 'segundo') !== false) {
-                            $nota2 = $catGrade;
-                        } elseif (strpos($itemName, '3') !== false || strpos($itemName, 'tercer') !== false) {
-                            $nota3 = $catGrade;
-                        } elseif (strpos($itemName, 'ex') !== false || strpos($itemName, 'final') !== false) {
-                            $exa = $catGrade;
+        try {
+            $gradeSql = "SELECT 
+                            gi.id,
+                            gi.itemmodule,
+                            gi.iteminstance,
+                            gi.itemname,
+                            gi.itemtype,
+                            gi.grademax,
+                            gi.grademin,
+                            cm.id AS cmid,
+                            gg.finalgrade,
+                            gg.rawgrade,
+                            gg.timemodified
+                        FROM {grade_items} gi
+                        LEFT JOIN {grade_grades} gg ON (gg.itemid = gi.id AND gg.userid = :userid)
+                        LEFT JOIN {modules} m ON m.name = gi.itemmodule
+                        LEFT JOIN {course_modules} cm ON (cm.course = gi.courseid AND cm.module = m.id AND cm.instance = gi.iteminstance)
+                        WHERE gi.courseid = :courseid
+                        ORDER BY gi.itemtype DESC, gi.sortorder ASC, gi.id ASC";
+
+            $gradeRecords = $DB->get_records_sql($gradeSql, array(
+                'courseid' => $courseId,
+                'userid'   => $userId
+            ));
+
+            if (!empty($gradeRecords)) {
+                foreach ($gradeRecords as $gr) {
+                    if ($gr->itemtype === 'course') {
+                        if ($gr->finalgrade !== null) {
+                            $courseTotalGrade = round((float)$gr->finalgrade, 2);
+                        } elseif ($gr->rawgrade !== null) {
+                            $courseTotalGrade = round((float)$gr->rawgrade, 2);
                         }
-                    }
-                } elseif ($gr->itemtype === 'mod') {
-                    $finalGrade = null;
-                    $presento = false;
-                    if ($gr->finalgrade !== null) {
-                        $finalGrade = round((float)$gr->finalgrade, 2);
-                        $presento = true;
-                    } elseif ($gr->rawgrade !== null) {
-                        $finalGrade = round((float)$gr->rawgrade, 2);
-                        $presento = true;
-                    }
+                    } elseif ($gr->itemtype === 'category') {
+                        $rawName = !empty($gr->itemname) ? (string)$gr->itemname : '';
+                        $itemName = strtolower(trim($rawName));
+                        $catGrade = null;
+                        if ($gr->finalgrade !== null) {
+                            $catGrade = round((float)$gr->finalgrade, 2);
+                        } elseif ($gr->rawgrade !== null) {
+                            $catGrade = round((float)$gr->rawgrade, 2);
+                        }
+                        if ($catGrade !== null) {
+                            if (strpos($itemName, '1') !== false || strpos($itemName, 'primer') !== false) {
+                                $nota1 = $catGrade;
+                            } elseif (strpos($itemName, '2') !== false || strpos($itemName, 'segundo') !== false) {
+                                $nota2 = $catGrade;
+                            } elseif (strpos($itemName, '3') !== false || strpos($itemName, 'tercer') !== false) {
+                                $nota3 = $catGrade;
+                            } elseif (strpos($itemName, 'ex') !== false || strpos($itemName, 'final') !== false) {
+                                $exa = $catGrade;
+                            }
+                        }
+                    } elseif ($gr->itemtype === 'mod') {
+                        $finalGrade = null;
+                        $presento = false;
+                        if ($gr->finalgrade !== null) {
+                            $finalGrade = round((float)$gr->finalgrade, 2);
+                            $presento = true;
+                        } elseif ($gr->rawgrade !== null) {
+                            $finalGrade = round((float)$gr->rawgrade, 2);
+                            $presento = true;
+                        }
 
-                    $notaMax = ($gr->grademax !== null) ? round((float)$gr->grademax, 2) : 5.0;
-                    $notaMin = ($gr->grademin !== null) ? round((float)$gr->grademin, 2) : 0.0;
+                        $notaMax = ($gr->grademax !== null) ? round((float)$gr->grademax, 2) : 5.0;
+                        $notaMin = ($gr->grademin !== null) ? round((float)$gr->grademin, 2) : 0.0;
 
-                    if ($presento && $finalGrade !== null) {
-                        $totalNotaMods += $finalGrade;
-                        $countModsGraded++;
+                        if ($presento && $finalGrade !== null) {
+                            $totalNotaMods += $finalGrade;
+                            $countModsGraded++;
+                        }
+
+                        $actividades[] = array(
+                            'cmid'             => ($gr->cmid !== null) ? (int)$gr->cmid : 0,
+                            'grade_item_id'    => (int)$gr->id,
+                            'id_actividad'     => (int)$gr->iteminstance,
+                            'tipo_actividad'   => $gr->itemmodule ? $gr->itemmodule : 'actividad',
+                            'nombre_actividad' => $gr->itemname ? $gr->itemname : ($gr->itemmodule ? ucfirst($gr->itemmodule) : 'Actividad'),
+                            'nota_final'       => ($finalGrade !== null) ? $finalGrade : 0.0,
+                            'nota_maxima'      => $notaMax,
+                            'nota_minima'      => $notaMin,
+                            'presento'         => $presento,
+                            'fecha_modificado' => $gr->timemodified
+                        );
                     }
-
-                    $actividades[] = array(
-                        'cmid'             => ($gr->cmid !== null) ? (int)$gr->cmid : 0,
-                        'grade_item_id'    => (int)$gr->grade_item_id,
-                        'id_actividad'     => (int)$gr->iteminstance,
-                        'tipo_actividad'   => $gr->itemmodule ? $gr->itemmodule : 'actividad',
-                        'nombre_actividad' => $gr->itemname ? $gr->itemname : ($gr->itemmodule ? ucfirst($gr->itemmodule) : 'Actividad'),
-                        'nota_final'       => ($finalGrade !== null) ? $finalGrade : 0.0,
-                        'nota_maxima'      => $notaMax,
-                        'nota_minima'      => $notaMin,
-                        'presento'         => $presento,
-                        'fecha_modificado' => $gr->timemodified
-                    );
                 }
             }
+        } catch (Exception $e) {
+            // Ignorar error al procesar calificaciones
         }
 
         // Si no habia categoria explicita para nota1, pero hay actividades calificadas o nota total de curso
@@ -199,13 +246,14 @@ if (!empty($courses)) {
         }
 
         $definitiva = ($courseTotalGrade !== null) ? $courseTotalGrade : (($nota1 !== null) ? $nota1 : 0.0);
+        $summaryText = !empty($c->summary) ? strip_tags((string)$c->summary) : '';
 
         $cursosData[] = array(
             'id'              => $courseId,
-            'fullname'        => $c->fullname,
-            'shortname'       => $c->shortname,
-            'idnumber'        => $c->idnumber,
-            'summary'         => strip_tags($c->summary),
+            'fullname'        => (string)$c->fullname,
+            'shortname'       => (string)$c->shortname,
+            'idnumber'        => !empty($c->idnumber) ? (string)$c->idnumber : '',
+            'summary'         => $summaryText,
             'profesor_email'  => $profEmail,
             'profesor_nombre' => $profNombre,
             'nota1'           => ($nota1 !== null) ? $nota1 : 0.0,

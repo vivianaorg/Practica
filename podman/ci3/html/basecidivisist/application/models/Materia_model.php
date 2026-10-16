@@ -76,6 +76,8 @@ class Materia_model extends CI_Model {
                     $resMoodle = $CI->Moodle_model->obtener_cursos_estudiante($codigo);
                     if (!empty($resMoodle['exito']) && isset($resMoodle['datos']['cursos']) && is_array($resMoodle['datos']['cursos'])) {
                         $cursosMoodle = $resMoodle['datos']['cursos'];
+                    } else {
+                        log_message('error', 'Materia_model: Moodle fallo o vacio para ' . $codigo . ': ' . json_encode($resMoodle));
                     }
                     if (!empty($resMoodle['exito']) && isset($resMoodle['datos']['estudiante'])) {
                         $e = $resMoodle['datos']['estudiante'];
