@@ -177,12 +177,21 @@ class Materia_model extends CI_Model {
                         $grupo = 'C';
                     }
 
-                    // Buscar si el estudiante tiene notas de rúbrica registradas en Oracle para este curso
                     $subnotaEncontrada = null;
+                    $shortnameBase = $shortname;
+                    if (strpos($shortname, '-') !== false) {
+                        $snPartes = explode('-', $shortname, 2);
+                        $shortnameBase = trim($snPartes[0]);
+                    }
                     $candidatos = array(
                         strtolower($shortname) . '_' . strtoupper($grupo),
                         strtolower($shortname) . '_-',
                         strtolower($shortname),
+                        strtolower($shortnameBase) . '_' . strtoupper($grupo),
+                        strtolower($shortnameBase) . '_-',
+                        strtolower($shortnameBase),
+                        strtolower(str_replace('-', '_', $shortname)) . '_' . strtoupper($grupo),
+                        strtolower(str_replace('-', '_', $shortname)),
                         'curso_' . $c['id'] . '_' . strtoupper($grupo),
                         'curso_' . $c['id'] . '_-',
                         'curso_' . $c['id'],
@@ -191,9 +200,14 @@ class Materia_model extends CI_Model {
                         (string)$c['id']
                     );
                     if (!empty($c['idnumber'])) {
-                        $candidatos[] = strtolower(trim($c['idnumber'])) . '_' . strtoupper($grupo);
-                        $candidatos[] = strtolower(trim($c['idnumber'])) . '_-';
-                        $candidatos[] = strtolower(trim($c['idnumber']));
+                        $idnumLow = strtolower(trim($c['idnumber']));
+                        $candidatos[] = $idnumLow . '_' . strtoupper($grupo);
+                        $candidatos[] = $idnumLow . '_-';
+                        $candidatos[] = $idnumLow;
+                        $idnumBase = strpos($idnumLow, '-') !== false ? trim(explode('-', $idnumLow, 2)[0]) : $idnumLow;
+                        $candidatos[] = $idnumBase . '_' . strtoupper($grupo);
+                        $candidatos[] = $idnumBase . '_-';
+                        $candidatos[] = $idnumBase;
                     }
 
                     foreach ($candidatos as $cand) {
@@ -206,7 +220,8 @@ class Materia_model extends CI_Model {
                     if ($subnotaEncontrada === null) {
                         foreach ($subnotasMap as $sKey => $sVal) {
                             $matOracle = strtolower(trim($sVal['COD_MATERIA']));
-                            if (stripos($shortname, $matOracle) !== false || stripos($matOracle, $shortname) !== false) {
+                            if (stripos($shortname, $matOracle) !== false || stripos($matOracle, $shortname) !== false ||
+                                stripos($shortnameBase, $matOracle) !== false || stripos($matOracle, $shortnameBase) !== false) {
                                 $subnotaEncontrada = $sVal;
                                 break;
                             }
