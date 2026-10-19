@@ -75,14 +75,32 @@ class Rubrica_model extends CI_Model
         $sql = "SELECT ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, 
                        ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE 
                 FROM CONFIG_RUBRICA 
-                WHERE COD_MATERIA = '{$codMateria}' 
-                  AND GRUPO       = '{$grupo}' 
-                  AND SEMESTRE    = '{$semestre}' 
+                WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                       OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                       OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                       OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                       OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                  AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                  AND SEMESTRE = '{$semestre}' 
                   AND TIPO_PREVIO = '{$tipoPrevio}' 
                 ORDER BY ID ASC";
 
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+        if (empty($arr)) {
+            $sqlSinSem = "SELECT ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, 
+                                 ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE 
+                          FROM CONFIG_RUBRICA 
+                          WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                                 OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                                 OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                                 OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                                 OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                            AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                            AND TIPO_PREVIO = '{$tipoPrevio}' 
+                          ORDER BY ID ASC";
+            $this->database2->get_obj_array($sqlSinSem, $arr);
+        }
         return $arr;
     }
 
@@ -93,13 +111,30 @@ class Rubrica_model extends CI_Model
         $sql = "SELECT ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, 
                        ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE 
                 FROM CONFIG_RUBRICA 
-                WHERE COD_MATERIA = '{$codMateria}' 
-                  AND GRUPO       = '{$grupo}' 
-                  AND SEMESTRE    = '{$semestre}' 
+                WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                       OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                       OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                       OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                       OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                  AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                  AND SEMESTRE = '{$semestre}' 
                 ORDER BY TIPO_PREVIO ASC, ID ASC";
 
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+        if (empty($arr)) {
+            $sqlSinSem = "SELECT ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, 
+                                 ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE 
+                          FROM CONFIG_RUBRICA 
+                          WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                                 OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                                 OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                                 OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                                 OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                            AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                          ORDER BY TIPO_PREVIO ASC, ID ASC";
+            $this->database2->get_obj_array($sqlSinSem, $arr);
+        }
 
         $agrupadas = array(
             '1'     => array(),

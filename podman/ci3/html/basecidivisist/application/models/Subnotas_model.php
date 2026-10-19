@@ -81,13 +81,29 @@ class Subnotas_model extends CI_Model
     {
         $grupo = $this->_normalizar_grupo($grupo);
         $sql = "SELECT COUNT(*) AS TOTAL FROM SUBNOTAS 
-                WHERE COD_MATERIA = '{$codMateria}' 
-                  AND GRUPO       = '{$grupo}' 
+                WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                       OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                       OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                       OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                       OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                  AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
                   AND SEMESTRE    = '{$semestre}' 
                   AND TIPO_PREVIO = '{$tipoPrevio}' 
                   AND (ESTADO = 'ACEPTADA' OR ESTADO = 'MODIFICADA')";
         $obj = null;
         $this->database2->get_sql_object($sql, $obj);
+        if (!$obj || !isset($obj->TOTAL) || (int)$obj->TOTAL <= 0) {
+            $sqlSinSem = "SELECT COUNT(*) AS TOTAL FROM SUBNOTAS 
+                          WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                                 OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                                 OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                                 OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                                 OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                            AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                            AND TIPO_PREVIO = '{$tipoPrevio}' 
+                            AND (ESTADO = 'ACEPTADA' OR ESTADO = 'MODIFICADA')";
+            $this->database2->get_sql_object($sqlSinSem, $obj);
+        }
         return ($obj && isset($obj->TOTAL) && (int)$obj->TOTAL > 0);
     }
 
@@ -95,13 +111,29 @@ class Subnotas_model extends CI_Model
     {
         $grupo = $this->_normalizar_grupo($grupo);
         $sql = "SELECT TIPO_PREVIO, COUNT(*) AS TOTAL FROM SUBNOTAS 
-                WHERE COD_MATERIA = '{$codMateria}' 
-                  AND GRUPO       = '{$grupo}' 
+                WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                       OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                       OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                       OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                       OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                  AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
                   AND SEMESTRE    = '{$semestre}' 
                   AND (ESTADO = 'ACEPTADA' OR ESTADO = 'MODIFICADA') 
                 GROUP BY TIPO_PREVIO";
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+        if (empty($arr)) {
+            $sqlSinSem = "SELECT TIPO_PREVIO, COUNT(*) AS TOTAL FROM SUBNOTAS 
+                          WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                                 OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                                 OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                                 OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                                 OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                            AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                            AND (ESTADO = 'ACEPTADA' OR ESTADO = 'MODIFICADA') 
+                          GROUP BY TIPO_PREVIO";
+            $this->database2->get_obj_array($sqlSinSem, $arr);
+        }
 
         $calificados = array();
         if (!empty($arr) && is_array($arr)) {
@@ -242,14 +274,32 @@ class Subnotas_model extends CI_Model
         $sql = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
                        NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
                 FROM SUBNOTAS 
-                WHERE COD_MATERIA = '{$codMateria}' 
-                  AND GRUPO       = '{$grupo}' 
+                WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                       OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                       OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                       OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                       OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                  AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
                   AND SEMESTRE    = '{$semestre}' 
                   AND TIPO_PREVIO = '{$tipoPrevio}' 
                 ORDER BY COD_ESTUDIANTE ASC, ID ASC";
 
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+        if (empty($arr)) {
+            $sqlSinSem = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
+                                 NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
+                          FROM SUBNOTAS 
+                          WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                                 OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                                 OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                                 OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                                 OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                            AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                            AND TIPO_PREVIO = '{$tipoPrevio}' 
+                          ORDER BY COD_ESTUDIANTE ASC, ID ASC";
+            $this->database2->get_obj_array($sqlSinSem, $arr);
+        }
 
         $agrupadas = array();
         if (!empty($arr) && is_array($arr)) {
@@ -363,14 +413,34 @@ class Subnotas_model extends CI_Model
                        MAX(ESTADO) AS ESTADO_CORTE,
                        COUNT(ID) AS TOTAL_ACTIVIDADES
                 FROM SUBNOTAS 
-                WHERE COD_MATERIA = '{$codMateria}' 
-                  AND GRUPO       = '{$grupo}' 
+                WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                       OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                       OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                       OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                       OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                  AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
                   AND SEMESTRE    = '{$semestre}' 
                 GROUP BY COD_ESTUDIANTE, TIPO_PREVIO 
                 ORDER BY COD_ESTUDIANTE ASC, TIPO_PREVIO ASC";
 
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+        if (empty($arr)) {
+            $sqlSinSem = "SELECT COD_ESTUDIANTE, TIPO_PREVIO, 
+                                 ROUND(SUM(SUBNOTA), 2) AS NOTA_CORTE,
+                                 MAX(ESTADO) AS ESTADO_CORTE,
+                                 COUNT(ID) AS TOTAL_ACTIVIDADES
+                          FROM SUBNOTAS 
+                          WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                                 OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                                 OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                                 OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                                 OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                            AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                          GROUP BY COD_ESTUDIANTE, TIPO_PREVIO 
+                          ORDER BY COD_ESTUDIANTE ASC, TIPO_PREVIO ASC";
+            $this->database2->get_obj_array($sqlSinSem, $arr);
+        }
 
         $agrupadas = array();
         if (!empty($arr) && is_array($arr)) {
@@ -400,13 +470,30 @@ class Subnotas_model extends CI_Model
         $sql = "SELECT ID, COD_ESTUDIANTE, TIPO_PREVIO, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
                        NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO 
                 FROM SUBNOTAS 
-                WHERE COD_MATERIA = '{$codMateria}' 
-                  AND GRUPO       = '{$grupo}' 
+                WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                       OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                       OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                       OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                       OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                  AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
                   AND SEMESTRE    = '{$semestre}' 
                 ORDER BY COD_ESTUDIANTE ASC, TIPO_PREVIO ASC, ID ASC";
 
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+        if (empty($arr)) {
+            $sqlSinSem = "SELECT ID, COD_ESTUDIANTE, TIPO_PREVIO, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
+                                 NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO 
+                          FROM SUBNOTAS 
+                          WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                                 OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                                 OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                                 OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                                 OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                            AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                          ORDER BY COD_ESTUDIANTE ASC, TIPO_PREVIO ASC, ID ASC";
+            $this->database2->get_obj_array($sqlSinSem, $arr);
+        }
 
         $agrupadas = array();
         if (!empty($arr) && is_array($arr)) {
@@ -426,5 +513,23 @@ class Subnotas_model extends CI_Model
         }
 
         return $agrupadas;
+    }
+
+    public function obtener_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
+    {
+        $CI =& get_instance();
+        if (!isset($CI->Rubrica_model)) {
+            $CI->load->model('Rubrica_model');
+        }
+        return $CI->Rubrica_model->obtener($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
+    }
+
+    public function obtener_todas_rubricas_curso($codProfesor, $codMateria, $grupo, $semestre)
+    {
+        $CI =& get_instance();
+        if (!isset($CI->Rubrica_model)) {
+            $CI->load->model('Rubrica_model');
+        }
+        return $CI->Rubrica_model->obtener_todas_del_curso($codProfesor, $codMateria, $grupo, $semestre);
     }
 }

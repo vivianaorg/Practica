@@ -218,7 +218,7 @@ function abrirDetalleEstudiante(idx) {
     if (elNombre) elNombre.innerText = est.nombre_completo;
     if (elCodigo) elCodigo.innerText = est.codigo;
     if (elDef) {
-        if (est.definitiva !== null) {
+        if (est.definitiva !== null && est.definitiva !== undefined) {
             var val = parseFloat(est.definitiva).toFixed(2);
             elDef.innerText = val;
             elDef.style.color = (parseFloat(val) >= 3.0) ? "#00a65a" : "#dd4b39";
@@ -228,10 +228,29 @@ function abrirDetalleEstudiante(idx) {
         }
     }
 
-    renderizarTablaCorte("contenedor_corte_1", est.desglose["1"] || [], est.corte_1);
-    renderizarTablaCorte("contenedor_corte_2", est.desglose["2"] || [], est.corte_2);
-    renderizarTablaCorte("contenedor_corte_3", est.desglose["3"] || [], est.corte_3);
-    renderizarTablaCorte("contenedor_corte_final", est.desglose["FINAL"] || [], est.corte_final);
+    var desg = est.desglose || {};
+    renderizarTablaCorte("contenedor_corte_1", desg["1"] || [], est.corte_1);
+    renderizarTablaCorte("contenedor_corte_2", desg["2"] || [], est.corte_2);
+    renderizarTablaCorte("contenedor_corte_3", desg["3"] || [], est.corte_3);
+    renderizarTablaCorte("contenedor_corte_final", desg["FINAL"] || [], est.corte_final);
+
+    var tabCortes = [
+        { sel: 'a[href="#tab_det_1"]', items: desg["1"] },
+        { sel: 'a[href="#tab_det_2"]', items: desg["2"] },
+        { sel: 'a[href="#tab_det_3"]', items: desg["3"] },
+        { sel: 'a[href="#tab_det_final"]', items: desg["FINAL"] }
+    ];
+    var activada = false;
+    for (var tc = 0; tc < tabCortes.length; tc++) {
+        if (tabCortes[tc].items && tabCortes[tc].items.length > 0) {
+            $(tabCortes[tc].sel).tab("show");
+            activada = true;
+            break;
+        }
+    }
+    if (!activada) {
+        $('a[href="#tab_det_1"]').tab("show");
+    }
 
     $("#modal_detalle_estudiante").modal("show");
 }
@@ -265,23 +284,29 @@ function renderizarTablaCorte(contenedorId, subnotas, notaCorte) {
 
     for (var i = 0; i < subnotas.length; i++) {
         var s = subnotas[i];
-        var orig = parseFloat(s.NOTA_ORIGINAL).toFixed(2) + " / " + parseFloat(s.NOTA_MAXIMA).toFixed(2);
-        var pct = parseFloat(s.PORCENTAJE).toFixed(1);
-        var sub = parseFloat(s.SUBNOTA).toFixed(2);
+        var nomAct = s.NOMBRE_ACTIVIDAD || s.nombre_actividad || 'Actividad';
+        var notaOrig = (s.NOTA_ORIGINAL !== undefined) ? s.NOTA_ORIGINAL : (s.nota_original !== undefined ? s.nota_original : 0);
+        var notaMax = (s.NOTA_MAXIMA !== undefined) ? s.NOTA_MAXIMA : (s.nota_maxima !== undefined ? s.nota_maxima : 5);
+        var porc = (s.PORCENTAJE !== undefined) ? s.PORCENTAJE : (s.porcentaje !== undefined ? s.porcentaje : 0);
+        var subn = (s.SUBNOTA !== undefined) ? s.SUBNOTA : (s.subnota !== undefined ? s.subnota : 0);
 
-        sumaSub += parseFloat(s.SUBNOTA);
-        sumaPct += parseFloat(s.PORCENTAJE);
+        var orig = parseFloat(notaOrig).toFixed(2) + " / " + parseFloat(notaMax).toFixed(2);
+        var pct = parseFloat(porc).toFixed(1);
+        var sub = parseFloat(subn).toFixed(2);
+
+        sumaSub += parseFloat(subn);
+        sumaPct += parseFloat(porc);
 
         html += '<tr>' +
             '<td style="text-align: center;">' + (i + 1) + '</td>' +
-            '<td><strong>' + s.NOMBRE_ACTIVIDAD + '</strong></td>' +
+            '<td><strong>' + nomAct + '</strong></td>' +
             '<td style="text-align: center;">' + orig + '</td>' +
             '<td style="text-align: center;"><span class="badge bg-blue">' + pct + '%</span></td>' +
             '<td style="text-align: center; font-weight: bold; color: #0073b7;">' + sub + '</td>' +
             '</tr>';
     }
 
-    var notaFinalCorte = (notaCorte !== null) ? parseFloat(notaCorte).toFixed(2) : sumaSub.toFixed(2);
+    var notaFinalCorte = (notaCorte !== null && notaCorte !== undefined) ? parseFloat(notaCorte).toFixed(2) : sumaSub.toFixed(2);
 
     html += '</tbody>' +
         '<tfoot>' +

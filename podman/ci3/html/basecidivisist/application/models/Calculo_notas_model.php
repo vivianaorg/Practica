@@ -8,6 +8,7 @@ class Calculo_notas_model extends CI_Model
         parent::__construct();
         $this->load->model('Moodle_model');
         $this->load->model('Subnotas_model');
+        $this->load->model('Rubrica_model');
     }
 
     /**
@@ -62,8 +63,14 @@ class Calculo_notas_model extends CI_Model
         $codMateria = $infoCurso['cod_materia'];
         $grupo      = $infoCurso['grupo'];
 
-        $rubrica = $this->Subnotas_model->obtener_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
-        $todasRubricas = $this->Subnotas_model->obtener_todas_rubricas_curso($codProfesor, $codMateria, $grupo, $semestre);
+        $rubrica = $this->Rubrica_model->obtener($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
+        if (empty($rubrica)) {
+            $rubrica = $this->Subnotas_model->obtener_rubrica($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
+        }
+        $todasRubricas = $this->Rubrica_model->obtener_todas_del_curso($codProfesor, $codMateria, $grupo, $semestre);
+        if (empty($todasRubricas) || (empty($todasRubricas['1']) && empty($todasRubricas['2']) && empty($todasRubricas['3']) && empty($todasRubricas['FINAL']))) {
+            $todasRubricas = $this->Subnotas_model->obtener_todas_rubricas_curso($codProfesor, $codMateria, $grupo, $semestre);
+        }
 
         $sumaPorcentajes = 0;
         if (!empty($rubrica)) {
@@ -261,6 +268,10 @@ class Calculo_notas_model extends CI_Model
      */
     public function obtener_planilla_general($courseId, $codProfesor, $semestre)
     {
+        $this->load->model('Moodle_model');
+        $this->load->model('Subnotas_model');
+        $this->load->model('Rubrica_model');
+
         $resultadoMoodle = $this->Moodle_model->obtener_calificaciones($courseId);
         $exitoMoodle = isset($resultadoMoodle['exito']) ? $resultadoMoodle['exito'] : false;
         $mensajeMoodle = isset($resultadoMoodle['mensaje']) ? $resultadoMoodle['mensaje'] : '';
@@ -274,7 +285,7 @@ class Calculo_notas_model extends CI_Model
 
         $calificacionesGuardadas = $this->Subnotas_model->obtener_calificaciones_todos_cortes($codProfesor, $codMateria, $grupo, $semestre);
         $subnotasDetalle = $this->Subnotas_model->obtener_todas_subnotas_curso($codProfesor, $codMateria, $grupo, $semestre);
-        $cortesCalificados = $this->Subnotas_model->obtener_cortes_calificados($codProfesor, $codMateria, $grupo, $semestre);
+        $todasRubricas = $this->Rubrica_model->obtener_todas_del_curso($codProfesor, $codMateria, $grupo, $semestre);
 
         $pesosCortes = array(
             '1'     => 23.3,
@@ -283,6 +294,14 @@ class Calculo_notas_model extends CI_Model
             'FINAL' => 30.0,
         );
 
+        $mapaPalabrasCortes = array(
+            '1'     => array('primer previo', '1er previo', '1p', 'previo 1', 'corte 1', 'evaluacion 1', 'quiz 1', 'parcial 1', 'tema 1', 'actividad 1', 'taller 1'),
+            '2'     => array('segundo previo', '2do previo', '2p', 'previo 2', 'corte 2', 'evaluacion 2', 'quiz 2', 'parcial 2', 'tema 2', 'actividad 2', 'taller 2'),
+            '3'     => array('tercer previo', '3er previo', '3p', 'previo 3', 'corte 3', 'evaluacion 3', 'quiz 3', 'parcial 3', 'tema 3', 'actividad 3', 'taller 3'),
+            'FINAL' => array('examen final', 'evaluacion final', 'final', 'ex final', 'parcial final', 'evaluacion sumativa', 'proyecto final')
+        );
+
+        $cortesClaves = array('1', '2', '3', 'FINAL');
         $planilla = array();
         $totalAprobados = 0;
         $totalReprobados = 0;
@@ -324,40 +343,245 @@ class Calculo_notas_model extends CI_Model
                 }
             }
 
-            $desgloseEst = array();
+            $desgloseOracle = array();
             foreach ($posiblesClaves as $clave) {
                 if (!empty($clave) && isset($subnotasDetalle[$clave])) {
-                    $desgloseEst = $subnotasDetalle[$clave];
+                    $desgloseOracle = $subnotasDetalle[$clave];
                     break;
                 }
             }
-            if (empty($desgloseEst)) {
+            if (empty($desgloseOracle)) {
                 foreach ($posiblesClaves as $clave) {
                     if (empty($clave)) continue;
                     $claveLower = strtolower($clave);
                     foreach ($subnotasDetalle as $guardadoCod => $guardadoVal) {
                         if (strtolower(trim($guardadoCod)) === $claveLower) {
-                            $desgloseEst = $guardadoVal;
+                            $desgloseOracle = $guardadoVal;
                             break 2;
                         }
                     }
                 }
             }
 
-            $cortesClaves = array('1', '2', '3', 'FINAL');
+            $moodleActs = isset($est['calificaciones']) && is_array($est['calificaciones']) ? $est['calificaciones'] : array();
+            $calificacionesPorId = array();
+            $calificacionesPorNombre = array();
+
+            foreach ($moodleActs as $cal) {
+                if (isset($cal['cmid']) && (int)$cal['cmid'] > 0) {
+                    $calificacionesPorId[(int)$cal['cmid']] = $cal;
+                }
+                if (isset($cal['id_actividad']) && (int)$cal['id_actividad'] > 0) {
+                    $calificacionesPorId[(int)$cal['id_actividad']] = $cal;
+                }
+                if (isset($cal['grade_item_id']) && (int)$cal['grade_item_id'] > 0) {
+                    $calificacionesPorId[(int)$cal['grade_item_id']] = $cal;
+                }
+                $nomActCal = isset($cal['nombre_actividad']) ? $cal['nombre_actividad'] : '';
+                $nomNorm = strtolower(trim($nomActCal));
+                if (!empty($nomNorm)) {
+                    $calificacionesPorNombre[$nomNorm] = $cal;
+                }
+            }
+
             $notasCortes = array(
                 '1'     => null,
                 '2'     => null,
                 '3'     => null,
                 'FINAL' => null,
             );
+            $desgloseFinal = array(
+                '1'     => array(),
+                '2'     => array(),
+                '3'     => array(),
+                'FINAL' => array(),
+            );
 
             foreach ($cortesClaves as $cClave) {
-                if (isset($cortesCalificados[$cClave]) && $cortesCalificados[$cClave]) {
-                    if (isset($cortesEst[$cClave]) && isset($cortesEst[$cClave]['nota'])) {
-                        $notasCortes[$cClave] = (float)$cortesEst[$cClave]['nota'];
+                if (!empty($desgloseOracle[$cClave])) {
+                    $itemsOra = array();
+                    $sumaOra = 0.0;
+                    foreach ($desgloseOracle[$cClave] as $rowOra) {
+                        $nom = isset($rowOra->NOMBRE_ACTIVIDAD) ? $rowOra->NOMBRE_ACTIVIDAD : '';
+                        $orig = isset($rowOra->NOTA_ORIGINAL) ? (float)$rowOra->NOTA_ORIGINAL : 0.0;
+                        $max = isset($rowOra->NOTA_MAXIMA) ? (float)$rowOra->NOTA_MAXIMA : 5.0;
+                        $pct = isset($rowOra->PORCENTAJE) ? (float)$rowOra->PORCENTAJE : 0.0;
+                        $sub = isset($rowOra->SUBNOTA) ? (float)$rowOra->SUBNOTA : 0.0;
+                        $sumaOra += $sub;
+
+                        $itemsOra[] = array(
+                            'ID_ACTIVIDAD_MOODLE' => isset($rowOra->ID_ACTIVIDAD_MOODLE) ? $rowOra->ID_ACTIVIDAD_MOODLE : 0,
+                            'id_actividad_moodle' => isset($rowOra->ID_ACTIVIDAD_MOODLE) ? $rowOra->ID_ACTIVIDAD_MOODLE : 0,
+                            'NOMBRE_ACTIVIDAD'    => $nom,
+                            'nombre_actividad'    => $nom,
+                            'NOTA_ORIGINAL'       => $orig,
+                            'nota_original'       => $orig,
+                            'NOTA_MAXIMA'         => $max,
+                            'nota_maxima'         => $max,
+                            'PORCENTAJE'          => $pct,
+                            'porcentaje'          => $pct,
+                            'SUBNOTA'             => $sub,
+                            'subnota'             => $sub,
+                            'ESTADO'              => isset($rowOra->ESTADO) ? $rowOra->ESTADO : 'ORACLE'
+                        );
+                    }
+                    $desgloseFinal[$cClave] = $itemsOra;
+                    $notasCortes[$cClave] = (isset($cortesEst[$cClave]) && isset($cortesEst[$cClave]['nota']))
+                        ? (float)$cortesEst[$cClave]['nota']
+                        : round($sumaOra, 2);
+                    continue;
+                }
+
+                $rubricaCorte = isset($todasRubricas[$cClave]) ? $todasRubricas[$cClave] : array();
+                if (!empty($rubricaCorte)) {
+                    $itemsMoodleRub = array();
+                    $notaSug = 0.0;
+
+                    foreach ($rubricaCorte as $rItem) {
+                        $idAct = (int)$rItem->ID_ACTIVIDAD_MOODLE;
+                        $nomAct = trim($rItem->NOMBRE_ACTIVIDAD);
+                        $nomNorm = strtolower($nomAct);
+                        $pct = (float)$rItem->PORCENTAJE;
+                        $tipoAct = isset($rItem->TIPO_ACTIVIDAD) ? trim($rItem->TIPO_ACTIVIDAD) : '';
+                        $esManual = ($idAct === 0 || strtolower($tipoAct) === 'manual');
+
+                        $notaOrig = 0.0;
+                        $notaMax = 5.0;
+
+                        if (!$esManual) {
+                            $calEncontrada = null;
+                            if (isset($calificacionesPorId[$idAct])) {
+                                $calEncontrada = $calificacionesPorId[$idAct];
+                            } elseif (isset($calificacionesPorNombre[$nomNorm])) {
+                                $calEncontrada = $calificacionesPorNombre[$nomNorm];
+                            } else {
+                                foreach ($calificacionesPorNombre as $calNom => $calObj) {
+                                    if (strpos($calNom, $nomNorm) !== false || strpos($nomNorm, $calNom) !== false) {
+                                        $calEncontrada = $calObj;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if ($calEncontrada !== null) {
+                                $notaOrig = (float)$calEncontrada['nota_final'];
+                                $notaMax = (float)$calEncontrada['nota_maxima'];
+                            }
+                        }
+
+                        $notaNorm = ($notaMax > 0 && abs($notaMax - 5.0) > 0.01) ? round(($notaOrig / $notaMax) * 5.0, 2) : $notaOrig;
+                        $subnota = round($notaNorm * ($pct / 100), 2);
+                        $notaSug += $subnota;
+
+                        $itemsMoodleRub[] = array(
+                            'ID_ACTIVIDAD_MOODLE' => $idAct,
+                            'id_actividad_moodle' => $idAct,
+                            'NOMBRE_ACTIVIDAD'    => $nomAct,
+                            'nombre_actividad'    => $nomAct,
+                            'NOTA_ORIGINAL'       => $notaOrig,
+                            'nota_original'       => $notaOrig,
+                            'NOTA_MAXIMA'         => $notaMax,
+                            'nota_maxima'         => $notaMax,
+                            'PORCENTAJE'          => $pct,
+                            'porcentaje'          => $pct,
+                            'SUBNOTA'             => $subnota,
+                            'subnota'             => $subnota,
+                            'ESTADO'              => 'MOODLE'
+                        );
+                    }
+
+                    if (!empty($itemsMoodleRub)) {
+                        $desgloseFinal[$cClave] = $itemsMoodleRub;
+                        $notasCortes[$cClave] = min(5.0, max(0.0, round($notaSug, 2)));
+                        continue;
                     }
                 }
+
+                $actsMatching = array();
+                if (!empty($moodleActs) && isset($mapaPalabrasCortes[$cClave])) {
+                    foreach ($moodleActs as $mAct) {
+                        $mNom = strtolower(trim(isset($mAct['nombre_actividad']) ? $mAct['nombre_actividad'] : ''));
+                        foreach ($mapaPalabrasCortes[$cClave] as $kw) {
+                            if (strpos($mNom, $kw) !== false) {
+                                $actsMatching[] = $mAct;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!empty($actsMatching)) {
+                    $totCount = count($actsMatching);
+                    $porcEach = $totCount > 0 ? round(100.0 / $totCount, 1) : 0;
+                    $itemsMoodleDyn = array();
+                    $notaSugDyn = 0.0;
+
+                    foreach ($actsMatching as $mAct) {
+                        $notaOrig = isset($mAct['nota_final']) ? (float)$mAct['nota_final'] : 0.0;
+                        $notaMax  = isset($mAct['nota_maxima']) ? (float)$mAct['nota_maxima'] : 5.0;
+                        $notaNorm = ($notaMax > 0 && abs($notaMax - 5.0) > 0.01) ? round(($notaOrig / $notaMax) * 5.0, 2) : $notaOrig;
+                        $subnota  = round($notaNorm * ($porcEach / 100.0), 2);
+                        $notaSugDyn += $subnota;
+
+                        $itemsMoodleDyn[] = array(
+                            'ID_ACTIVIDAD_MOODLE' => isset($mAct['id_actividad']) ? (int)$mAct['id_actividad'] : (isset($mAct['cmid']) ? (int)$mAct['cmid'] : 0),
+                            'id_actividad_moodle' => isset($mAct['id_actividad']) ? (int)$mAct['id_actividad'] : (isset($mAct['cmid']) ? (int)$mAct['cmid'] : 0),
+                            'NOMBRE_ACTIVIDAD'    => isset($mAct['nombre_actividad']) ? $mAct['nombre_actividad'] : 'Actividad Moodle',
+                            'nombre_actividad'    => isset($mAct['nombre_actividad']) ? $mAct['nombre_actividad'] : 'Actividad Moodle',
+                            'NOTA_ORIGINAL'       => $notaOrig,
+                            'nota_original'       => $notaOrig,
+                            'NOTA_MAXIMA'         => $notaMax,
+                            'nota_maxima'         => $notaMax,
+                            'PORCENTAJE'          => $porcEach,
+                            'porcentaje'          => $porcEach,
+                            'SUBNOTA'             => $subnota,
+                            'subnota'             => $subnota,
+                            'ESTADO'              => 'MOODLE'
+                        );
+                    }
+
+                    $desgloseFinal[$cClave] = $itemsMoodleDyn;
+                    $notasCortes[$cClave] = min(5.0, max(0.0, round($notaSugDyn, 2)));
+                }
+            }
+
+            $algunCorteTieneDatos = false;
+            foreach ($cortesClaves as $cc) {
+                if (!empty($desgloseFinal[$cc])) {
+                    $algunCorteTieneDatos = true;
+                    break;
+                }
+            }
+            if (!$algunCorteTieneDatos && !empty($moodleActs)) {
+                $totCount = count($moodleActs);
+                $porcEach = $totCount > 0 ? round(100.0 / $totCount, 1) : 0;
+                $itemsGen = array();
+                $sumGen = 0.0;
+                foreach ($moodleActs as $mAct) {
+                    $notaOrig = isset($mAct['nota_final']) ? (float)$mAct['nota_final'] : 0.0;
+                    $notaMax  = isset($mAct['nota_maxima']) ? (float)$mAct['nota_maxima'] : 5.0;
+                    $notaNorm = ($notaMax > 0 && abs($notaMax - 5.0) > 0.01) ? round(($notaOrig / $notaMax) * 5.0, 2) : $notaOrig;
+                    $subnota  = round($notaNorm * ($porcEach / 100.0), 2);
+                    $sumGen += $subnota;
+
+                    $itemsGen[] = array(
+                        'ID_ACTIVIDAD_MOODLE' => isset($mAct['id_actividad']) ? (int)$mAct['id_actividad'] : (isset($mAct['cmid']) ? (int)$mAct['cmid'] : 0),
+                        'id_actividad_moodle' => isset($mAct['id_actividad']) ? (int)$mAct['id_actividad'] : (isset($mAct['cmid']) ? (int)$mAct['cmid'] : 0),
+                        'NOMBRE_ACTIVIDAD'    => isset($mAct['nombre_actividad']) ? $mAct['nombre_actividad'] : 'Actividad Moodle',
+                        'nombre_actividad'    => isset($mAct['nombre_actividad']) ? $mAct['nombre_actividad'] : 'Actividad Moodle',
+                        'NOTA_ORIGINAL'       => $notaOrig,
+                        'nota_original'       => $notaOrig,
+                        'NOTA_MAXIMA'         => $notaMax,
+                        'nota_maxima'         => $notaMax,
+                        'PORCENTAJE'          => $porcEach,
+                        'porcentaje'          => $porcEach,
+                        'SUBNOTA'             => $subnota,
+                        'subnota'             => $subnota,
+                        'ESTADO'              => 'MOODLE'
+                    );
+                }
+                $desgloseFinal['1'] = $itemsGen;
+                $notasCortes['1'] = min(5.0, max(0.0, round($sumGen, 2)));
             }
 
             $n1 = $notasCortes['1'];
@@ -405,8 +629,6 @@ class Calculo_notas_model extends CI_Model
                 $conNotaDefinitiva++;
             }
 
-            $desgloseEst = isset($subnotasDetalle[$codEstudiante]) ? $subnotasDetalle[$codEstudiante] : array();
-
             $planilla[] = array(
                 'codigo'           => $codEstudiante,
                 'nombre_completo'  => $nombreCompleto,
@@ -418,7 +640,7 @@ class Calculo_notas_model extends CI_Model
                 'peso_evaluado'    => round($pesoEvaluado, 1),
                 'definitiva'       => ($pesoEvaluado > 0) ? $definitiva : null,
                 'estado_academico' => $estadoAcademico,
-                'desglose'         => $desgloseEst,
+                'desglose'         => $desgloseFinal,
             );
         }
 

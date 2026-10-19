@@ -1,5 +1,7 @@
 <?php
 define('CLI_SCRIPT', true);
+error_reporting(0);
+@ini_set('display_errors', '0');
 
 require(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/clilib.php');
@@ -89,7 +91,7 @@ $sql = "SELECT
         LEFT JOIN {modules} m ON m.name = gi.itemmodule
         LEFT JOIN {course_modules} cm ON (cm.course = gi.courseid AND cm.module = m.id AND cm.instance = gi.iteminstance)
         WHERE gi.courseid = :courseid
-          AND gi.itemtype = 'mod'
+          AND gi.itemtype != 'course'
           AND u.deleted = 0
         ORDER BY u.lastname ASC, u.firstname ASC, gi.id ASC";
 
@@ -139,9 +141,9 @@ foreach ($records as $row) {
     $estudiantesMap[$userId]['calificaciones'][] = array(
         'cmid'             => ($row->cmid !== null) ? (int)$row->cmid : 0,
         'grade_item_id'    => (int)$row->grade_item_id,
-        'id_actividad'     => (int)$row->iteminstance,
-        'tipo_actividad'   => $row->itemmodule,
-        'nombre_actividad' => $row->itemname ? $row->itemname : $row->itemmodule,
+        'id_actividad'     => ($row->iteminstance !== null) ? (int)$row->iteminstance : (int)$row->grade_item_id,
+        'tipo_actividad'   => $row->itemmodule ? $row->itemmodule : 'actividad',
+        'nombre_actividad' => $row->itemname ? $row->itemname : ($row->itemmodule ? ucfirst($row->itemmodule) : 'Actividad'),
         'nota_final'       => $notaFinal,
         'nota_maxima'      => $notaMax,
         'nota_minima'      => $notaMin,
