@@ -22,9 +22,12 @@ class Subnotas_model extends CI_Model
     {
         $cands = array(
             "'" . strtolower(trim($codEstudiante)) . "'",
-            "'" . strtoupper(trim($codEstudiante)) . "'"
+            "'" . strtoupper(trim($codEstudiante)) . "'",
+            "'" . trim($codEstudiante) . "'"
         );
         $clean = strtolower(trim($codEstudiante));
+
+        // 1. Compatibilidad con datos de prueba históricos
         if ($clean === '1152002' || $clean === 'viviana') {
             $cands[] = "'1152002'";
             $cands[] = "'viviana'";
@@ -33,6 +36,26 @@ class Subnotas_model extends CI_Model
             $cands[] = "'jorge'";
             $cands[] = "'jorgeandresfs'";
         }
+
+        // 2. Resolución dinámica en tiempo real para cualquier estudiante desde Moodle
+        try {
+            $CI =& get_instance();
+            if (!isset($CI->Moodle_model)) {
+                $CI->load->model('Moodle_model');
+            }
+            if (isset($CI->Moodle_model)) {
+                $resMoodle = $CI->Moodle_model->obtener_cursos_estudiante($codEstudiante);
+                if (!empty($resMoodle['exito']) && isset($resMoodle['datos']['estudiante'])) {
+                    $e = $resMoodle['datos']['estudiante'];
+                    if (!empty($e['username'])) { $cands[] = "'" . strtolower(trim($e['username'])) . "'"; }
+                    if (!empty($e['idnumber'])) { $cands[] = "'" . strtolower(trim($e['idnumber'])) . "'"; }
+                    if (!empty($e['codigo']))   { $cands[] = "'" . strtolower(trim($e['codigo'])) . "'"; }
+                }
+            }
+        } catch (Exception $e) {
+            // Continuar con los identificadores disponibles
+        }
+
         return implode(',', array_unique($cands));
     }
 
