@@ -28,28 +28,29 @@ class Rubrica_model extends CI_Model
     public function guardar($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio, $items)
     {
         $grupo = $this->_normalizar_grupo($grupo);
-        $this->eliminar($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio);
+        $tipoPrevioUpper = strtoupper(trim($tipoPrevio));
+        $this->eliminar($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevioUpper);
 
         if (empty($items) || !is_array($items)) {
             return false;
         }
 
         $exito = true;
+        $nextId = $this->_obtener_siguiente_id();
+
         foreach ($items as $item) {
-            $idActividad = isset($item['id_actividad_moodle']) ? $item['id_actividad_moodle'] : 0;
-            $nombre      = isset($item['nombre_actividad']) ? $item['nombre_actividad'] : '';
-            $tipo        = isset($item['tipo_actividad']) ? $item['tipo_actividad'] : '';
+            $idActividad = isset($item['id_actividad_moodle']) ? (int)$item['id_actividad_moodle'] : 0;
+            $nombre      = isset($item['nombre_actividad']) ? str_replace("'", "''", trim($item['nombre_actividad'])) : '';
+            $tipo        = isset($item['tipo_actividad']) ? trim($item['tipo_actividad']) : '';
             $porcentaje  = isset($item['porcentaje']) ? (float)$item['porcentaje'] : 0;
 
-            $nextId = $this->_obtener_siguiente_id();
-
             $dataInsert = array(
-                'ID'                  => $nextId,
+                'ID'                  => $nextId++,
                 'COD_PROFESOR'        => $codProfesor,
                 'COD_MATERIA'         => $codMateria,
                 'GRUPO'               => $grupo,
                 'SEMESTRE'            => $semestre,
-                'TIPO_PREVIO'         => $tipoPrevio,
+                'TIPO_PREVIO'         => $tipoPrevioUpper,
                 'ID_ACTIVIDAD_MOODLE' => $idActividad,
                 'NOMBRE_ACTIVIDAD'    => $nombre,
                 'TIPO_ACTIVIDAD'      => $tipo,
@@ -71,6 +72,7 @@ class Rubrica_model extends CI_Model
     public function obtener($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
         $grupo = $this->_normalizar_grupo($grupo);
+        $tipoPrevioUpper = strtoupper(trim($tipoPrevio));
 
         $sql = "SELECT ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, 
                        ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE 
@@ -82,7 +84,7 @@ class Rubrica_model extends CI_Model
                        OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
                   AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
                   AND SEMESTRE = '{$semestre}' 
-                  AND TIPO_PREVIO = '{$tipoPrevio}' 
+                  AND UPPER(TRIM(TIPO_PREVIO)) = '{$tipoPrevioUpper}' 
                 ORDER BY ID ASC";
 
         $arr = array();
@@ -97,7 +99,7 @@ class Rubrica_model extends CI_Model
                                  OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
                                  OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
                             AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
-                            AND TIPO_PREVIO = '{$tipoPrevio}' 
+                            AND UPPER(TRIM(TIPO_PREVIO)) = '{$tipoPrevioUpper}' 
                           ORDER BY ID ASC";
             $this->database2->get_obj_array($sqlSinSem, $arr);
         }
@@ -122,19 +124,6 @@ class Rubrica_model extends CI_Model
 
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
-        if (empty($arr)) {
-            $sqlSinSem = "SELECT ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, 
-                                 ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE 
-                          FROM CONFIG_RUBRICA 
-                          WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
-                                 OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
-                                 OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
-                                 OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
-                                 OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
-                            AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
-                          ORDER BY TIPO_PREVIO ASC, ID ASC";
-            $this->database2->get_obj_array($sqlSinSem, $arr);
-        }
 
         $agrupadas = array(
             '1'     => array(),
@@ -145,11 +134,32 @@ class Rubrica_model extends CI_Model
 
         if (!empty($arr) && is_array($arr)) {
             foreach ($arr as $row) {
-                $previo = isset($row->TIPO_PREVIO) ? $row->TIPO_PREVIO : '1';
+                $previo = isset($row->TIPO_PREVIO) ? strtoupper(trim($row->TIPO_PREVIO)) : '1';
                 if (!isset($agrupadas[$previo])) {
                     $agrupadas[$previo] = array();
                 }
                 $agrupadas[$previo][] = $row;
+            }
+        }
+
+        foreach (array('1', '2', '3', 'FINAL') as $cClave) {
+            if (empty($agrupadas[$cClave])) {
+                $sqlCorte = "SELECT ID, COD_PROFESOR, COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, 
+                                    ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, TIPO_ACTIVIDAD, PORCENTAJE 
+                             FROM CONFIG_RUBRICA 
+                             WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                                    OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                                    OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                                    OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                                    OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                               AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                               AND UPPER(TRIM(TIPO_PREVIO)) = '{$cClave}' 
+                             ORDER BY ID ASC";
+                $arrCorte = array();
+                $this->database2->get_obj_array($sqlCorte, $arrCorte);
+                if (!empty($arrCorte)) {
+                    $agrupadas[$cClave] = $arrCorte;
+                }
             }
         }
 
@@ -159,11 +169,15 @@ class Rubrica_model extends CI_Model
     public function eliminar($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
         $grupo = $this->_normalizar_grupo($grupo);
+        $tipoPrevioUpper = strtoupper(trim($tipoPrevio));
         $sql = "DELETE FROM CONFIG_RUBRICA 
-                WHERE COD_MATERIA = '{$codMateria}' 
-                  AND GRUPO       = '{$grupo}' 
-                  AND SEMESTRE    = '{$semestre}' 
-                  AND TIPO_PREVIO = '{$tipoPrevio}'";
+                WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                       OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                       OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                       OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                       OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                  AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                  AND UPPER(TRIM(TIPO_PREVIO)) = '{$tipoPrevioUpper}'";
         return $this->database2->get_sql_bool($sql);
     }
 
@@ -185,6 +199,13 @@ class Rubrica_model extends CI_Model
 
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+        if (empty($arr)) {
+            $sqlSinProf = "SELECT COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO, COUNT(*) AS TOTAL_ITEMS
+                           FROM CONFIG_RUBRICA 
+                           GROUP BY COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO 
+                           ORDER BY SEMESTRE DESC, COD_MATERIA ASC, GRUPO ASC, TIPO_PREVIO ASC";
+            $this->database2->get_obj_array($sqlSinProf, $arr);
+        }
         return $arr;
     }
 }

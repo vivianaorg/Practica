@@ -124,7 +124,7 @@
                                                         <button type="button" class="btn btn-danger btn-xs" onclick="confirmarEliminarRubrica('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
                                                             <i class="fa fa-trash"></i> Eliminar
                                                         </button>
-                                                    <?php elseif (!empty($rubricasAgrupadas[$claveCorte])): ?>
+                                                    <?php elseif (!empty($itemsCorte)): ?>
                                                         <button type="button" class="btn btn-danger btn-xs" onclick="confirmarEliminarRubrica('<?php echo $claveCorte; ?>', '<?php echo htmlspecialchars($nombreCorte); ?>')">
                                                             <i class="fa fa-trash"></i> Eliminar
                                                         </button>

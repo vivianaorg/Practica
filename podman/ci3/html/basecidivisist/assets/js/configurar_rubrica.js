@@ -176,11 +176,15 @@ document.addEventListener("DOMContentLoaded", function() {
     if (rubricaGuardada && rubricaGuardada.length > 0) {
         for (var i = 0; i < rubricaGuardada.length; i++) {
             var r = rubricaGuardada[i];
-            var esMan = esActividadManual(r.ID_ACTIVIDAD_MOODLE, r.TIPO_ACTIVIDAD);
+            var nomAct = r.NOMBRE_ACTIVIDAD || r.nombre_actividad || "";
+            var idAct = (r.ID_ACTIVIDAD_MOODLE !== undefined) ? r.ID_ACTIVIDAD_MOODLE : (r.id_actividad_moodle !== undefined ? r.id_actividad_moodle : 0);
+            var pctAct = (r.PORCENTAJE !== undefined) ? r.PORCENTAJE : (r.porcentaje !== undefined ? r.porcentaje : 0);
+            var tipoAct = r.TIPO_ACTIVIDAD || r.tipo_actividad || "";
+            var esMan = esActividadManual(idAct, tipoAct);
             if (esMan) {
-                agregarFilaRubrica(0, r.PORCENTAJE, true, r.NOMBRE_ACTIVIDAD);
+                agregarFilaRubrica(0, pctAct, true, nomAct);
             } else {
-                agregarFilaRubrica(r.ID_ACTIVIDAD_MOODLE, r.PORCENTAJE, false, "");
+                agregarFilaRubrica(idAct, pctAct, false, nomAct);
             }
         }
     } else {
@@ -477,8 +481,10 @@ function agregarFilaRubrica(actividadSeleccionada, porcentaje, esManual, nombreM
 
         for (var i = 0; i < actividadesDisponibles.length; i++) {
             var act = actividadesDisponibles[i];
-            var selected = (actividadSeleccionada && String(act.id) === String(actividadSeleccionada)) ? 'selected' : '';
-            selectHtml += '<option value="' + act.id + '" data-tipo="' + act.tipo + '" data-nombre="' + act.nombre.replace(/"/g, '&quot;') + '" ' + selected + '>';
+            var matchId = (actividadSeleccionada && String(act.id) === String(actividadSeleccionada));
+            var matchNombre = (nombreManual && normalizarTexto(act.nombre) === normalizarTexto(nombreManual));
+            var selected = (matchId || matchNombre) ? 'selected' : '';
+            selectHtml += '<option value="' + act.id + '" data-tipo="' + act.tipo + '" data-nombre="' + String(act.nombre).replace(/"/g, '&quot;') + '" ' + selected + '>';
             selectHtml += act.nombre + ' (' + act.tipo + ')';
             selectHtml += '</option>';
         }
@@ -486,9 +492,10 @@ function agregarFilaRubrica(actividadSeleccionada, porcentaje, esManual, nombreM
         actividadHtml = selectHtml;
 
         var tipoActividad = "";
-        if (actividadSeleccionada) {
+        if (actividadSeleccionada || nombreManual) {
             for (var k = 0; k < actividadesDisponibles.length; k++) {
-                if (String(actividadesDisponibles[k].id) === String(actividadSeleccionada)) {
+                if ((actividadSeleccionada && String(actividadesDisponibles[k].id) === String(actividadSeleccionada)) ||
+                    (nombreManual && normalizarTexto(actividadesDisponibles[k].nombre) === normalizarTexto(nombreManual))) {
                     tipoActividad = actividadesDisponibles[k].tipo;
                     break;
                 }
@@ -622,7 +629,7 @@ function recalcularTotales() {
     }
 
     // Habilitar / deshabilitar Guardar Rúbrica: corte abierto, suma exacta de 100% y datos completos
-    var ponderacionCompleta = (total === 100 && completas === rows.length && rows.length > 0);
+    var ponderacionCompleta = (Math.abs(total - 100) < 0.01 && completas === rows.length && rows.length > 0);
     if (btnGuardar) {
         btnGuardar.disabled = corteCalificado || !ponderacionCompleta;
     }
@@ -708,6 +715,8 @@ function guardarRubrica() {
             msgDiv.className = "alert alert-success";
             msgDiv.innerHTML = '<i class="fa fa-check"></i> ' + data.mensaje;
             mostrarAlertaApp(data.mensaje, "success", "Rúbrica Guardada", function() {
+                var urlBase = window.RUBRICA_CONFIG.urls.irAConfigurar;
+                window.location.href = urlBase + "/" + corte + "#tab_configurar";
                 window.location.reload();
             });
         } else {
@@ -760,6 +769,8 @@ function ejecutarEliminarRubrica(corte) {
     .then(function(data) {
         if (data.exito) {
             mostrarAlertaApp(data.mensaje, "success", "Rúbrica Eliminada", function() {
+                var urlBase = window.RUBRICA_CONFIG.urls.irAConfigurar;
+                window.location.href = urlBase + "/" + corte + "#tab_configurar";
                 window.location.reload();
             });
         } else {
@@ -799,6 +810,8 @@ function ejecutarDesbloquearCorte(corte) {
     .then(function(data) {
         if (data.exito) {
             mostrarAlertaApp(data.mensaje, "success", "Corte Desbloqueado", function() {
+                var urlBase = window.RUBRICA_CONFIG.urls.irAConfigurar;
+                window.location.href = urlBase + "/" + corte + "#tab_configurar";
                 window.location.reload();
             });
         } else {
@@ -845,6 +858,19 @@ function mostrarAlertaApp(mensaje, tipo, titulo, onCerrar) {
                 }, 100);
             }
         };
+    }
+
+    if (window.$ && $('#modal_app_dialog').length) {
+        $('#modal_app_dialog').off('hidden.bs.modal').on('hidden.bs.modal', function() {
+            if (typeof _modalAppCallbackCerrar === "function") {
+                var cb = _modalAppCallbackCerrar;
+                _modalAppCallbackCerrar = null;
+                setTimeout(function() {
+                    limpiarBackdropsModal();
+                    cb();
+                }, 100);
+            }
+        });
     }
 
     abrirModalApp();

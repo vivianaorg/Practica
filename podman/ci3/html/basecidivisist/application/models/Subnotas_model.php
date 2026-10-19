@@ -69,17 +69,22 @@ class Subnotas_model extends CI_Model
     public function eliminar_subnotas_corte($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
         $grupo = $this->_normalizar_grupo($grupo);
+        $tipoPrevioUpper = strtoupper(trim($tipoPrevio));
         $sql = "DELETE FROM SUBNOTAS 
-                WHERE COD_MATERIA = '{$codMateria}' 
-                  AND GRUPO       = '{$grupo}' 
-                  AND SEMESTRE    = '{$semestre}' 
-                  AND TIPO_PREVIO = '{$tipoPrevio}'";
+                WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
+                       OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
+                       OR LOWER('CURSO_' || COD_MATERIA) = LOWER('{$codMateria}')
+                       OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
+                       OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
+                  AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
+                  AND UPPER(TRIM(TIPO_PREVIO)) = '{$tipoPrevioUpper}'";
         return $this->database2->get_sql_bool($sql);
     }
 
     public function corte_esta_calificado($codProfesor, $codMateria, $grupo, $semestre, $tipoPrevio)
     {
         $grupo = $this->_normalizar_grupo($grupo);
+        $tipoPrevioUpper = strtoupper(trim($tipoPrevio));
         $sql = "SELECT COUNT(*) AS TOTAL FROM SUBNOTAS 
                 WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
                        OR LOWER(COD_MATERIA) = LOWER('CURSO_{$codMateria}') 
@@ -88,7 +93,7 @@ class Subnotas_model extends CI_Model
                        OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
                   AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
                   AND SEMESTRE    = '{$semestre}' 
-                  AND TIPO_PREVIO = '{$tipoPrevio}' 
+                  AND UPPER(TRIM(TIPO_PREVIO)) = '{$tipoPrevioUpper}' 
                   AND (ESTADO = 'ACEPTADA' OR ESTADO = 'MODIFICADA')";
         $obj = null;
         $this->database2->get_sql_object($sql, $obj);
@@ -100,7 +105,7 @@ class Subnotas_model extends CI_Model
                                  OR INSTR(LOWER('{$codMateria}'), LOWER(COD_MATERIA)) > 0
                                  OR INSTR(LOWER(COD_MATERIA), LOWER('{$codMateria}')) > 0)
                             AND (GRUPO = '{$grupo}' OR GRUPO = '-' OR '{$grupo}' = '-' OR '{$grupo}' = '') 
-                            AND TIPO_PREVIO = '{$tipoPrevio}' 
+                            AND UPPER(TRIM(TIPO_PREVIO)) = '{$tipoPrevioUpper}' 
                             AND (ESTADO = 'ACEPTADA' OR ESTADO = 'MODIFICADA')";
             $this->database2->get_sql_object($sqlSinSem, $obj);
         }
