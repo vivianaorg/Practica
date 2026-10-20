@@ -11,7 +11,7 @@ class Materia_model extends CI_Model {
     }
 
     private function _normalizar_texto($str) {
-        $str = mb_strtolower(trim($str), 'UTF-8');
+        $str = strtolower(trim($str));
         $remplazos = array(
             'á'=>'a', 'é'=>'e', 'í'=>'i', 'ó'=>'o', 'ú'=>'u', 'ñ'=>'n',
             'ä'=>'a', 'ë'=>'e', 'ï'=>'i', 'ö'=>'o', 'ü'=>'u',
