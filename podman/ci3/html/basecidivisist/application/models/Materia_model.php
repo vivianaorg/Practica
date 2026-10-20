@@ -183,6 +183,14 @@ class Materia_model extends CI_Model {
                         $snPartes = explode('-', $shortname, 2);
                         $shortnameBase = trim($snPartes[0]);
                     }
+
+                    $snCarrera = $codCarrera;
+                    $codMatPuro = $shortnameBase;
+                    if (preg_match('/^\d{3}(.+)$/', $shortnameBase, $snM) && strlen($shortnameBase) > 3) {
+                        $snCarrera  = substr($shortnameBase, 0, 3);
+                        $codMatPuro = $snM[1];
+                    }
+
                     $candidatos = array(
                         strtolower($shortname) . '_' . strtoupper($grupo),
                         strtolower($shortname) . '_-',
@@ -190,6 +198,9 @@ class Materia_model extends CI_Model {
                         strtolower($shortnameBase) . '_' . strtoupper($grupo),
                         strtolower($shortnameBase) . '_-',
                         strtolower($shortnameBase),
+                        strtolower($codMatPuro) . '_' . strtoupper($grupo),
+                        strtolower($codMatPuro) . '_-',
+                        strtolower($codMatPuro),
                         strtolower(str_replace('-', '_', $shortname)) . '_' . strtoupper($grupo),
                         strtolower(str_replace('-', '_', $shortname)),
                         'curso_' . $c['id'] . '_' . strtoupper($grupo),
@@ -208,6 +219,12 @@ class Materia_model extends CI_Model {
                         $candidatos[] = $idnumBase . '_' . strtoupper($grupo);
                         $candidatos[] = $idnumBase . '_-';
                         $candidatos[] = $idnumBase;
+                        if (preg_match('/^\d{3}(.+)$/', $idnumBase, $idM) && strlen($idnumBase) > 3) {
+                            $idnumPuro = $idM[1];
+                            $candidatos[] = $idnumPuro . '_' . strtoupper($grupo);
+                            $candidatos[] = $idnumPuro . '_-';
+                            $candidatos[] = $idnumPuro;
+                        }
                     }
 
                     foreach ($candidatos as $cand) {
@@ -221,7 +238,8 @@ class Materia_model extends CI_Model {
                         foreach ($subnotasMap as $sKey => $sVal) {
                             $matOracle = strtolower(trim($sVal['COD_MATERIA']));
                             if (stripos($shortname, $matOracle) !== false || stripos($matOracle, $shortname) !== false ||
-                                stripos($shortnameBase, $matOracle) !== false || stripos($matOracle, $shortnameBase) !== false) {
+                                stripos($shortnameBase, $matOracle) !== false || stripos($matOracle, $shortnameBase) !== false ||
+                                stripos($codMatPuro, $matOracle) !== false || stripos($matOracle, $codMatPuro) !== false) {
                                 $subnotaEncontrada = $sVal;
                                 break;
                             }
@@ -318,9 +336,9 @@ class Materia_model extends CI_Model {
                     $profEmail = !empty($c['profesor_email']) ? $c['profesor_email'] : 'docente@ufps.edu.co';
                     $contenido = !empty($c['summary']) ? $c['summary'] : "Curso virtual Moodle: {$fullname}.\nConsulte el aula virtual para más detalles.";
 
-                    $output['CODCARMAT'][]    = $codCarrera;
-                    $output['CODMAT'][]       = $shortname;
-                    $output['CODMATMAT'][]    = $shortname;
+                    $output['CODCARMAT'][]    = $snCarrera;
+                    $output['CODMAT'][]       = $codMatPuro;
+                    $output['CODMATMAT'][]    = $codMatPuro;
                     $output['NOMBREMAT'][]    = strtoupper($fullname);
                     $output['GRUPO'][]        = $grupo;
                     $output['CREDITOS'][]     = 3;
