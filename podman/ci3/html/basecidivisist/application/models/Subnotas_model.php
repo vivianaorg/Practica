@@ -127,6 +127,64 @@ class Subnotas_model extends CI_Model
                 GROUP BY TIPO_PREVIO";
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+
+        if (empty($arr)) {
+            $aliasCandidatos = array();
+            try {
+                $CI =& get_instance();
+                if (!isset($CI->Moodle_model)) {
+                    $CI->load->model('Moodle_model');
+                }
+                if (isset($CI->Moodle_model)) {
+                    $resM = $CI->Moodle_model->obtener_cursos_estudiante($codEstudiante);
+                    if (!empty($resM['exito']) && isset($resM['datos']['cursos']) && is_array($resM['datos']['cursos'])) {
+                        foreach ($resM['datos']['cursos'] as $cur) {
+                            $cShort = isset($cur['shortname']) ? strtolower(trim($cur['shortname'])) : '';
+                            $cId    = isset($cur['id']) ? (string)$cur['id'] : '';
+                            $cFull  = isset($cur['fullname']) ? strtolower(trim($cur['fullname'])) : '';
+                            $cMatLow = strtolower(trim($codMateria));
+
+                            $match = false;
+                            if ($cShort === $cMatLow || $cId === $cMatLow || 'curso_' . $cId === $cMatLow) {
+                                $match = true;
+                            } elseif (strpos($cShort, $cMatLow) !== false || strpos($cMatLow, $cShort) !== false) {
+                                $match = true;
+                            }
+
+                            if ($match) {
+                                $slug = preg_replace('/[^a-z0-9_]/', '_', $cFull);
+                                $aliasCandidatos[] = $slug;
+                                $partes = array_filter(explode('_', $slug));
+                                foreach ($partes as $p) {
+                                    if (strlen($p) >= 4 && !in_array($p, array('curso', 'moodle', 'para'))) {
+                                        $aliasCandidatos[] = $p;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $e) {}
+
+            if (!empty($aliasCandidatos)) {
+                $condsAlias = array();
+                foreach (array_unique($aliasCandidatos) as $al) {
+                    $alEsc = addslashes($al);
+                    $condsAlias[] = "INSTR(LOWER(COD_MATERIA), '{$alEsc}') > 0";
+                    $condsAlias[] = "INSTR('{$alEsc}', LOWER(COD_MATERIA)) > 0";
+                }
+                $orAlias = implode(' OR ', $condsAlias);
+                $sqlFallback = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
+                                       NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
+                                FROM SUBNOTAS 
+                                WHERE LOWER(TRIM(COD_ESTUDIANTE)) IN ({$inEst}) 
+                                  AND ({$orAlias})
+                                  AND (TIPO_PREVIO = '{$tipoPrevio}' 
+                                       OR ('{$tipoPrevio}' IN ('FINAL', 'EXA', '4') AND TIPO_PREVIO IN ('FINAL', 'EXA', '4'))) 
+                                ORDER BY ID ASC";
+                $this->database2->get_obj_array($sqlFallback, $arr);
+            }
+        }
         if (empty($arr)) {
             $sqlSinSem = "SELECT TIPO_PREVIO, COUNT(*) AS TOTAL FROM SUBNOTAS 
                           WHERE (LOWER(COD_MATERIA) = LOWER('{$codMateria}') 
@@ -223,6 +281,64 @@ class Subnotas_model extends CI_Model
 
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+
+        if (empty($arr)) {
+            $aliasCandidatos = array();
+            try {
+                $CI =& get_instance();
+                if (!isset($CI->Moodle_model)) {
+                    $CI->load->model('Moodle_model');
+                }
+                if (isset($CI->Moodle_model)) {
+                    $resM = $CI->Moodle_model->obtener_cursos_estudiante($codEstudiante);
+                    if (!empty($resM['exito']) && isset($resM['datos']['cursos']) && is_array($resM['datos']['cursos'])) {
+                        foreach ($resM['datos']['cursos'] as $cur) {
+                            $cShort = isset($cur['shortname']) ? strtolower(trim($cur['shortname'])) : '';
+                            $cId    = isset($cur['id']) ? (string)$cur['id'] : '';
+                            $cFull  = isset($cur['fullname']) ? strtolower(trim($cur['fullname'])) : '';
+                            $cMatLow = strtolower(trim($codMateria));
+
+                            $match = false;
+                            if ($cShort === $cMatLow || $cId === $cMatLow || 'curso_' . $cId === $cMatLow) {
+                                $match = true;
+                            } elseif (strpos($cShort, $cMatLow) !== false || strpos($cMatLow, $cShort) !== false) {
+                                $match = true;
+                            }
+
+                            if ($match) {
+                                $slug = preg_replace('/[^a-z0-9_]/', '_', $cFull);
+                                $aliasCandidatos[] = $slug;
+                                $partes = array_filter(explode('_', $slug));
+                                foreach ($partes as $p) {
+                                    if (strlen($p) >= 4 && !in_array($p, array('curso', 'moodle', 'para'))) {
+                                        $aliasCandidatos[] = $p;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $e) {}
+
+            if (!empty($aliasCandidatos)) {
+                $condsAlias = array();
+                foreach (array_unique($aliasCandidatos) as $al) {
+                    $alEsc = addslashes($al);
+                    $condsAlias[] = "INSTR(LOWER(COD_MATERIA), '{$alEsc}') > 0";
+                    $condsAlias[] = "INSTR('{$alEsc}', LOWER(COD_MATERIA)) > 0";
+                }
+                $orAlias = implode(' OR ', $condsAlias);
+                $sqlFallback = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
+                                       NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
+                                FROM SUBNOTAS 
+                                WHERE LOWER(TRIM(COD_ESTUDIANTE)) IN ({$inEst}) 
+                                  AND ({$orAlias})
+                                  AND (TIPO_PREVIO = '{$tipoPrevio}' 
+                                       OR ('{$tipoPrevio}' IN ('FINAL', 'EXA', '4') AND TIPO_PREVIO IN ('FINAL', 'EXA', '4'))) 
+                                ORDER BY ID ASC";
+                $this->database2->get_obj_array($sqlFallback, $arr);
+            }
+        }
         return $arr;
     }
 
@@ -258,6 +374,64 @@ class Subnotas_model extends CI_Model
 
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+
+        if (empty($arr)) {
+            $aliasCandidatos = array();
+            try {
+                $CI =& get_instance();
+                if (!isset($CI->Moodle_model)) {
+                    $CI->load->model('Moodle_model');
+                }
+                if (isset($CI->Moodle_model)) {
+                    $resM = $CI->Moodle_model->obtener_cursos_estudiante($codEstudiante);
+                    if (!empty($resM['exito']) && isset($resM['datos']['cursos']) && is_array($resM['datos']['cursos'])) {
+                        foreach ($resM['datos']['cursos'] as $cur) {
+                            $cShort = isset($cur['shortname']) ? strtolower(trim($cur['shortname'])) : '';
+                            $cId    = isset($cur['id']) ? (string)$cur['id'] : '';
+                            $cFull  = isset($cur['fullname']) ? strtolower(trim($cur['fullname'])) : '';
+                            $cMatLow = strtolower(trim($codMateria));
+
+                            $match = false;
+                            if ($cShort === $cMatLow || $cId === $cMatLow || 'curso_' . $cId === $cMatLow) {
+                                $match = true;
+                            } elseif (strpos($cShort, $cMatLow) !== false || strpos($cMatLow, $cShort) !== false) {
+                                $match = true;
+                            }
+
+                            if ($match) {
+                                $slug = preg_replace('/[^a-z0-9_]/', '_', $cFull);
+                                $aliasCandidatos[] = $slug;
+                                $partes = array_filter(explode('_', $slug));
+                                foreach ($partes as $p) {
+                                    if (strlen($p) >= 4 && !in_array($p, array('curso', 'moodle', 'para'))) {
+                                        $aliasCandidatos[] = $p;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $e) {}
+
+            if (!empty($aliasCandidatos)) {
+                $condsAlias = array();
+                foreach (array_unique($aliasCandidatos) as $al) {
+                    $alEsc = addslashes($al);
+                    $condsAlias[] = "INSTR(LOWER(COD_MATERIA), '{$alEsc}') > 0";
+                    $condsAlias[] = "INSTR('{$alEsc}', LOWER(COD_MATERIA)) > 0";
+                }
+                $orAlias = implode(' OR ', $condsAlias);
+                $sqlFallback = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
+                                       NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
+                                FROM SUBNOTAS 
+                                WHERE LOWER(TRIM(COD_ESTUDIANTE)) IN ({$inEst}) 
+                                  AND ({$orAlias})
+                                  AND (TIPO_PREVIO = '{$tipoPrevio}' 
+                                       OR ('{$tipoPrevio}' IN ('FINAL', 'EXA', '4') AND TIPO_PREVIO IN ('FINAL', 'EXA', '4'))) 
+                                ORDER BY ID ASC";
+                $this->database2->get_obj_array($sqlFallback, $arr);
+            }
+        }
         return $arr;
     }
 
@@ -291,6 +465,64 @@ class Subnotas_model extends CI_Model
 
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+
+        if (empty($arr)) {
+            $aliasCandidatos = array();
+            try {
+                $CI =& get_instance();
+                if (!isset($CI->Moodle_model)) {
+                    $CI->load->model('Moodle_model');
+                }
+                if (isset($CI->Moodle_model)) {
+                    $resM = $CI->Moodle_model->obtener_cursos_estudiante($codEstudiante);
+                    if (!empty($resM['exito']) && isset($resM['datos']['cursos']) && is_array($resM['datos']['cursos'])) {
+                        foreach ($resM['datos']['cursos'] as $cur) {
+                            $cShort = isset($cur['shortname']) ? strtolower(trim($cur['shortname'])) : '';
+                            $cId    = isset($cur['id']) ? (string)$cur['id'] : '';
+                            $cFull  = isset($cur['fullname']) ? strtolower(trim($cur['fullname'])) : '';
+                            $cMatLow = strtolower(trim($codMateria));
+
+                            $match = false;
+                            if ($cShort === $cMatLow || $cId === $cMatLow || 'curso_' . $cId === $cMatLow) {
+                                $match = true;
+                            } elseif (strpos($cShort, $cMatLow) !== false || strpos($cMatLow, $cShort) !== false) {
+                                $match = true;
+                            }
+
+                            if ($match) {
+                                $slug = preg_replace('/[^a-z0-9_]/', '_', $cFull);
+                                $aliasCandidatos[] = $slug;
+                                $partes = array_filter(explode('_', $slug));
+                                foreach ($partes as $p) {
+                                    if (strlen($p) >= 4 && !in_array($p, array('curso', 'moodle', 'para'))) {
+                                        $aliasCandidatos[] = $p;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $e) {}
+
+            if (!empty($aliasCandidatos)) {
+                $condsAlias = array();
+                foreach (array_unique($aliasCandidatos) as $al) {
+                    $alEsc = addslashes($al);
+                    $condsAlias[] = "INSTR(LOWER(COD_MATERIA), '{$alEsc}') > 0";
+                    $condsAlias[] = "INSTR('{$alEsc}', LOWER(COD_MATERIA)) > 0";
+                }
+                $orAlias = implode(' OR ', $condsAlias);
+                $sqlFallback = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
+                                       NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
+                                FROM SUBNOTAS 
+                                WHERE LOWER(TRIM(COD_ESTUDIANTE)) IN ({$inEst}) 
+                                  AND ({$orAlias})
+                                  AND (TIPO_PREVIO = '{$tipoPrevio}' 
+                                       OR ('{$tipoPrevio}' IN ('FINAL', 'EXA', '4') AND TIPO_PREVIO IN ('FINAL', 'EXA', '4'))) 
+                                ORDER BY ID ASC";
+                $this->database2->get_obj_array($sqlFallback, $arr);
+            }
+        }
         if (empty($arr)) {
             $sqlSinSem = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
                                  NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
@@ -430,6 +662,64 @@ class Subnotas_model extends CI_Model
 
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+
+        if (empty($arr)) {
+            $aliasCandidatos = array();
+            try {
+                $CI =& get_instance();
+                if (!isset($CI->Moodle_model)) {
+                    $CI->load->model('Moodle_model');
+                }
+                if (isset($CI->Moodle_model)) {
+                    $resM = $CI->Moodle_model->obtener_cursos_estudiante($codEstudiante);
+                    if (!empty($resM['exito']) && isset($resM['datos']['cursos']) && is_array($resM['datos']['cursos'])) {
+                        foreach ($resM['datos']['cursos'] as $cur) {
+                            $cShort = isset($cur['shortname']) ? strtolower(trim($cur['shortname'])) : '';
+                            $cId    = isset($cur['id']) ? (string)$cur['id'] : '';
+                            $cFull  = isset($cur['fullname']) ? strtolower(trim($cur['fullname'])) : '';
+                            $cMatLow = strtolower(trim($codMateria));
+
+                            $match = false;
+                            if ($cShort === $cMatLow || $cId === $cMatLow || 'curso_' . $cId === $cMatLow) {
+                                $match = true;
+                            } elseif (strpos($cShort, $cMatLow) !== false || strpos($cMatLow, $cShort) !== false) {
+                                $match = true;
+                            }
+
+                            if ($match) {
+                                $slug = preg_replace('/[^a-z0-9_]/', '_', $cFull);
+                                $aliasCandidatos[] = $slug;
+                                $partes = array_filter(explode('_', $slug));
+                                foreach ($partes as $p) {
+                                    if (strlen($p) >= 4 && !in_array($p, array('curso', 'moodle', 'para'))) {
+                                        $aliasCandidatos[] = $p;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $e) {}
+
+            if (!empty($aliasCandidatos)) {
+                $condsAlias = array();
+                foreach (array_unique($aliasCandidatos) as $al) {
+                    $alEsc = addslashes($al);
+                    $condsAlias[] = "INSTR(LOWER(COD_MATERIA), '{$alEsc}') > 0";
+                    $condsAlias[] = "INSTR('{$alEsc}', LOWER(COD_MATERIA)) > 0";
+                }
+                $orAlias = implode(' OR ', $condsAlias);
+                $sqlFallback = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
+                                       NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
+                                FROM SUBNOTAS 
+                                WHERE LOWER(TRIM(COD_ESTUDIANTE)) IN ({$inEst}) 
+                                  AND ({$orAlias})
+                                  AND (TIPO_PREVIO = '{$tipoPrevio}' 
+                                       OR ('{$tipoPrevio}' IN ('FINAL', 'EXA', '4') AND TIPO_PREVIO IN ('FINAL', 'EXA', '4'))) 
+                                ORDER BY ID ASC";
+                $this->database2->get_obj_array($sqlFallback, $arr);
+            }
+        }
         if (empty($arr)) {
             $sqlSinSem = "SELECT COD_ESTUDIANTE, TIPO_PREVIO, 
                                  ROUND(SUM(SUBNOTA), 2) AS NOTA_CORTE,
@@ -486,6 +776,64 @@ class Subnotas_model extends CI_Model
 
         $arr = array();
         $this->database2->get_obj_array($sql, $arr);
+
+        if (empty($arr)) {
+            $aliasCandidatos = array();
+            try {
+                $CI =& get_instance();
+                if (!isset($CI->Moodle_model)) {
+                    $CI->load->model('Moodle_model');
+                }
+                if (isset($CI->Moodle_model)) {
+                    $resM = $CI->Moodle_model->obtener_cursos_estudiante($codEstudiante);
+                    if (!empty($resM['exito']) && isset($resM['datos']['cursos']) && is_array($resM['datos']['cursos'])) {
+                        foreach ($resM['datos']['cursos'] as $cur) {
+                            $cShort = isset($cur['shortname']) ? strtolower(trim($cur['shortname'])) : '';
+                            $cId    = isset($cur['id']) ? (string)$cur['id'] : '';
+                            $cFull  = isset($cur['fullname']) ? strtolower(trim($cur['fullname'])) : '';
+                            $cMatLow = strtolower(trim($codMateria));
+
+                            $match = false;
+                            if ($cShort === $cMatLow || $cId === $cMatLow || 'curso_' . $cId === $cMatLow) {
+                                $match = true;
+                            } elseif (strpos($cShort, $cMatLow) !== false || strpos($cMatLow, $cShort) !== false) {
+                                $match = true;
+                            }
+
+                            if ($match) {
+                                $slug = preg_replace('/[^a-z0-9_]/', '_', $cFull);
+                                $aliasCandidatos[] = $slug;
+                                $partes = array_filter(explode('_', $slug));
+                                foreach ($partes as $p) {
+                                    if (strlen($p) >= 4 && !in_array($p, array('curso', 'moodle', 'para'))) {
+                                        $aliasCandidatos[] = $p;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $e) {}
+
+            if (!empty($aliasCandidatos)) {
+                $condsAlias = array();
+                foreach (array_unique($aliasCandidatos) as $al) {
+                    $alEsc = addslashes($al);
+                    $condsAlias[] = "INSTR(LOWER(COD_MATERIA), '{$alEsc}') > 0";
+                    $condsAlias[] = "INSTR('{$alEsc}', LOWER(COD_MATERIA)) > 0";
+                }
+                $orAlias = implode(' OR ', $condsAlias);
+                $sqlFallback = "SELECT ID, COD_ESTUDIANTE, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
+                                       NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO, FECHA_REGISTRO 
+                                FROM SUBNOTAS 
+                                WHERE LOWER(TRIM(COD_ESTUDIANTE)) IN ({$inEst}) 
+                                  AND ({$orAlias})
+                                  AND (TIPO_PREVIO = '{$tipoPrevio}' 
+                                       OR ('{$tipoPrevio}' IN ('FINAL', 'EXA', '4') AND TIPO_PREVIO IN ('FINAL', 'EXA', '4'))) 
+                                ORDER BY ID ASC";
+                $this->database2->get_obj_array($sqlFallback, $arr);
+            }
+        }
         if (empty($arr)) {
             $sqlSinSem = "SELECT ID, COD_ESTUDIANTE, TIPO_PREVIO, ID_ACTIVIDAD_MOODLE, NOMBRE_ACTIVIDAD, 
                                  NOTA_ORIGINAL, NOTA_MAXIMA, PORCENTAJE, SUBNOTA, ESTADO 
