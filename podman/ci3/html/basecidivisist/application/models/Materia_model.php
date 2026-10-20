@@ -10,29 +10,14 @@ class Materia_model extends CI_Model {
         }
     }
 
-    private function _normalizar_texto($str) {
+    private function _limpiar_texto($str) {
         $str = strtolower(trim($str));
         $remplazos = array(
             'á'=>'a', 'é'=>'e', 'í'=>'i', 'ó'=>'o', 'ú'=>'u', 'ñ'=>'n',
-            'ä'=>'a', 'ë'=>'e', 'ï'=>'i', 'ö'=>'o', 'ü'=>'u',
-            '-'=>'_', ' '=>'_'
+            'ä'=>'a', 'ë'=>'e', 'ï'=>'i', 'ö'=>'o', 'ü'=>'u'
         );
         $str = strtr($str, $remplazos);
-        return preg_replace('/[^a-z0-9_]/', '', $str);
-    }
-
-    private function _extraer_palabras_clave($str) {
-        $norm = $this->_normalizar_texto($str);
-        $partes = explode('_', $norm);
-        $stopWords = array('curso', 'de', 'la', 'el', 'los', 'las', 'un', 'una', 'en', 'para', 'y', 'o', 'a', 'moodle');
-        $claves = array();
-        foreach ($partes as $p) {
-            $p = trim($p);
-            if (strlen($p) >= 3 && !in_array($p, $stopWords)) {
-                $claves[] = $p;
-            }
-        }
-        return array_unique($claves);
+        return preg_replace('/[^a-z0-9]/', '', $str);
     }
 
     private function _resolver_carrera_materia($shortname, $fullname, $carreraEstudiante) {
@@ -81,32 +66,48 @@ class Materia_model extends CI_Model {
         return $subnotas;
     }
 
-    private function _coincide_materia($subCodMateria, $cursoInfo) {
-        $subLow = $this->_normalizar_texto($subCodMateria);
+    private function _coincide_materia($subCodMateria, $curso) {
+        $subClean = $this->_limpiar_texto($subCodMateria);
+        if (empty($subClean)) {
+            return false;
+        }
 
-        if (in_array($subLow, $cursoInfo['directos'])) {
+        $cid = (string)$curso['id'];
+        $shortname = isset($curso['shortname']) ? $curso['shortname'] : '';
+        $fullname  = isset($curso['fullname']) ? $curso['fullname'] : '';
+        $snClean   = $this->_limpiar_texto($shortname);
+        $idClean   = $this->_limpiar_texto($cid);
+
+        $directos = array($idClean, 'curso' . $idClean, $snClean);
+        if (strpos($shortname, '-') !== false) {
+            $p = explode('-', $shortname, 2);
+            $directos[] = $this->_limpiar_texto($p[0]);
+            if (preg_match('/^(\d{3})(\d{3,})$/', trim($p[0]), $mP)) {
+                $directos[] = $this->_limpiar_texto($mP[2]);
+            }
+        } elseif (preg_match('/^(\d{3})(\d{3,})$/', $shortname, $mP)) {
+            $directos[] = $this->_limpiar_texto($mP[2]);
+        }
+        if (!empty($curso['idnumber'])) {
+            $directos[] = $this->_limpiar_texto($curso['idnumber']);
+        }
+
+        foreach (array_unique(array_filter($directos)) as $d) {
+            if ($subClean === $d) {
+                return true;
+            }
+        }
+
+        $fnClean = $this->_limpiar_texto($fullname);
+        $fnSinCurso = str_replace('curso', '', $fnClean);
+
+        if ($subClean === $fnClean || $subClean === $fnSinCurso) {
             return true;
         }
 
-        foreach ($cursoInfo['directos'] as $dir) {
-            if (strlen($dir) >= 3) {
-                if ($subLow === $dir || strpos($subLow, $dir) !== false || strpos($dir, $subLow) !== false) {
-                    return true;
-                }
-            }
-        }
-
-        if (!empty($cursoInfo['palabras'])) {
-            $coincidencias = 0;
-            foreach ($cursoInfo['palabras'] as $pal) {
-                if (strpos($subLow, $pal) !== false) {
-                    $coincidencias++;
-                }
-            }
-            if ($coincidencias >= 1) {
-                if (count($cursoInfo['palabras']) == 1 || $coincidencias >= 2 || strlen($cursoInfo['palabras'][0]) >= 6) {
-                    return true;
-                }
+        if (strlen($fnSinCurso) >= 4) {
+            if (strpos($subClean, $fnSinCurso) !== false || strpos($fnSinCurso, $subClean) !== false) {
+                return true;
             }
         }
 
@@ -214,79 +215,64 @@ class Materia_model extends CI_Model {
                     'CLASES'       => array()
                 );
 
+                $mapCortes = array(
+                    '1' => '1', '1P' => '1', 'NOTA1' => '1',
+                    '2' => '2', '2P' => '2', 'NOTA2' => '2',
+                    '3' => '3', '3P' => '3', 'NOTA3' => '3',
+                    'FINAL' => 'FINAL', 'EX' => 'FINAL', 'EXA' => 'FINAL', '4' => 'FINAL'
+                );
+
                 $semestreNum = 1;
                 foreach ($cursosMoodle as $c) {
                     $fullname  = trim($c['fullname']);
                     $shortname = trim($c['shortname']);
-                    $courseId  = (string)$c['id'];
 
                     $parsed = $this->_resolver_carrera_materia($shortname, $fullname, $carreraEst);
                     $codCarrera = $parsed['carrera'];
                     $codMateria = $parsed['cod_materia'];
                     $grupo      = $parsed['grupo'];
-                    $snBase     = $parsed['sn_base'];
 
-                    $directos = array(
-                        $this->_normalizar_texto($courseId),
-                        $this->_normalizar_texto('curso_' . $courseId),
-                        $this->_normalizar_texto($shortname),
-                        $this->_normalizar_texto($snBase),
-                        $this->_normalizar_texto($codMateria),
-                        $this->_normalizar_texto($codCarrera . $codMateria)
-                    );
-                    if (!empty($c['idnumber'])) {
-                        $directos[] = $this->_normalizar_texto($c['idnumber']);
-                    }
-
-                    $cursoInfo = array(
-                        'directos' => array_unique(array_filter($directos)),
-                        'palabras' => $this->_extraer_palabras_clave($fullname)
-                    );
-
-                    $subnotasPorCorte = array(
-                        '1'     => array('suma' => 0.0, 'items' => 0),
-                        '2'     => array('suma' => 0.0, 'items' => 0),
-                        '3'     => array('suma' => 0.0, 'items' => 0),
-                        'FINAL' => array('suma' => 0.0, 'items' => 0)
-                    );
-
-                    $mapCortes = array(
-                        '1' => '1', '1P' => '1', 'NOTA1' => '1',
-                        '2' => '2', '2P' => '2', 'NOTA2' => '2',
-                        '3' => '3', '3P' => '3', 'NOTA3' => '3',
-                        'FINAL' => 'FINAL', 'EX' => 'FINAL', 'EXA' => 'FINAL', '4' => 'FINAL'
-                    );
-
-                    $subnotasAgrupadasPorFuente = array();
-
+                    $subnotasPorFuente = array();
                     foreach ($todasSubnotas as $sub) {
                         $subMat = isset($sub->COD_MATERIA) ? trim($sub->COD_MATERIA) : '';
-                        if ($this->_coincide_materia($subMat, $cursoInfo)) {
+                        if ($this->_coincide_materia($subMat, $c)) {
                             $tipoRaw = isset($sub->TIPO_PREVIO) ? strtoupper(trim($sub->TIPO_PREVIO)) : '';
-                            $corteNorm = isset($mapCortes[$tipoRaw]) ? $mapCortes[$tipoRaw] : $tipoRaw;
-                            $valSub = isset($sub->SUBNOTA) ? floatval($sub->SUBNOTA) : 0.0;
+                            $cN = isset($mapCortes[$tipoRaw]) ? $mapCortes[$tipoRaw] : $tipoRaw;
+                            $val = isset($sub->SUBNOTA) ? floatval($sub->SUBNOTA) : 0.0;
+                            $subId = isset($sub->ID) ? intval($sub->ID) : 0;
 
-                            if (isset($subnotasPorCorte[$corteNorm])) {
-                                if (!isset($subnotasAgrupadasPorFuente[$subMat])) {
-                                    $subnotasAgrupadasPorFuente[$subMat] = array(
-                                        '1' => array('suma' => 0.0, 'items' => 0),
-                                        '2' => array('suma' => 0.0, 'items' => 0),
-                                        '3' => array('suma' => 0.0, 'items' => 0),
-                                        'FINAL' => array('suma' => 0.0, 'items' => 0)
+                            if (in_array($cN, array('1', '2', '3', 'FINAL'))) {
+                                if (!isset($subnotasPorFuente[$subMat])) {
+                                    $subnotasPorFuente[$subMat] = array(
+                                        '1' => array('suma' => 0.0, 'items' => 0, 'max_id' => 0),
+                                        '2' => array('suma' => 0.0, 'items' => 0, 'max_id' => 0),
+                                        '3' => array('suma' => 0.0, 'items' => 0, 'max_id' => 0),
+                                        'FINAL' => array('suma' => 0.0, 'items' => 0, 'max_id' => 0)
                                     );
                                 }
-                                $subnotasAgrupadasPorFuente[$subMat][$corteNorm]['suma'] += $valSub;
-                                $subnotasAgrupadasPorFuente[$subMat][$corteNorm]['items']++;
+                                $subnotasPorFuente[$subMat][$cN]['suma'] += $val;
+                                $subnotasPorFuente[$subMat][$cN]['items']++;
+                                if ($subId > $subnotasPorFuente[$subMat][$cN]['max_id']) {
+                                    $subnotasPorFuente[$subMat][$cN]['max_id'] = $subId;
+                                }
                             }
                         }
                     }
 
-                    if (!empty($subnotasAgrupadasPorFuente)) {
-                        foreach ($subnotasAgrupadasPorFuente as $fuenteMat => $cortesFuente) {
-                            foreach ($cortesFuente as $cN => $dC) {
-                                if ($dC['items'] > 0 && ($dC['suma'] > $subnotasPorCorte[$cN]['suma'] || $subnotasPorCorte[$cN]['items'] == 0)) {
-                                    $subnotasPorCorte[$cN]['suma'] = $dC['suma'];
-                                    $subnotasPorCorte[$cN]['items'] = $dC['items'];
+                    $cortesFinales = array(
+                        '1'     => array('nota' => 0.0, 'tiene' => false, 'max_id' => 0),
+                        '2'     => array('nota' => 0.0, 'tiene' => false, 'max_id' => 0),
+                        '3'     => array('nota' => 0.0, 'tiene' => false, 'max_id' => 0),
+                        'FINAL' => array('nota' => 0.0, 'tiene' => false, 'max_id' => 0)
+                    );
+
+                    foreach ($subnotasPorFuente as $fuenteMat => $datosCortes) {
+                        foreach (array('1', '2', '3', 'FINAL') as $cN) {
+                            if ($datosCortes[$cN]['items'] > 0) {
+                                if (!$cortesFinales[$cN]['tiene'] || $datosCortes[$cN]['max_id'] > $cortesFinales[$cN]['max_id']) {
+                                    $cortesFinales[$cN]['nota']   = $this->_normalizar_nota($datosCortes[$cN]['suma']);
+                                    $cortesFinales[$cN]['tiene']  = true;
+                                    $cortesFinales[$cN]['max_id'] = $datosCortes[$cN]['max_id'];
                                 }
                             }
                         }
@@ -298,23 +284,23 @@ class Materia_model extends CI_Model {
                     $nota3 = 0.0; $estNota3 = 'S';
                     $exa   = 0.0; $estExa   = 'S';
 
-                    if ($subnotasPorCorte['1']['items'] > 0) {
-                        $nota1 = $this->_normalizar_nota($subnotasPorCorte['1']['suma']);
+                    if ($cortesFinales['1']['tiene']) {
+                        $nota1 = $cortesFinales['1']['nota'];
                         $estNota1 = 'V';
                         $tieneRubrica = true;
                     }
-                    if ($subnotasPorCorte['2']['items'] > 0) {
-                        $nota2 = $this->_normalizar_nota($subnotasPorCorte['2']['suma']);
+                    if ($cortesFinales['2']['tiene']) {
+                        $nota2 = $cortesFinales['2']['nota'];
                         $estNota2 = 'V';
                         $tieneRubrica = true;
                     }
-                    if ($subnotasPorCorte['3']['items'] > 0) {
-                        $nota3 = $this->_normalizar_nota($subnotasPorCorte['3']['suma']);
+                    if ($cortesFinales['3']['tiene']) {
+                        $nota3 = $cortesFinales['3']['nota'];
                         $estNota3 = 'V';
                         $tieneRubrica = true;
                     }
-                    if ($subnotasPorCorte['FINAL']['items'] > 0) {
-                        $exa = $this->_normalizar_nota($subnotasPorCorte['FINAL']['suma']);
+                    if ($cortesFinales['FINAL']['tiene']) {
+                        $exa = $cortesFinales['FINAL']['nota'];
                         $estExa = 'V';
                         $tieneRubrica = true;
                     }
