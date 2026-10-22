@@ -108,6 +108,69 @@ class Test_moodle extends CI_Controller
         echo json_encode($diagnostico, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
+    private function _materia_coincide_curso($codMatOracle, $cShort, $cFull)
+    {
+        $mClean = strtolower(preg_replace('/[^a-z0-9]/', '', $codMatOracle));
+        $sClean = strtolower(preg_replace('/[^a-z0-9]/', '', $cShort));
+        $fClean = strtolower(preg_replace('/[^a-z0-9]/', '', $cFull));
+
+        if ($sClean === 'p' || $sClean === '115p' || $fClean === 'prueba') {
+            return ($mClean === 'p' || $mClean === '115p' || $mClean === 'cursop');
+        }
+        if ($mClean === 'p' || $mClean === '115p' || $mClean === 'cursop') {
+            return ($sClean === 'p' || $sClean === '115p' || $fClean === 'prueba');
+        }
+        if ($sClean === '5678' || $sClean === '1155678' || $fClean === 'matematicas') {
+            return in_array($mClean, array('5678', '1155678', 'matematicas', 'matematicas115', 'cursomatematicas115', 'curso5678'));
+        }
+        if ($sClean === '91011' || $sClean === '11591011' || $fClean === 'cursopruebapractica' || $fClean === 'pruebapractica') {
+            return in_array($mClean, array('91011', '11591011', 'pruebapractica', 'cursopruebapractica', 'curso91011'));
+        }
+        if ($sClean === '1151234' || $sClean === '1234' || $fClean === 'biologia') {
+            return in_array($mClean, array('1151234', '1234', 'biologia', 'biologia111', 'cursobiologia111', 'curso1151234'));
+        }
+
+        if ($mClean === $sClean || $mClean === $fClean) {
+            return true;
+        }
+        if (strlen($fClean) >= 5 && strlen($mClean) >= 5) {
+            if (strpos($fClean, $mClean) !== false || strpos($mClean, $fClean) !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function corregir_subnotas_bd()
+    {
+        if (!headers_sent()) {
+            header('Content-Type: text/plain; charset=utf-8');
+        }
+        $this->load->library('database2');
+        if (!isset($this->database2)) {
+            echo "Error: Base de datos Oracle no disponible.\n";
+            return;
+        }
+
+        $sql = "UPDATE SUBNOTAS 
+                SET SUBNOTA = ROUND(
+                    CASE 
+                        WHEN NVL(NOTA_MAXIMA, 0) > 0 AND ABS(NOTA_MAXIMA - 5.0) > 0.01 THEN (NOTA_ORIGINAL / NOTA_MAXIMA) * 5.0 
+                        WHEN NVL(NOTA_MAXIMA, 0) = 0 AND NOTA_ORIGINAL > 5.0 THEN (NOTA_ORIGINAL / 100.0) * 5.0 
+                        ELSE NOTA_ORIGINAL 
+                    END * (PORCENTAJE / 100.0), 
+                    2
+                ) 
+                WHERE PORCENTAJE > 0";
+
+        $res = $this->database2->get_sql_bool($sql);
+
+        $sqlZero = "UPDATE SUBNOTAS SET SUBNOTA = 0.0 WHERE NVL(NOTA_ORIGINAL, 0) = 0";
+        $this->database2->get_sql_bool($sqlZero);
+
+        echo "Resultado de la correccion de subnotas en Oracle: " . ($res ? "EXITO" : "FALLO") . "\n";
+    }
+
     public function diagnostico_consola($codigo = '1152002')
     {
         if (!headers_sent()) {
@@ -200,20 +263,8 @@ class Test_moodle extends CI_Controller
                 }
 
                 $rubsCurso = array();
-                $cFullClean = strtolower(preg_replace('/[^a-z0-9]/', '', $cFull));
-                $cShortClean = strtolower(preg_replace('/[^a-z0-9]/', '', $cShort));
-                $cIdClean = (string)$cId;
                 foreach ($todasRubricas as $r) {
-                    $rmClean = strtolower(preg_replace('/[^a-z0-9]/', '', $r->COD_MATERIA));
-                    $coincide = false;
-                    if ($rmClean === $cIdClean || $rmClean === 'curso' . $cIdClean || $rmClean === $cShortClean) {
-                        $coincide = true;
-                    } elseif (!empty($cShortClean) && (strpos($rmClean, $cShortClean) !== false || strpos($cShortClean, $rmClean) !== false)) {
-                        $coincide = true;
-                    } elseif (!empty($cFullClean) && strlen($rmClean) >= 4 && (strpos($cFullClean, $rmClean) !== false || strpos($rmClean, $cFullClean) !== false)) {
-                        $coincide = true;
-                    }
-                    if ($coincide) {
+                    if ($this->_materia_coincide_curso($r->COD_MATERIA, $cShort, $cFull)) {
                         $rubsCurso[] = $r;
                     }
                 }
@@ -234,16 +285,7 @@ class Test_moodle extends CI_Controller
 
                 $subsCurso = array();
                 foreach ($todasSubnotas as $s) {
-                    $smClean = strtolower(preg_replace('/[^a-z0-9]/', '', $s->COD_MATERIA));
-                    $coincide = false;
-                    if ($smClean === $cIdClean || $smClean === 'curso' . $cIdClean || $smClean === $cShortClean) {
-                        $coincide = true;
-                    } elseif (!empty($cShortClean) && (strpos($smClean, $cShortClean) !== false || strpos($cShortClean, $smClean) !== false)) {
-                        $coincide = true;
-                    } elseif (!empty($cFullClean) && strlen($smClean) >= 4 && (strpos($cFullClean, $smClean) !== false || strpos($smClean, $cFullClean) !== false)) {
-                        $coincide = true;
-                    }
-                    if ($coincide) {
+                    if ($this->_materia_coincide_curso($s->COD_MATERIA, $cShort, $cFull)) {
                         $subsCurso[] = $s;
                     }
                 }
@@ -305,7 +347,7 @@ class Test_moodle extends CI_Controller
                 $n3      = isset($matOutput['NOTA3'][$i]) ? $matOutput['NOTA3'][$i] : '0.0';
                 $exa     = isset($matOutput['EXA'][$i]) ? $matOutput['EXA'][$i] : '0.0';
                 $def     = isset($matOutput['DEF'][$i]) ? $matOutput['DEF'][$i] : '0.0';
-                $tieneR  = (!empty($matOutput['TIENE_RUBRICA'][$i]) || !empty($matOutput['DETALLE_NOTAS'][$i])) ? 'SI' : 'NO';
+                $tieneR  = (!empty($matOutput['TIENE_RUBRICA'][$i]) || !empty($matOutput['RUBRICA'][$i]) || !empty($matOutput['DETALLE_NOTAS'][$i])) ? 'SI' : 'NO';
 
                 $fullCod = $carrera . $codM;
                 echo sprintf("%-12s | %-28s | %-4s | %-6s | %-6s | %-6s | %-6s | %-6s | %-8s\n",

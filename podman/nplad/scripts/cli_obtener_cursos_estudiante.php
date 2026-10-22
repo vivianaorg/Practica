@@ -1,7 +1,6 @@
 <?php
 define('CLI_SCRIPT', true);
 
-// Desactivar visualizacion de errores y notices para proteger la salida JSON
 error_reporting(0);
 @ini_set('display_errors', '0');
 
@@ -32,7 +31,6 @@ if ($options['help'] || empty($options['codigo'])) {
 
 $codigo = trim($options['codigo']);
 
-// Buscar estudiante por idnumber o username (case-insensitive)
 $user = $DB->get_record_select(
     'user',
     "(LOWER(idnumber) = LOWER(:c1) OR LOWER(username) = LOWER(:c2)) AND deleted = 0",
@@ -49,18 +47,15 @@ if (!$user) {
 
 $userId = (int)$user->id;
 
-// 1. Obtener cursos del estudiante usando la funcion nativa de Moodle enrol_get_all_users_courses
 $courses = array();
 try {
     if (function_exists('enrol_get_all_users_courses')) {
-        // false = incluye todos los cursos independientemente de si ya comenzaron o son futuros
         $courses = enrol_get_all_users_courses($userId, false);
     }
 } catch (Exception $e) {
     $courses = array();
 }
 
-// 2. Fallback SQL si la funcion nativa no retorno registros
 if (empty($courses)) {
     try {
         $sqlCourses = "SELECT DISTINCT 
@@ -80,7 +75,6 @@ if (empty($courses)) {
     }
 }
 
-// 3. Fallback adicional por asignacion de roles en contexto de curso
 if (empty($courses)) {
     try {
         $sqlRoles = "SELECT DISTINCT 
@@ -106,10 +100,9 @@ if (!empty($courses)) {
     foreach ($courses as $c) {
         $courseId = (int)$c->id;
         if ($courseId <= 1) {
-            continue; // Ignorar el curso frontal del sitio
+            continue;
         }
 
-        // Obtener profesor del curso si existe
         $profEmail = 'docente@ufps.edu.co';
         $profNombre = 'Docente Moodle';
         try {
@@ -130,11 +123,8 @@ if (!empty($courses)) {
                 $profNombre = trim($t->firstname . ' ' . $t->lastname);
             }
         } catch (Exception $e) {
-            // Ignorar error al buscar profesor
         }
 
-        // Obtener items de calificacion y notas del estudiante
-        // El primer campo DEBE llamarse 'id' para cumplir con Moodle get_records_sql
         $actividades = array();
         $totalNotaMods = 0.0;
         $countModsGraded = 0;
@@ -173,10 +163,14 @@ if (!empty($courses)) {
             if (!empty($gradeRecords)) {
                 foreach ($gradeRecords as $gr) {
                     if ($gr->itemtype === 'course') {
-                        if ($gr->finalgrade !== null) {
-                            $courseTotalGrade = round((float)$gr->finalgrade, 2);
-                        } elseif ($gr->rawgrade !== null) {
-                            $courseTotalGrade = round((float)$gr->rawgrade, 2);
+                        $cMax = (!empty($gr->grademax) && (float)$gr->grademax > 0) ? (float)$gr->grademax : 100.0;
+                        $rawVal = ($gr->finalgrade !== null) ? (float)$gr->finalgrade : (($gr->rawgrade !== null) ? (float)$gr->rawgrade : null);
+                        if ($rawVal !== null) {
+                            if ($cMax > 0 && abs($cMax - 5.0) > 0.01) {
+                                $courseTotalGrade = round(($rawVal / $cMax) * 5.0, 1);
+                            } else {
+                                $courseTotalGrade = round($rawVal, 1);
+                            }
                         }
                     } elseif ($gr->itemtype === 'category') {
                         $rawName = !empty($gr->itemname) ? (string)$gr->itemname : '';
@@ -248,20 +242,23 @@ if (!empty($courses)) {
                 }
             }
         } catch (Exception $e) {
-            // Ignorar error al procesar calificaciones
         }
 
-        if ($nota1 !== null && $nota1 > 5.0 && $nota1 <= 100.0) {
+        if ($nota1 !== null && $nota1 > 5.0) {
             $nota1 = round(($nota1 / 100.0) * 5.0, 1);
+            if ($nota1 > 5.0) { $nota1 = 5.0; }
         }
-        if ($nota2 !== null && $nota2 > 5.0 && $nota2 <= 100.0) {
+        if ($nota2 !== null && $nota2 > 5.0) {
             $nota2 = round(($nota2 / 100.0) * 5.0, 1);
+            if ($nota2 > 5.0) { $nota2 = 5.0; }
         }
-        if ($nota3 !== null && $nota3 > 5.0 && $nota3 <= 100.0) {
+        if ($nota3 !== null && $nota3 > 5.0) {
             $nota3 = round(($nota3 / 100.0) * 5.0, 1);
+            if ($nota3 > 5.0) { $nota3 = 5.0; }
         }
-        if ($exa !== null && $exa > 5.0 && $exa <= 100.0) {
+        if ($exa !== null && $exa > 5.0) {
             $exa = round(($exa / 100.0) * 5.0, 1);
+            if ($exa > 5.0) { $exa = 5.0; }
         }
 
         $sumPart = 0.0;
@@ -279,8 +276,14 @@ if (!empty($courses)) {
             $definitiva = 0.0;
         }
 
-        if ($definitiva !== null && $definitiva > 5.0 && $definitiva <= 100.0) {
+        if ($definitiva !== null && $definitiva > 5.0) {
             $definitiva = round(($definitiva / 100.0) * 5.0, 1);
+        }
+        if ($definitiva !== null && $definitiva > 5.0) {
+            $definitiva = 5.0;
+        }
+        if ($definitiva !== null && $definitiva < 0.0) {
+            $definitiva = 0.0;
         }
         $summaryText = !empty($c->summary) ? strip_tags((string)$c->summary) : '';
 
