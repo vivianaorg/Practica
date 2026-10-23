@@ -20,6 +20,29 @@ class Calculo_notas_model extends CI_Model
      */
     public function parsear_curso_codigo($cursoCodigo, $courseId = null)
     {
+        $CI =& get_instance();
+        if (!isset($CI->Materia_model)) {
+            $CI->load->model('Materia_model');
+        }
+        $can = null;
+        if (!empty($courseId)) {
+            $can = $CI->Materia_model->obtener_mapeo_canonical($courseId);
+        }
+        if ($can === null && !empty($cursoCodigo)) {
+            $can = $CI->Materia_model->obtener_mapeo_canonical($cursoCodigo);
+        }
+        if ($can !== null) {
+            $grupo = '-';
+            if (!empty($cursoCodigo) && strpos($cursoCodigo, '-') !== false) {
+                $partes = explode('-', $cursoCodigo, 2);
+                $grupo = trim($partes[1]);
+            }
+            return array(
+                'cod_materia' => $can['cod_materia'],
+                'grupo'       => (!empty($grupo) && $grupo !== '') ? $grupo : '-'
+            );
+        }
+
         $defaultMateria = !empty($courseId) ? 'CURSO_' . $courseId : '1155304';
         $codMateria = !empty($cursoCodigo) ? trim($cursoCodigo) : $defaultMateria;
         $grupo      = '-';

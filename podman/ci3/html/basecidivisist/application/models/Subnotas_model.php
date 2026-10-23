@@ -20,6 +20,16 @@ class Subnotas_model extends CI_Model
 
     private function _construir_condicion_materia($codMateria)
     {
+        $CI =& get_instance();
+        if (!isset($CI->Materia_model)) {
+            $CI->load->model('Materia_model');
+        }
+        $can = $CI->Materia_model->obtener_mapeo_canonical($codMateria);
+        if ($can !== null) {
+            $c = "'" . $can['cod_materia'] . "'";
+            return "LOWER(TRIM(COD_MATERIA)) IN ({$c})";
+        }
+
         $mLow = strtolower(trim($codMateria));
         $mClean = preg_replace('/[^a-z0-9]/', '', $mLow);
 
@@ -33,24 +43,6 @@ class Subnotas_model extends CI_Model
             $con115 = '115' . $mClean;
             $candidatos[] = "'" . $con115 . "'";
             $candidatos[] = "'curso_" . $con115 . "'";
-        }
-
-        if ($mClean === '5678' || $mClean === '1155678' || $mClean === 'matematicas') {
-            $candidatos[] = "'matematicas_115'";
-            $candidatos[] = "'matematicas'";
-            $candidatos[] = "'5678'";
-            $candidatos[] = "'1155678'";
-        } elseif ($mClean === '91011' || $mClean === '11591011' || $mClean === 'pruebapractica') {
-            $candidatos[] = "'prueba_practica'";
-            $candidatos[] = "'cursopruebapractica'";
-            $candidatos[] = "'91011'";
-            $candidatos[] = "'11591011'";
-        } elseif ($mClean === '1234' || $mClean === '1151234' || $mClean === 'biologia') {
-            $candidatos[] = "'biologia'";
-            $candidatos[] = "'1151234'";
-            $candidatos[] = "'1234'";
-        } elseif ($mClean === 'p' || $mClean === '115p' || $mClean === 'prueba') {
-            return "LOWER(TRIM(COD_MATERIA)) IN ('p', '115p', 'curso_p', 'curso_9', 'prueba')";
         }
 
         $candsList = implode(',', array_unique($candidatos));
@@ -416,30 +408,13 @@ class Subnotas_model extends CI_Model
                 }
             }
 
-            $colNota = 'NOTA1';
-            $colEst = 'EST_NOTA1';
-            $tp = strtoupper(trim($tipoPrevio));
-            if ($tp === '2' || $tp === '2P' || $tp === 'CORTE2') {
-                $colNota = 'NOTA2';
-                $colEst = 'EST_NOTA2';
-            } elseif ($tp === '3' || $tp === '3P' || $tp === 'CORTE3') {
-                $colNota = 'NOTA3';
-                $colEst = 'EST_NOTA3';
-            } elseif ($tp === 'FINAL' || $tp === 'EX' || $tp === 'EXA') {
-                $colNota = 'EXA';
-                $colEst = 'EST_EXA';
+            $CI =& get_instance();
+            if (!isset($CI->Materia_model)) {
+                $CI->load->model('Materia_model');
             }
-
-            $carreraEst = strlen($codEstudiante) >= 3 ? substr($codEstudiante, 0, 3) : '115';
-            $alumnoEst  = strlen($codEstudiante) >= 7 ? substr($codEstudiante, 3, 4) : $codEstudiante;
-            $notaCorteFinal = round(min(5.0, max(0.0, $notaSugerida > 0 ? $notaSugerida : $notaDefinitiva)), 2);
-
-            $sqlUpdatePensum = "UPDATE MATRICULA.materiasMatriculadasPensum 
-                                SET {$colNota} = {$notaCorteFinal}, {$colEst} = 'V', RUBRICA = 1 
-                                WHERE COD_CARRERA = '{$carreraEst}' 
-                                  AND COD_ALUMNO = '{$alumnoEst}' 
-                                  AND (CODMAT = '{$codMateria}' OR CODMATMAT = '{$codMateria}' OR '115' || CODMAT = '{$codMateria}')";
-            $this->database2->get_sql_bool($sqlUpdatePensum);
+            if (isset($CI->Materia_model)) {
+                $CI->Materia_model->materiasMatriculadasPensum($codEstudiante);
+            }
         }
 
         $conn = $this->database2->get_conn();

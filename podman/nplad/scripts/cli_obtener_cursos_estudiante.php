@@ -215,17 +215,6 @@ if (!empty($courses)) {
                             $countModsGraded++;
                         }
 
-                        $actNameLow = strtolower(trim($gr->itemname ? (string)$gr->itemname : ''));
-                        if (strpos($actNameLow, 'primer previo') !== false || strpos($actNameLow, '1er previo') !== false || strpos($actNameLow, '1p') !== false) {
-                            if ($finalGrade !== null) { $nota1 = $finalGradeNorm; }
-                        } elseif (strpos($actNameLow, 'segundo previo') !== false || strpos($actNameLow, '2do previo') !== false || strpos($actNameLow, '2p') !== false) {
-                            if ($finalGrade !== null) { $nota2 = $finalGradeNorm; }
-                        } elseif (strpos($actNameLow, 'tercer previo') !== false || strpos($actNameLow, '3er previo') !== false || strpos($actNameLow, '3p') !== false) {
-                            if ($finalGrade !== null) { $nota3 = $finalGradeNorm; }
-                        } elseif (strpos($actNameLow, 'examen final') !== false || strpos($actNameLow, 'evaluacion final') !== false) {
-                            if ($finalGrade !== null) { $exa = $finalGradeNorm; }
-                        }
-
                         $actividades[] = array(
                             'cmid'             => ($gr->cmid !== null) ? (int)$gr->cmid : 0,
                             'grade_item_id'    => (int)$gr->id,
@@ -270,8 +259,6 @@ if (!empty($courses)) {
 
         if ($cntPart > 0) {
             $definitiva = round($sumPart / $cntPart, 1);
-        } elseif ($courseTotalGrade !== null) {
-            $definitiva = $courseTotalGrade;
         } else {
             $definitiva = 0.0;
         }

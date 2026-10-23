@@ -75,80 +75,99 @@ class Materia_model extends CI_Model {
         return $subnotas;
     }
 
+    public function obtener_mapeo_canonical($valor) {
+        $c = $this->_limpiar_texto($valor);
+        if ($c === '1234' || $c === '1151234' || $c === 'biologia' || $c === 'cursobiologia' || $c === 'curso1234' || $c === 'curso1151234' || $c === '2') {
+            return array(
+                'curso_id'       => 2,
+                'shortname'      => '1151234',
+                'fullname'       => 'Biología',
+                'cod_materia'    => '1151234',
+                'sia_carrera'    => '115',
+                'sia_codmat'     => '1234',
+                'sia_codmatmat'  => '1234',
+                'sia_codigo'     => '1151234'
+            );
+        }
+        if ($c === '5678' || $c === '1155678' || $c === 'matematicas' || $c === 'cursomatematicas' || $c === 'matematicas115' || $c === 'cursomatematicas115' || $c === 'curso5678' || $c === 'curso1155678' || $c === '3') {
+            return array(
+                'curso_id'       => 3,
+                'shortname'      => '1155678',
+                'fullname'       => 'Matemáticas',
+                'cod_materia'    => '1155678',
+                'sia_carrera'    => '115',
+                'sia_codmat'     => '5678',
+                'sia_codmatmat'  => '5678',
+                'sia_codigo'     => '1155678'
+            );
+        }
+        if ($c === '91011' || $c === '11591011' || $c === 'pruebapractica' || $c === 'cursopruebapractica' || $c === 'cursopruebaprtica' || $c === 'curso91011' || $c === 'curso11591011' || $c === 'pruebapractica115' || $c === 'prueba_practica' || $c === '4') {
+            return array(
+                'curso_id'       => 4,
+                'shortname'      => '91011',
+                'fullname'       => 'Curso prueba práctica',
+                'cod_materia'    => '11591011',
+                'sia_carrera'    => '115',
+                'sia_codmat'     => '91011',
+                'sia_codmatmat'  => '91011',
+                'sia_codigo'     => '11591011'
+            );
+        }
+        if ($c === 'p' || $c === '115p' || $c === 'cursop' || $c === 'prueba' || $c === 'cursoprueba' || $c === 'curso9' || $c === '5') {
+            return array(
+                'curso_id'       => 5,
+                'shortname'      => 'p',
+                'fullname'       => 'Prueba',
+                'cod_materia'    => '115p',
+                'sia_carrera'    => '115',
+                'sia_codmat'     => 'p',
+                'sia_codmatmat'  => 'p',
+                'sia_codigo'     => '115p'
+            );
+        }
+        return null;
+    }
+
     public function _coincide_materia($subCodMateria, $curso) {
+        $canSub = $this->obtener_mapeo_canonical($subCodMateria);
+        $cid = isset($curso['id']) ? (string)$curso['id'] : '';
+        $shortname = isset($curso['shortname']) ? $curso['shortname'] : '';
+        $fullname  = isset($curso['fullname']) ? $curso['fullname'] : '';
+        $idnumber  = isset($curso['idnumber']) ? $curso['idnumber'] : '';
+
+        $canCur = null;
+        foreach (array($cid, $shortname, $fullname, $idnumber) as $cand) {
+            if (!empty($cand)) {
+                $canCur = $this->obtener_mapeo_canonical($cand);
+                if ($canCur !== null) {
+                    break;
+                }
+            }
+        }
+
+        if ($canSub !== null && $canCur !== null) {
+            return ($canSub['cod_materia'] === $canCur['cod_materia']);
+        }
+
         $subClean = $this->_limpiar_texto($subCodMateria);
         if (empty($subClean)) {
             return false;
         }
 
-        $cid = isset($curso['id']) ? (string)$curso['id'] : '';
-        $shortname = isset($curso['shortname']) ? $curso['shortname'] : '';
-        $fullname  = isset($curso['fullname']) ? $curso['fullname'] : '';
-        $snClean   = $this->_limpiar_texto($shortname);
-        $fnClean   = $this->_limpiar_texto($fullname);
-        $idClean   = $this->_limpiar_texto($cid);
-
-        $gP = array('p', '115p', 'cursop', 'prueba', 'cursoprueba', 'curso9');
-        $gM = array('5678', '1155678', 'matematicas', 'cursomatematicas', 'matematicas115', 'cursomatematicas115', 'curso5678', 'curso1155678');
-        $gPP = array('91011', '11591011', 'pruebapractica', 'cursopruebapractica', 'cursopruebaprtica', 'curso91011', 'curso11591011', 'pruebapractica115', 'cursoprueba', 'prueba_practica');
-        $gB = array('1234', '1151234', 'biologia', 'cursobiologia', 'curso1234', 'curso1151234');
-
         if ($subClean === 'biologia111' || $subClean === 'cursobiologia111') {
             return false;
         }
 
+        $snClean = $this->_limpiar_texto($shortname);
+        $fnClean = $this->_limpiar_texto($fullname);
+        $idClean = $this->_limpiar_texto($cid);
+
         $targets = array_unique(array_filter(array($snClean, $fnClean, $idClean, str_replace('curso', '', $fnClean))));
-        if (strpos($shortname, '-') !== false) {
-            $p = explode('-', $shortname, 2);
-            $targets[] = $this->_limpiar_texto($p[0]);
-            if (preg_match('/^115(\d+)$/', trim($p[0]), $mP)) {
-                $targets[] = $this->_limpiar_texto($mP[1]);
-            }
-        } elseif (preg_match('/^115(\d+)$/', $shortname, $mP)) {
-            $targets[] = $this->_limpiar_texto($mP[1]);
-        }
-        if (!empty($curso['idnumber'])) {
-            $targets[] = $this->_limpiar_texto($curso['idnumber']);
-        }
-        $targets = array_unique(array_filter($targets));
-
-        if (in_array($subClean, $gP)) {
-            foreach ($targets as $t) {
-                if (in_array($t, $gP)) { return true; }
-            }
-        }
-        if (in_array($subClean, $gM)) {
-            foreach ($targets as $t) {
-                if (in_array($t, $gM)) { return true; }
-            }
-        }
-        if (in_array($subClean, $gPP)) {
-            foreach ($targets as $t) {
-                if (in_array($t, $gPP)) { return true; }
-            }
-        }
-        if (in_array($subClean, $gB)) {
-            foreach ($targets as $t) {
-                if (in_array($t, $gB)) { return true; }
-            }
-        }
-
         foreach ($targets as $t) {
             if ($subClean === $t) {
                 return true;
             }
-            $subSin115 = (strpos($subClean, '115') === 0 && strlen($subClean) > 3) ? substr($subClean, 3) : $subClean;
-            $tSin115   = (strpos($t, '115') === 0 && strlen($t) > 3) ? substr($t, 3) : $t;
-            if (is_numeric($subSin115) && is_numeric($tSin115) && $subSin115 === $tSin115) {
-                return true;
-            }
-            if (strlen($subClean) >= 5 && strlen($t) >= 5) {
-                if (strpos($subClean, $t) !== false || strpos($t, $subClean) !== false) {
-                    return true;
-                }
-            }
         }
-
         return false;
     }
 
@@ -259,7 +278,7 @@ class Materia_model extends CI_Model {
             if ($estNota2 === 'V') { $acumulado += $nota2 * 0.233; $peso += 23.3; }
             if ($estNota3 === 'V') { $acumulado += $nota3 * 0.234; $peso += 23.4; }
             if ($estExa   === 'V') { $acumulado += $exa   * 0.300; $peso += 30.0; }
-            $def = ($peso > 0) ? round($acumulado, 1) : 0.0;
+            $def = ($peso > 0) ? round($acumulado, 2) : 0.0;
         } else {
             $sum = 0.0; $cnt = 0;
             if ($estNota1 === 'V') { $sum += $nota1; $cnt++; }
@@ -267,12 +286,12 @@ class Materia_model extends CI_Model {
             if ($estNota3 === 'V') { $sum += $nota3; $cnt++; }
             if ($estExa   === 'V') { $sum += $exa;   $cnt++; }
             if ($cnt > 0) {
-                $def = round($sum / $cnt, 1);
+                $def = round($sum / $cnt, 2);
             } elseif (isset($c['def']) && floatval($c['def']) > 0) {
                 $def = $this->_normalizar_nota(floatval($c['def']));
             }
         }
-        $def = round(min(5.0, max(0.0, $def)), 1);
+        $def = round(min(5.0, max(0.0, $def)), 2);
 
         return array(
             'tiene_rubrica' => $tieneRubrica,

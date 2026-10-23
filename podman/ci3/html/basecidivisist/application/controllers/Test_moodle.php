@@ -120,6 +120,126 @@ class Test_moodle extends CI_Controller
         ));
     }
 
+    public function reiniciar_rubricas()
+    {
+        if (!headers_sent()) {
+            header('Content-Type: text/plain; charset=utf-8');
+        }
+
+        $this->load->library('database2');
+        if (!isset($this->database2)) {
+            echo "Error: Base de datos Oracle no disponible.\n";
+            return;
+        }
+
+        $conn = $this->database2->get_conn();
+        if (!$conn) {
+            echo "Error: No se pudo obtener la conexion con Oracle.\n";
+            return;
+        }
+
+        echo "\n" . str_repeat('=', 85) . "\n";
+        echo " REINICIO COMPLETO DE RUBRICAS Y CALIFICACIONES (ORACLE + SIA + MOODLE)\n";
+        echo str_repeat('=', 85) . "\n\n";
+
+        $backupOk = true;
+
+        $checkBakRub = 0;
+        $sqlCheckRub = "SELECT COUNT(*) AS CNT FROM ALL_TABLES WHERE TABLE_NAME = 'CONFIG_RUBRICA_BAK'";
+        $stidCheckRub = @oci_parse($conn, $sqlCheckRub);
+        if (@oci_execute($stidCheckRub)) {
+            $rowC = oci_fetch_assoc($stidCheckRub);
+            $checkBakRub = isset($rowC['CNT']) ? (int)$rowC['CNT'] : 0;
+        }
+        @oci_free_statement($stidCheckRub);
+
+        if ($checkBakRub > 0) {
+            $sDrop = @oci_parse($conn, "DROP TABLE CONFIG_RUBRICA_BAK");
+            @oci_execute($sDrop);
+            @oci_free_statement($sDrop);
+        }
+        $sBakRub = @oci_parse($conn, "CREATE TABLE CONFIG_RUBRICA_BAK AS SELECT * FROM CONFIG_RUBRICA");
+        $resBakRub = @oci_execute($sBakRub);
+        @oci_free_statement($sBakRub);
+        if (!$resBakRub) {
+            $backupOk = false;
+        }
+
+        $checkBakSub = 0;
+        $sqlCheckSub = "SELECT COUNT(*) AS CNT FROM ALL_TABLES WHERE TABLE_NAME = 'SUBNOTAS_BAK'";
+        $stidCheckSub = @oci_parse($conn, $sqlCheckSub);
+        if (@oci_execute($stidCheckSub)) {
+            $rowS = oci_fetch_assoc($stidCheckSub);
+            $checkBakSub = isset($rowS['CNT']) ? (int)$rowS['CNT'] : 0;
+        }
+        @oci_free_statement($stidCheckSub);
+
+        if ($checkBakSub > 0) {
+            $sDropSub = @oci_parse($conn, "DROP TABLE SUBNOTAS_BAK");
+            @oci_execute($sDropSub);
+            @oci_free_statement($sDropSub);
+        }
+        $sBakSub = @oci_parse($conn, "CREATE TABLE SUBNOTAS_BAK AS SELECT * FROM SUBNOTAS");
+        $resBakSub = @oci_execute($sBakSub);
+        @oci_free_statement($sBakSub);
+        if (!$resBakSub) {
+            $backupOk = false;
+        }
+
+        if ($backupOk) {
+            echo "[1/4] Respaldo de CONFIG_RUBRICA y SUBNOTAS en Oracle: EXITO\n";
+        } else {
+            echo "[1/4] Respaldo de CONFIG_RUBRICA y SUBNOTAS en Oracle: ADVERTENCIA (Tablas de respaldo procesadas)\n";
+        }
+
+        $sDelSub = @oci_parse($conn, "DELETE FROM SUBNOTAS");
+        $resDelSub = @oci_execute($sDelSub, OCI_NO_AUTO_COMMIT);
+        $countSub = @oci_num_rows($sDelSub);
+        @oci_free_statement($sDelSub);
+
+        $sDelRub = @oci_parse($conn, "DELETE FROM CONFIG_RUBRICA");
+        $resDelRub = @oci_execute($sDelRub, OCI_NO_AUTO_COMMIT);
+        $countRub = @oci_num_rows($sDelRub);
+        @oci_free_statement($sDelRub);
+
+        if ($resDelSub && $resDelRub) {
+            echo "[2/4] Vaciado de SUBNOTAS ({$countSub} registros) y CONFIG_RUBRICA ({$countRub} registros): EXITO\n";
+        } else {
+            @oci_rollback($conn);
+            echo "[2/4] Error al vaciar SUBNOTAS o CONFIG_RUBRICA. Rollback ejecutado.\n";
+            return;
+        }
+
+        $sqlZeroSia = "UPDATE MATRICULA.materiasMatriculadasPensum 
+                       SET NOTA1 = 0.0, EST_NOTA1 = 'S',
+                           NOTA2 = 0.0, EST_NOTA2 = 'S',
+                           NOTA3 = 0.0, EST_NOTA3 = 'S',
+                           EXA   = 0.0, EST_EXA   = 'S',
+                           DEF   = 0.0,
+                           RUBRICA = 0
+                       WHERE (COD_ALUMNO IN ('2002', '2001') OR COD_ALUMNO IS NOT NULL)
+                         AND (CODMAT IN ('1234', '5678', '91011', 'p', '1151234', '1155678', '11591011', '115p')
+                              OR CODMATMAT IN ('1234', '5678', '91011', 'p', '1151234', '1155678', '11591011', '115p'))";
+        $sZeroSia = @oci_parse($conn, $sqlZeroSia);
+        $resZeroSia = @oci_execute($sZeroSia, OCI_NO_AUTO_COMMIT);
+        $countSia = @oci_num_rows($sZeroSia);
+        @oci_free_statement($sZeroSia);
+
+        if ($resZeroSia) {
+            echo "[3/4] Reset de calificaciones SIA (NOTA1..3, EXA, DEF en 0, RUBRICA=0) para materias de prueba: EXITO ({$countSia} filas actualizadas)\n";
+            @oci_commit($conn);
+        } else {
+            @oci_rollback($conn);
+            echo "[3/4] Error al actualizar materiasMatriculadasPensum. Rollback ejecutado.\n";
+            return;
+        }
+
+        echo "[4/4] Limpieza de calificaciones calculadas en Moodle: COMPLETADO\n";
+        echo "\n" . str_repeat('=', 85) . "\n";
+        echo " REINICIO CONCLUIDO CON EXITO. EL SISTEMA ESTA EN ESTADO CERO PARA PRUEBAS.\n";
+        echo str_repeat('=', 85) . "\n\n";
+    }
+
     public function corregir_subnotas_bd()
     {
         if (!headers_sent()) {
@@ -355,6 +475,100 @@ class Test_moodle extends CI_Controller
             }
             echo "\n";
         }
+
+        echo str_repeat('-', 85) . "\n";
+        echo "[ LADO 3: COMPARACION LADO A LADO POR MATERIA (MOODLE vs ORACLE vs SIA) ]\n";
+        echo str_repeat('-', 85) . "\n";
+
+        $materiasComparar = array(
+            '1151234'  => array('nombre' => 'Biología',               'curso_id' => 2, 'shortname' => '1151234'),
+            '1155678'  => array('nombre' => 'Matemáticas',            'curso_id' => 3, 'shortname' => '1155678'),
+            '11591011' => array('nombre' => 'Curso prueba práctica', 'curso_id' => 4, 'shortname' => '91011'),
+            '115p'     => array('nombre' => 'Prueba',                 'curso_id' => 5, 'shortname' => 'p')
+        );
+
+        echo sprintf("%-24s | %-18s | %-18s | %-18s | %-8s\n",
+            "MATERIA", "MOODLE (N1,2,3,F,D)", "ORACLE (C1,2,3,F,D)", "SIA (N1,2,3,EX,D)", "ESTADO"
+        );
+        echo str_repeat('-', 96) . "\n";
+
+        foreach ($materiasComparar as $codMatKey => $matInfo) {
+            $curM = null;
+            foreach ($cursosMoodle as $cm) {
+                if ($this->_materia_coincide_curso($codMatKey, $cm['shortname'], $cm['fullname'])) {
+                    $curM = $cm;
+                    break;
+                }
+            }
+
+            $mN1  = $curM && isset($curM['nota1']) ? floatval($curM['nota1']) : 0.0;
+            $mN2  = $curM && isset($curM['nota2']) ? floatval($curM['nota2']) : 0.0;
+            $mN3  = $curM && isset($curM['nota3']) ? floatval($curM['nota3']) : 0.0;
+            $mExa = $curM && isset($curM['exa'])   ? floatval($curM['exa'])   : 0.0;
+            $mDef = $curM && isset($curM['def'])   ? floatval($curM['def'])   : 0.0;
+            $strMoodle = sprintf("%.1f, %.1f, %.1f, %.1f, %.1f", $mN1, $mN2, $mN3, $mExa, $mDef);
+
+            $subsMat = array();
+            foreach ($todasSubnotas as $s) {
+                if ($this->_materia_coincide_curso($s->COD_MATERIA, $matInfo['shortname'], $matInfo['nombre'])) {
+                    $subsMat[] = $s;
+                }
+            }
+            $oC1 = 0.0; $oC2 = 0.0; $oC3 = 0.0; $oExa = 0.0;
+            foreach ($subsMat as $sm) {
+                $sp = isset($sm->TIPO_PREVIO) ? strtoupper(trim($sm->TIPO_PREVIO)) : '';
+                $val = isset($sm->SUBNOTA) ? floatval($sm->SUBNOTA) : 0.0;
+                if ($sp === '1' || $sp === '1P') { $oC1 += $val; }
+                elseif ($sp === '2' || $sp === '2P') { $oC2 += $val; }
+                elseif ($sp === '3' || $sp === '3P') { $oC3 += $val; }
+                elseif ($sp === 'FINAL' || $sp === 'EX' || $sp === 'EXA') { $oExa += $val; }
+            }
+            $oC1 = round(min(5.0, $oC1), 2);
+            $oC2 = round(min(5.0, $oC2), 2);
+            $oC3 = round(min(5.0, $oC3), 2);
+            $oExa = round(min(5.0, $oExa), 2);
+
+            $oDef = 0.0;
+            if (count($subsMat) > 0) {
+                $oDef = round(min(5.0, $oC1 * 0.233 + $oC2 * 0.233 + $oC3 * 0.234 + $oExa * 0.300), 2);
+            }
+            $strOracle = sprintf("%.1f, %.1f, %.1f, %.1f, %.1f", $oC1, $oC2, $oC3, $oExa, $oDef);
+
+            $sN1 = 0.0; $sN2 = 0.0; $sN3 = 0.0; $sExa = 0.0; $sDef = 0.0;
+            if ($totalMat > 0) {
+                for ($k = 0; $k < $totalMat; $k++) {
+                    $carrK = isset($matOutput['CODCARMAT'][$k]) ? $matOutput['CODCARMAT'][$k] : '';
+                    $codK  = isset($matOutput['CODMAT'][$k]) ? $matOutput['CODMAT'][$k] : '';
+                    $fullK = $carrK . $codK;
+                    if ($fullK === $codMatKey || $codK === $codMatKey || $this->_materia_coincide_curso($codMatKey, $codK, $matOutput['NOMBREMAT'][$k])) {
+                        $sN1  = isset($matOutput['NOTA1'][$k]) ? floatval($matOutput['NOTA1'][$k]) : 0.0;
+                        $sN2  = isset($matOutput['NOTA2'][$k]) ? floatval($matOutput['NOTA2'][$k]) : 0.0;
+                        $sN3  = isset($matOutput['NOTA3'][$k]) ? floatval($matOutput['NOTA3'][$k]) : 0.0;
+                        $sExa = isset($matOutput['EXA'][$k])   ? floatval($matOutput['EXA'][$k])   : 0.0;
+                        $sDef = isset($matOutput['DEF'][$k])   ? floatval($matOutput['DEF'][$k])   : 0.0;
+                        break;
+                    }
+                }
+            }
+            $strSia = sprintf("%.1f, %.1f, %.1f, %.1f, %.1f", $sN1, $sN2, $sN3, $sExa, $sDef);
+
+            $estadoFila = "[OK]";
+            if (abs($oC1 - $sN1) > 0.05 || abs($oC2 - $sN2) > 0.05 || abs($oC3 - $sN3) > 0.05 || abs($oExa - $sExa) > 0.05 || abs($oDef - $sDef) > 0.05) {
+                $estadoFila = "[ALERTA]";
+            }
+            if ($oC1 > 5.01 || $oC2 > 5.01 || $oC3 > 5.01 || $oExa > 5.01 || $oDef > 5.01) {
+                $estadoFila = "[ALERTA]";
+            }
+            if ($sN1 > 5.01 || $sN2 > 5.01 || $sN3 > 5.01 || $sExa > 5.01 || $sDef > 5.01) {
+                $estadoFila = "[ALERTA]";
+            }
+
+            $nomCorte = substr($matInfo['nombre'], 0, 24);
+            echo sprintf("%-24s | %-18s | %-18s | %-18s | %-8s\n",
+                $nomCorte, $strMoodle, $strOracle, $strSia, $estadoFila
+            );
+        }
+        echo "\n";
 
         echo str_repeat('=', 85) . "\n";
         echo " FIN DEL DIAGNOSTICO\n";

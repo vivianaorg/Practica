@@ -20,6 +20,16 @@ class Rubrica_model extends CI_Model
 
     private function _construir_condicion_materia($codMateria)
     {
+        $CI =& get_instance();
+        if (!isset($CI->Materia_model)) {
+            $CI->load->model('Materia_model');
+        }
+        $can = $CI->Materia_model->obtener_mapeo_canonical($codMateria);
+        if ($can !== null) {
+            $c = "'" . $can['cod_materia'] . "'";
+            return "LOWER(TRIM(COD_MATERIA)) IN ({$c})";
+        }
+
         $mLow = strtolower(trim($codMateria));
         $mClean = preg_replace('/[^a-z0-9]/', '', $mLow);
 
@@ -33,24 +43,6 @@ class Rubrica_model extends CI_Model
             $con115 = '115' . $mClean;
             $candidatos[] = "'" . $con115 . "'";
             $candidatos[] = "'curso_" . $con115 . "'";
-        }
-
-        if ($mClean === '5678' || $mClean === '1155678' || $mClean === 'matematicas') {
-            $candidatos[] = "'matematicas_115'";
-            $candidatos[] = "'matematicas'";
-            $candidatos[] = "'5678'";
-            $candidatos[] = "'1155678'";
-        } elseif ($mClean === '91011' || $mClean === '11591011' || $mClean === 'pruebapractica') {
-            $candidatos[] = "'prueba_practica'";
-            $candidatos[] = "'cursopruebapractica'";
-            $candidatos[] = "'91011'";
-            $candidatos[] = "'11591011'";
-        } elseif ($mClean === '1234' || $mClean === '1151234' || $mClean === 'biologia') {
-            $candidatos[] = "'biologia'";
-            $candidatos[] = "'1151234'";
-            $candidatos[] = "'1234'";
-        } elseif ($mClean === 'p' || $mClean === '115p' || $mClean === 'prueba') {
-            return "LOWER(TRIM(COD_MATERIA)) IN ('p', '115p', 'curso_p', 'curso_9', 'prueba')";
         }
 
         $candsList = implode(',', array_unique($candidatos));
