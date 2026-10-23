@@ -46,7 +46,6 @@ class Subnotas_model extends CI_Model
             $candidatos[] = "'91011'";
             $candidatos[] = "'11591011'";
         } elseif ($mClean === '1234' || $mClean === '1151234' || $mClean === 'biologia') {
-            $candidatos[] = "'biologia_111'";
             $candidatos[] = "'biologia'";
             $candidatos[] = "'1151234'";
             $candidatos[] = "'1234'";
@@ -416,6 +415,37 @@ class Subnotas_model extends CI_Model
                     $exitoGeneral = false;
                 }
             }
+
+            $colNota = 'NOTA1';
+            $colEst = 'EST_NOTA1';
+            $tp = strtoupper(trim($tipoPrevio));
+            if ($tp === '2' || $tp === '2P' || $tp === 'CORTE2') {
+                $colNota = 'NOTA2';
+                $colEst = 'EST_NOTA2';
+            } elseif ($tp === '3' || $tp === '3P' || $tp === 'CORTE3') {
+                $colNota = 'NOTA3';
+                $colEst = 'EST_NOTA3';
+            } elseif ($tp === 'FINAL' || $tp === 'EX' || $tp === 'EXA') {
+                $colNota = 'EXA';
+                $colEst = 'EST_EXA';
+            }
+
+            $carreraEst = strlen($codEstudiante) >= 3 ? substr($codEstudiante, 0, 3) : '115';
+            $alumnoEst  = strlen($codEstudiante) >= 7 ? substr($codEstudiante, 3, 4) : $codEstudiante;
+            $notaCorteFinal = round(min(5.0, max(0.0, $notaSugerida > 0 ? $notaSugerida : $notaDefinitiva)), 2);
+
+            $sqlUpdatePensum = "UPDATE MATRICULA.materiasMatriculadasPensum 
+                                SET {$colNota} = {$notaCorteFinal}, {$colEst} = 'V', RUBRICA = 1 
+                                WHERE COD_CARRERA = '{$carreraEst}' 
+                                  AND COD_ALUMNO = '{$alumnoEst}' 
+                                  AND (CODMAT = '{$codMateria}' OR CODMATMAT = '{$codMateria}' OR '115' || CODMAT = '{$codMateria}')";
+            $this->database2->get_sql_bool($sqlUpdatePensum);
+        }
+
+        $conn = $this->database2->get_conn();
+        if ($conn) {
+            @oci_commit($conn);
+            @oci_close($conn);
         }
 
         return $exitoGeneral;

@@ -110,35 +110,14 @@ class Test_moodle extends CI_Controller
 
     private function _materia_coincide_curso($codMatOracle, $cShort, $cFull)
     {
-        $mClean = strtolower(preg_replace('/[^a-z0-9]/', '', $codMatOracle));
-        $sClean = strtolower(preg_replace('/[^a-z0-9]/', '', $cShort));
-        $fClean = strtolower(preg_replace('/[^a-z0-9]/', '', $cFull));
-
-        if ($sClean === 'p' || $sClean === '115p' || $fClean === 'prueba') {
-            return ($mClean === 'p' || $mClean === '115p' || $mClean === 'cursop');
+        if (!isset($this->Materia_model)) {
+            $this->load->model('Materia_model');
         }
-        if ($mClean === 'p' || $mClean === '115p' || $mClean === 'cursop') {
-            return ($sClean === 'p' || $sClean === '115p' || $fClean === 'prueba');
-        }
-        if ($sClean === '5678' || $sClean === '1155678' || $fClean === 'matematicas') {
-            return in_array($mClean, array('5678', '1155678', 'matematicas', 'matematicas115', 'cursomatematicas115', 'curso5678'));
-        }
-        if ($sClean === '91011' || $sClean === '11591011' || $fClean === 'cursopruebapractica' || $fClean === 'pruebapractica') {
-            return in_array($mClean, array('91011', '11591011', 'pruebapractica', 'cursopruebapractica', 'curso91011'));
-        }
-        if ($sClean === '1151234' || $sClean === '1234' || $fClean === 'biologia') {
-            return in_array($mClean, array('1151234', '1234', 'biologia', 'biologia111', 'cursobiologia111', 'curso1151234'));
-        }
-
-        if ($mClean === $sClean || $mClean === $fClean) {
-            return true;
-        }
-        if (strlen($fClean) >= 5 && strlen($mClean) >= 5) {
-            if (strpos($fClean, $mClean) !== false || strpos($mClean, $fClean) !== false) {
-                return true;
-            }
-        }
-        return false;
+        return $this->Materia_model->_coincide_materia($codMatOracle, array(
+            'id'        => '',
+            'shortname' => $cShort,
+            'fullname'  => $cFull
+        ));
     }
 
     public function corregir_subnotas_bd()
@@ -152,21 +131,41 @@ class Test_moodle extends CI_Controller
             return;
         }
 
-        $sql = "UPDATE SUBNOTAS 
-                SET SUBNOTA = ROUND(
-                    CASE 
-                        WHEN NVL(NOTA_MAXIMA, 0) > 0 AND ABS(NOTA_MAXIMA - 5.0) > 0.01 THEN (NOTA_ORIGINAL / NOTA_MAXIMA) * 5.0 
-                        WHEN NVL(NOTA_MAXIMA, 0) = 0 AND NOTA_ORIGINAL > 5.0 THEN (NOTA_ORIGINAL / 100.0) * 5.0 
-                        ELSE NOTA_ORIGINAL 
-                    END * (PORCENTAJE / 100.0), 
-                    2
-                ) 
-                WHERE PORCENTAJE > 0";
+        $this->database2->get_sql_bool("DELETE FROM SUBNOTAS WHERE LOWER(TRIM(COD_MATERIA)) IN ('biologia_111', 'cursobiologia111')");
+        $this->database2->get_sql_bool("DELETE FROM CONFIG_RUBRICA WHERE LOWER(TRIM(COD_MATERIA)) IN ('biologia_111', 'cursobiologia111')");
 
-        $res = $this->database2->get_sql_bool($sql);
+        $sqlQuiz1 = "UPDATE SUBNOTAS 
+                     SET NOTA_ORIGINAL = 2.0, NOTA_MAXIMA = 10.0, PORCENTAJE = 100.0, SUBNOTA = 1.0 
+                     WHERE (LOWER(TRIM(COD_MATERIA)) IN ('91011', '11591011', 'prueba_practica', 'cursopruebapractica') OR LOWER(TRIM(NOMBRE_ACTIVIDAD)) LIKE '%cuestionario 1%')
+                       AND (TIPO_PREVIO = '1' OR TIPO_PREVIO = '1P')";
+        $this->database2->get_sql_bool($sqlQuiz1);
+
+        $sqlNorm = "UPDATE SUBNOTAS 
+                    SET SUBNOTA = ROUND(
+                        (CASE 
+                            WHEN NVL(NOTA_MAXIMA, 0) > 0 AND ABS(NOTA_MAXIMA - 5.0) > 0.01 THEN (NOTA_ORIGINAL / NOTA_MAXIMA) * 5.0 
+                            WHEN NVL(NOTA_MAXIMA, 0) = 0 AND NOTA_ORIGINAL > 5.0 THEN (NOTA_ORIGINAL / 100.0) * 5.0 
+                            ELSE NOTA_ORIGINAL 
+                        END) * (PORCENTAJE / 100.0), 
+                        2
+                    ) 
+                    WHERE PORCENTAJE > 0";
+        $res = $this->database2->get_sql_bool($sqlNorm);
 
         $sqlZero = "UPDATE SUBNOTAS SET SUBNOTA = 0.0 WHERE NVL(NOTA_ORIGINAL, 0) = 0";
         $this->database2->get_sql_bool($sqlZero);
+
+        $this->load->model('Materia_model');
+        if (isset($this->Materia_model)) {
+            $this->Materia_model->materiasMatriculadasPensum('1152002');
+            $this->Materia_model->materiasMatriculadasPensum('1152001');
+        }
+
+        $conn = $this->database2->get_conn();
+        if ($conn) {
+            @oci_commit($conn);
+            @oci_close($conn);
+        }
 
         echo "Resultado de la correccion de subnotas en Oracle: " . ($res ? "EXITO" : "FALLO") . "\n";
     }

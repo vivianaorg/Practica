@@ -10,13 +10,20 @@ class Materia_model extends CI_Model {
         }
     }
 
-    private function _limpiar_texto($str) {
-        $str = strtolower(trim($str));
+    public function _limpiar_texto($str) {
+        $str = trim((string)$str);
         $remplazos = array(
             'á'=>'a', 'é'=>'e', 'í'=>'i', 'ó'=>'o', 'ú'=>'u', 'ñ'=>'n',
-            'ä'=>'a', 'ë'=>'e', 'ï'=>'i', 'ö'=>'o', 'ü'=>'u'
+            'ä'=>'a', 'ë'=>'e', 'ï'=>'i', 'ö'=>'o', 'ü'=>'u',
+            'Á'=>'a', 'É'=>'e', 'Í'=>'i', 'Ó'=>'o', 'Ú'=>'u', 'Ñ'=>'n',
+            'Ä'=>'a', 'Ë'=>'e', 'Ï'=>'i', 'Ö'=>'o', 'Ü'=>'u',
+            "\xC3\x81" => 'a', "\xC3\x89" => 'e', "\xC3\x8D" => 'i', "\xC3\x93" => 'o', "\xC3\x9A" => 'u', "\xC3\x91" => 'n',
+            "\xC3\xA1" => 'a', "\xC3\xA9" => 'e', "\xC3\xAD" => 'i', "\xC3\xB3" => 'o', "\xC3\xBA" => 'u', "\xC3\xB1" => 'n',
+            "\xE1" => 'a', "\xE9" => 'e', "\xED" => 'i', "\xF3" => 'o', "\xFA" => 'u', "\xF1" => 'n',
+            "\xC1" => 'a', "\xC9" => 'e', "\xCD" => 'i', "\xD3" => 'o', "\xDA" => 'u', "\xD1" => 'n'
         );
         $str = strtr($str, $remplazos);
+        $str = strtolower($str);
         return preg_replace('/[^a-z0-9]/', '', $str);
     }
 
@@ -68,7 +75,7 @@ class Materia_model extends CI_Model {
         return $subnotas;
     }
 
-    private function _coincide_materia($subCodMateria, $curso) {
+    public function _coincide_materia($subCodMateria, $curso) {
         $subClean = $this->_limpiar_texto($subCodMateria);
         if (empty($subClean)) {
             return false;
@@ -79,64 +86,66 @@ class Materia_model extends CI_Model {
         $fullname  = isset($curso['fullname']) ? $curso['fullname'] : '';
         $snClean   = $this->_limpiar_texto($shortname);
         $fnClean   = $this->_limpiar_texto($fullname);
+        $idClean   = $this->_limpiar_texto($cid);
 
-        if ($snClean === 'p' || $snClean === '115p' || $fnClean === 'prueba') {
-            return ($subClean === 'p' || $subClean === '115p' || $subClean === 'cursop');
+        $gP = array('p', '115p', 'cursop', 'prueba', 'cursoprueba', 'curso9');
+        $gM = array('5678', '1155678', 'matematicas', 'cursomatematicas', 'matematicas115', 'cursomatematicas115', 'curso5678', 'curso1155678');
+        $gPP = array('91011', '11591011', 'pruebapractica', 'cursopruebapractica', 'cursopruebaprtica', 'curso91011', 'curso11591011', 'pruebapractica115', 'cursoprueba', 'prueba_practica');
+        $gB = array('1234', '1151234', 'biologia', 'cursobiologia', 'curso1234', 'curso1151234');
+
+        if ($subClean === 'biologia111' || $subClean === 'cursobiologia111') {
+            return false;
         }
 
-        if ($subClean === 'p' || $subClean === '115p' || $subClean === 'cursop') {
-            return ($snClean === 'p' || $snClean === '115p' || $fnClean === 'prueba');
-        }
-
-        if ($snClean === '5678' || $snClean === '1155678' || $fnClean === 'matematicas') {
-            if (in_array($subClean, array('5678', '1155678', 'matematicas', 'matematicas115', 'cursomatematicas115', 'curso5678'))) {
-                return true;
-            }
-        }
-
-        if ($snClean === '91011' || $snClean === '11591011' || $fnClean === 'cursopruebapractica' || $fnClean === 'pruebapractica') {
-            if (in_array($subClean, array('91011', '11591011', 'pruebapractica', 'cursopruebapractica', 'curso91011'))) {
-                return true;
-            }
-        }
-
-        if ($snClean === '1151234' || $snClean === '1234' || $fnClean === 'biologia') {
-            if (in_array($subClean, array('1151234', '1234', 'biologia', 'biologia111', 'cursobiologia111', 'curso1151234'))) {
-                return true;
-            }
-        }
-
-        $idClean = $this->_limpiar_texto($cid);
-
-        $directos = array($idClean, 'curso' . $idClean, $snClean);
+        $targets = array_unique(array_filter(array($snClean, $fnClean, $idClean, str_replace('curso', '', $fnClean))));
         if (strpos($shortname, '-') !== false) {
             $p = explode('-', $shortname, 2);
-            $directos[] = $this->_limpiar_texto($p[0]);
+            $targets[] = $this->_limpiar_texto($p[0]);
             if (preg_match('/^115(\d+)$/', trim($p[0]), $mP)) {
-                $directos[] = $this->_limpiar_texto($mP[1]);
+                $targets[] = $this->_limpiar_texto($mP[1]);
             }
         } elseif (preg_match('/^115(\d+)$/', $shortname, $mP)) {
-            $directos[] = $this->_limpiar_texto($mP[1]);
+            $targets[] = $this->_limpiar_texto($mP[1]);
         }
         if (!empty($curso['idnumber'])) {
-            $directos[] = $this->_limpiar_texto($curso['idnumber']);
+            $targets[] = $this->_limpiar_texto($curso['idnumber']);
         }
+        $targets = array_unique(array_filter($targets));
 
-        foreach (array_unique(array_filter($directos)) as $d) {
-            if ($subClean === $d) {
-                return true;
+        if (in_array($subClean, $gP)) {
+            foreach ($targets as $t) {
+                if (in_array($t, $gP)) { return true; }
+            }
+        }
+        if (in_array($subClean, $gM)) {
+            foreach ($targets as $t) {
+                if (in_array($t, $gM)) { return true; }
+            }
+        }
+        if (in_array($subClean, $gPP)) {
+            foreach ($targets as $t) {
+                if (in_array($t, $gPP)) { return true; }
+            }
+        }
+        if (in_array($subClean, $gB)) {
+            foreach ($targets as $t) {
+                if (in_array($t, $gB)) { return true; }
             }
         }
 
-        $fnSinCurso = str_replace('curso', '', $fnClean);
-
-        if ($subClean === $fnClean || $subClean === $fnSinCurso) {
-            return true;
-        }
-
-        if (strlen($fnSinCurso) >= 5 && strlen($subClean) >= 5) {
-            if (strpos($subClean, $fnSinCurso) !== false || strpos($fnSinCurso, $subClean) !== false) {
+        foreach ($targets as $t) {
+            if ($subClean === $t) {
                 return true;
+            }
+            $subSin115 = (strpos($subClean, '115') === 0 && strlen($subClean) > 3) ? substr($subClean, 3) : $subClean;
+            $tSin115   = (strpos($t, '115') === 0 && strlen($t) > 3) ? substr($t, 3) : $t;
+            if (is_numeric($subSin115) && is_numeric($tSin115) && $subSin115 === $tSin115) {
+                return true;
+            }
+            if (strlen($subClean) >= 5 && strlen($t) >= 5) {
+                if (strpos($subClean, $t) !== false || strpos($t, $subClean) !== false) {
+                    return true;
+                }
             }
         }
 
@@ -146,12 +155,12 @@ class Materia_model extends CI_Model {
     private function _normalizar_nota($n) {
         $f = floatval($n);
         if ($f > 5.0 && $f <= 100.0) {
-            return round(($f / 100.0) * 5.0, 1);
+            return round(($f / 100.0) * 5.0, 2);
         }
         if ($f > 100.0) {
             return 5.0;
         }
-        return round(min(5.0, max(0.0, $f)), 1);
+        return round(min(5.0, max(0.0, $f)), 2);
     }
 
     private function _calcular_subnotas_materia($c, $todasSubnotas, $todasRubricas) {
@@ -279,9 +288,73 @@ class Materia_model extends CI_Model {
         );
     }
 
+    public function persistir_materia_pensum($codigo, $codCarrera, $codAlumno, $codMateria, $nombreMateria, $grupo, $calc, $idMicro = 0, $email = 'docente@ufps.edu.co') {
+        if (!isset($this->database2)) {
+            return;
+        }
+        $conn = $this->database2->get_conn();
+        if (!$conn) {
+            return;
+        }
+
+        $rubVal = $calc['tiene_rubrica'] ? 1 : 0;
+        $n1 = (float)$calc['nota1'];
+        $e1 = $calc['est_nota1'];
+        $n2 = (float)$calc['nota2'];
+        $e2 = $calc['est_nota2'];
+        $n3 = (float)$calc['nota3'];
+        $e3 = $calc['est_nota3'];
+        $ex = (float)$calc['exa'];
+        $eEx = $calc['est_exa'];
+        $def = (float)$calc['def'];
+
+        $nomEsc = str_replace("'", "''", $nombreMateria);
+        $codEsc = str_replace("'", "''", $codMateria);
+
+        $sqlUpdate = "UPDATE MATRICULA.materiasMatriculadasPensum 
+                      SET NOTA1 = {$n1}, EST_NOTA1 = '{$e1}',
+                          NOTA2 = {$n2}, EST_NOTA2 = '{$e2}',
+                          NOTA3 = {$n3}, EST_NOTA3 = '{$e3}',
+                          EXA = {$ex}, EST_EXA = '{$eEx}',
+                          DEF = {$def},
+                          RUBRICA = {$rubVal}
+                      WHERE COD_CARRERA = '{$codCarrera}' 
+                        AND COD_ALUMNO = '{$codAlumno}' 
+                        AND (CODMAT = '{$codEsc}' OR CODMATMAT = '{$codEsc}' OR LOWER(TRIM(NOMBREMAT)) = LOWER(TRIM('{$nomEsc}')))";
+        $stid = @oci_parse($conn, $sqlUpdate);
+        $ok = @oci_execute($stid, OCI_NO_AUTO_COMMIT);
+        $rowsAff = @oci_num_rows($stid);
+        @oci_free_statement($stid);
+
+        if (!$ok || $rowsAff === 0) {
+            $sqlIns = "INSERT INTO MATRICULA.materiasMatriculadasPensum (
+                COD_CARRERA, COD_ALUMNO, CODCARMAT, CODMAT, CODMATMAT, NOMBREMAT,
+                GRUPO, CREDITOS, SEMESTRE, DEF, ID_MICRO, CONTENIDO, BIBLIOGRAFIA,
+                EMAIL, SECCIONAL, RUBRICA,
+                NOTA1, EST_NOTA1, NOTA2, EST_NOTA2, NOTA3, EST_NOTA3,
+                EXA, EST_EXA, HAB, EST_HAB, OPC, EST_OPC
+            ) VALUES (
+                '{$codCarrera}', '{$codAlumno}', '{$codCarrera}', '{$codEsc}', '{$codEsc}', '{$nomEsc}',
+                '{$grupo}', 3, 1, {$def}, {$idMicro}, 'Contenido Moodle', 'Bibliografia Moodle',
+                '{$email}', '01', {$rubVal},
+                {$n1}, '{$e1}', {$n2}, '{$e2}', {$n3}, '{$e3}',
+                {$ex}, '{$eEx}', 0.0, 'S', 0.0, 'S'
+            )";
+            $stidIns = @oci_parse($conn, $sqlIns);
+            @oci_execute($stidIns, OCI_NO_AUTO_COMMIT);
+            @oci_free_statement($stidIns);
+        }
+        @oci_commit($conn);
+        @oci_close($conn);
+    }
+
     public function materiasMatriculadasPensum($codigo) {
         $nrows = 0;
         $output = array();
+
+        $carreraEst = strlen($codigo) >= 3 ? substr($codigo, 0, 3) : '115';
+        $alumnoEst  = strlen($codigo) >= 7 ? substr($codigo, 3, 4) : $codigo;
+        $cleanCod   = strtolower(trim($codigo));
 
         $sql = "SELECT * FROM matricula.materiasMatriculadasPensum 
                 WHERE COD_ALUMNO=SUBSTR('{$codigo}','4','4') 
@@ -290,9 +363,6 @@ class Materia_model extends CI_Model {
         if (isset($this->database2)) {
             $this->database2->get_sql($sql, $nrows, $output);
         }
-
-        $carreraEst = strlen($codigo) >= 3 ? substr($codigo, 0, 3) : '115';
-        $cleanCod = strtolower(trim($codigo));
 
         $candsEst = array(
             "'{$cleanCod}'",
@@ -352,8 +422,11 @@ class Materia_model extends CI_Model {
             for ($i = 0; $i < $total; $i++) {
                 $cMat = isset($output['CODMAT'][$i]) ? $output['CODMAT'][$i] : '';
                 $nMat = isset($output['NOMBREMAT'][$i]) ? $output['NOMBREMAT'][$i] : '';
+                $gr   = isset($output['GRUPO'][$i]) ? $output['GRUPO'][$i] : 'A';
+                $idM  = isset($output['ID_MICRO'][$i]) ? (int)$output['ID_MICRO'][$i] : 0;
+                $em   = isset($output['EMAIL'][$i]) ? $output['EMAIL'][$i] : 'docente@ufps.edu.co';
 
-                $curMatch = array('id' => '', 'shortname' => $cMat, 'fullname' => $nMat);
+                $curMatch = array('id' => $idM, 'shortname' => $cMat, 'fullname' => $nMat);
                 foreach ($cursosMoodle as $cm) {
                     if ($this->_coincide_materia($cMat, $cm) || $this->_coincide_materia($nMat, $cm)) {
                         $curMatch = $cm;
@@ -388,6 +461,8 @@ class Materia_model extends CI_Model {
                     $defRaw = isset($output['DEF'][$i]) ? floatval($output['DEF'][$i]) : 0.0;
                     $output['DEF'][$i]       = $this->_normalizar_nota($defRaw);
                 }
+
+                $this->persistir_materia_pensum($codigo, $carreraEst, $alumnoEst, $cMat, $nMat, $gr, $calc, $idM, $em);
             }
         } elseif (!empty($cursosMoodle)) {
             $output = array(
@@ -468,6 +543,8 @@ class Materia_model extends CI_Model {
                     'FECHA_INI'   => array('Aula Virtual Activa'),
                     'URL_REUNION' => array('http://localhost:10000/course/view.php?id=' . $c['id'])
                 );
+
+                $this->persistir_materia_pensum($codigo, $codCarrera, $alumnoEst, $codMateria, $fullname, $grupo, $calc, (int)$c['id'], $profEmail);
             }
         }
 

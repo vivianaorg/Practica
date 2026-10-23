@@ -46,7 +46,6 @@ class Rubrica_model extends CI_Model
             $candidatos[] = "'91011'";
             $candidatos[] = "'11591011'";
         } elseif ($mClean === '1234' || $mClean === '1151234' || $mClean === 'biologia') {
-            $candidatos[] = "'biologia_111'";
             $candidatos[] = "'biologia'";
             $candidatos[] = "'1151234'";
             $candidatos[] = "'1234'";
