@@ -351,6 +351,15 @@ class Subnotas_model extends CI_Model
             return false;
         }
 
+        $CI =& get_instance();
+        if (!isset($CI->Materia_model)) {
+            $CI->load->model('Materia_model');
+        }
+        $can = $CI->Materia_model->obtener_mapeo_canonical($codMateria);
+        if ($can !== null) {
+            $codMateria = $can['cod_materia'];
+        }
+
         $exitoGeneral = true;
 
         foreach ($listaEstudiantes as $est) {
@@ -408,10 +417,6 @@ class Subnotas_model extends CI_Model
                 }
             }
 
-            $CI =& get_instance();
-            if (!isset($CI->Materia_model)) {
-                $CI->load->model('Materia_model');
-            }
             if (isset($CI->Materia_model)) {
                 $CI->Materia_model->materiasMatriculadasPensum($codEstudiante);
             }

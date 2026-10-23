@@ -145,7 +145,34 @@ class Calculo_notas_model extends CI_Model
             $desglose = array();
             $notaSugerida = 0.0;
 
-            if ($rubricaValida) {
+            if ($yaGuardado && isset($subnotasGuardadas[$codEstudiante]['items'])) {
+                $subItems = $subnotasGuardadas[$codEstudiante]['items'];
+                $desgloseGuardado = array();
+                $notaSugGuardada = 0.0;
+                foreach ($subItems as $sItem) {
+                    $orig = isset($sItem->NOTA_ORIGINAL) ? (float)$sItem->NOTA_ORIGINAL : 0.0;
+                    $max  = isset($sItem->NOTA_MAXIMA) ? (float)$sItem->NOTA_MAXIMA : 5.0;
+                    $pct  = isset($sItem->PORCENTAJE) ? (float)$sItem->PORCENTAJE : 0.0;
+                    $sub  = isset($sItem->SUBNOTA) ? (float)$sItem->SUBNOTA : 0.0;
+                    $norm = ($max > 0 && abs($max - 5.0) > 0.01) ? round(($orig / $max) * 5.0, 2) : $orig;
+                    $notaSugGuardada += $sub;
+
+                    $desgloseGuardado[] = array(
+                        'id_actividad_moodle' => isset($sItem->ID_ACTIVIDAD_MOODLE) ? (int)$sItem->ID_ACTIVIDAD_MOODLE : 0,
+                        'nombre_actividad'    => isset($sItem->NOMBRE_ACTIVIDAD) ? $sItem->NOMBRE_ACTIVIDAD : '',
+                        'tipo_actividad'      => 'rubrica',
+                        'es_manual'           => ((int)$sItem->ID_ACTIVIDAD_MOODLE === 0),
+                        'nota_original'       => $orig,
+                        'nota_maxima'         => $max,
+                        'nota_normalizada'    => $norm,
+                        'porcentaje'          => $pct,
+                        'subnota'             => $sub,
+                        'presento'            => ($orig > 0),
+                    );
+                }
+                $desglose = $desgloseGuardado;
+                $notaSugerida = min(5.0, max(0.0, round($notaSugGuardada, 2)));
+            } elseif ($rubricaValida) {
                 foreach ($rubrica as $itemRubrica) {
                     $idAct   = (int)$itemRubrica->ID_ACTIVIDAD_MOODLE;
                     $nomAct  = trim($itemRubrica->NOMBRE_ACTIVIDAD);
@@ -158,19 +185,7 @@ class Calculo_notas_model extends CI_Model
                     $notaMax = 5.0;
                     $presento = false;
 
-                    if ($esManual) {
-                        if ($yaGuardado && isset($subnotasGuardadas[$codEstudiante]['items'])) {
-                            foreach ($subnotasGuardadas[$codEstudiante]['items'] as $sItem) {
-                                $sNom = isset($sItem->NOMBRE_ACTIVIDAD) ? trim($sItem->NOMBRE_ACTIVIDAD) : '';
-                                if (strcasecmp($sNom, $nomAct) === 0 || ((int)$sItem->ID_ACTIVIDAD_MOODLE === 0 && (int)$idAct === 0 && count($rubrica) === 1)) {
-                                    $notaOriginal = isset($sItem->NOTA_ORIGINAL) ? (float)$sItem->NOTA_ORIGINAL : 0.0;
-                                    $notaMax = isset($sItem->NOTA_MAXIMA) ? (float)$sItem->NOTA_MAXIMA : 5.0;
-                                    $presento = ($notaOriginal > 0);
-                                    break;
-                                }
-                            }
-                        }
-                    } else {
+                    if (!$esManual) {
                         $calEncontrada = null;
                         if (isset($calificacionesPorId[$idAct])) {
                             $calEncontrada = $calificacionesPorId[$idAct];
@@ -519,92 +534,6 @@ class Calculo_notas_model extends CI_Model
                         continue;
                     }
                 }
-
-                $actsMatching = array();
-                if (!empty($moodleActs) && isset($mapaPalabrasCortes[$cClave])) {
-                    foreach ($moodleActs as $mAct) {
-                        $mNom = strtolower(trim(isset($mAct['nombre_actividad']) ? $mAct['nombre_actividad'] : ''));
-                        foreach ($mapaPalabrasCortes[$cClave] as $kw) {
-                            if (strpos($mNom, $kw) !== false) {
-                                $actsMatching[] = $mAct;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (!empty($actsMatching)) {
-                    $totCount = count($actsMatching);
-                    $porcEach = $totCount > 0 ? round(100.0 / $totCount, 1) : 0;
-                    $itemsMoodleDyn = array();
-                    $notaSugDyn = 0.0;
-
-                    foreach ($actsMatching as $mAct) {
-                        $notaOrig = isset($mAct['nota_final']) ? (float)$mAct['nota_final'] : 0.0;
-                        $notaMax  = isset($mAct['nota_maxima']) ? (float)$mAct['nota_maxima'] : 5.0;
-                        $notaNorm = ($notaMax > 0 && abs($notaMax - 5.0) > 0.01) ? round(($notaOrig / $notaMax) * 5.0, 2) : $notaOrig;
-                        $subnota  = round($notaNorm * ($porcEach / 100.0), 2);
-                        $notaSugDyn += $subnota;
-
-                        $itemsMoodleDyn[] = array(
-                            'ID_ACTIVIDAD_MOODLE' => isset($mAct['id_actividad']) ? (int)$mAct['id_actividad'] : (isset($mAct['cmid']) ? (int)$mAct['cmid'] : 0),
-                            'id_actividad_moodle' => isset($mAct['id_actividad']) ? (int)$mAct['id_actividad'] : (isset($mAct['cmid']) ? (int)$mAct['cmid'] : 0),
-                            'NOMBRE_ACTIVIDAD'    => isset($mAct['nombre_actividad']) ? $mAct['nombre_actividad'] : 'Actividad Moodle',
-                            'nombre_actividad'    => isset($mAct['nombre_actividad']) ? $mAct['nombre_actividad'] : 'Actividad Moodle',
-                            'NOTA_ORIGINAL'       => $notaOrig,
-                            'nota_original'       => $notaOrig,
-                            'NOTA_MAXIMA'         => $notaMax,
-                            'nota_maxima'         => $notaMax,
-                            'PORCENTAJE'          => $porcEach,
-                            'porcentaje'          => $porcEach,
-                            'SUBNOTA'             => $subnota,
-                            'subnota'             => $subnota,
-                            'ESTADO'              => 'MOODLE'
-                        );
-                    }
-
-                    $desgloseFinal[$cClave] = $itemsMoodleDyn;
-                    $notasCortes[$cClave] = min(5.0, max(0.0, round($notaSugDyn, 2)));
-                }
-            }
-
-            $algunCorteTieneDatos = false;
-            foreach ($cortesClaves as $cc) {
-                if (!empty($desgloseFinal[$cc])) {
-                    $algunCorteTieneDatos = true;
-                    break;
-                }
-            }
-            if (!$algunCorteTieneDatos && !empty($moodleActs)) {
-                $totCount = count($moodleActs);
-                $porcEach = $totCount > 0 ? round(100.0 / $totCount, 1) : 0;
-                $itemsGen = array();
-                $sumGen = 0.0;
-                foreach ($moodleActs as $mAct) {
-                    $notaOrig = isset($mAct['nota_final']) ? (float)$mAct['nota_final'] : 0.0;
-                    $notaMax  = isset($mAct['nota_maxima']) ? (float)$mAct['nota_maxima'] : 5.0;
-                    $notaNorm = ($notaMax > 0 && abs($notaMax - 5.0) > 0.01) ? round(($notaOrig / $notaMax) * 5.0, 2) : $notaOrig;
-                    $subnota  = round($notaNorm * ($porcEach / 100.0), 2);
-                    $sumGen += $subnota;
-
-                    $itemsGen[] = array(
-                        'ID_ACTIVIDAD_MOODLE' => isset($mAct['id_actividad']) ? (int)$mAct['id_actividad'] : (isset($mAct['cmid']) ? (int)$mAct['cmid'] : 0),
-                        'id_actividad_moodle' => isset($mAct['id_actividad']) ? (int)$mAct['id_actividad'] : (isset($mAct['cmid']) ? (int)$mAct['cmid'] : 0),
-                        'NOMBRE_ACTIVIDAD'    => isset($mAct['nombre_actividad']) ? $mAct['nombre_actividad'] : 'Actividad Moodle',
-                        'nombre_actividad'    => isset($mAct['nombre_actividad']) ? $mAct['nombre_actividad'] : 'Actividad Moodle',
-                        'NOTA_ORIGINAL'       => $notaOrig,
-                        'nota_original'       => $notaOrig,
-                        'NOTA_MAXIMA'         => $notaMax,
-                        'nota_maxima'         => $notaMax,
-                        'PORCENTAJE'          => $porcEach,
-                        'porcentaje'          => $porcEach,
-                        'SUBNOTA'             => $subnota,
-                        'subnota'             => $subnota,
-                        'ESTADO'              => 'MOODLE'
-                    );
-                }
-                $desgloseFinal['1'] = $itemsGen;
-                $notasCortes['1'] = min(5.0, max(0.0, round($sumGen, 2)));
             }
 
             $n1 = $notasCortes['1'];

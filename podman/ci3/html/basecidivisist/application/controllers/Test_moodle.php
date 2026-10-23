@@ -487,10 +487,10 @@ class Test_moodle extends CI_Controller
             '115p'     => array('nombre' => 'Prueba',                 'curso_id' => 5, 'shortname' => 'p')
         );
 
-        echo sprintf("%-24s | %-18s | %-18s | %-18s | %-8s\n",
-            "MATERIA", "MOODLE (N1,2,3,F,D)", "ORACLE (C1,2,3,F,D)", "SIA (N1,2,3,EX,D)", "ESTADO"
+        echo sprintf("%-24s | %-18s | %-18s | %-18s | %-12s | %-8s\n",
+            "MATERIA", "MOODLE (N1,2,3,F,D)", "ORACLE (C1,2,3,F,D)", "SIA (N1,2,3,EX,D)", "FUENTE NOTAS", "ESTADO"
         );
-        echo str_repeat('-', 96) . "\n";
+        echo str_repeat('-', 112) . "\n";
 
         foreach ($materiasComparar as $codMatKey => $matInfo) {
             $curM = null;
@@ -552,6 +552,15 @@ class Test_moodle extends CI_Controller
             }
             $strSia = sprintf("%.1f, %.1f, %.1f, %.1f, %.1f", $sN1, $sN2, $sN3, $sExa, $sDef);
 
+            $fuenteNota = "SIN_NOTAS";
+            if (count($subsMat) > 0) {
+                $fuenteNota = "SUBNOTAS";
+            } elseif ($mDef > 0) {
+                $fuenteNota = "MOODLE";
+            } elseif ($sDef > 0) {
+                $fuenteNota = "SIA";
+            }
+
             $estadoFila = "[OK]";
             if (abs($oC1 - $sN1) > 0.05 || abs($oC2 - $sN2) > 0.05 || abs($oC3 - $sN3) > 0.05 || abs($oExa - $sExa) > 0.05 || abs($oDef - $sDef) > 0.05) {
                 $estadoFila = "[ALERTA]";
@@ -564,8 +573,8 @@ class Test_moodle extends CI_Controller
             }
 
             $nomCorte = substr($matInfo['nombre'], 0, 24);
-            echo sprintf("%-24s | %-18s | %-18s | %-18s | %-8s\n",
-                $nomCorte, $strMoodle, $strOracle, $strSia, $estadoFila
+            echo sprintf("%-24s | %-18s | %-18s | %-18s | %-12s | %-8s\n",
+                $nomCorte, $strMoodle, $strOracle, $strSia, $fuenteNota, $estadoFila
             );
         }
         echo "\n";

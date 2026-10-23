@@ -265,10 +265,12 @@ class Materia_model extends CI_Model {
         if ($cortesFinales['3']['tiene']) { $nota3 = $cortesFinales['3']['nota']; $estNota3 = 'V'; }
         if ($cortesFinales['FINAL']['tiene']) { $exa = $cortesFinales['FINAL']['nota']; $estExa = 'V'; }
 
-        if (!$cortesFinales['1']['tiene'] && !empty($c['tiene_nota1'])) { $nota1 = $this->_normalizar_nota($c['nota1']); $estNota1 = 'V'; }
-        if (!$cortesFinales['2']['tiene'] && !empty($c['tiene_nota2'])) { $nota2 = $this->_normalizar_nota($c['nota2']); $estNota2 = 'V'; }
-        if (!$cortesFinales['3']['tiene'] && !empty($c['tiene_nota3'])) { $nota3 = $this->_normalizar_nota($c['nota3']); $estNota3 = 'V'; }
-        if (!$cortesFinales['FINAL']['tiene'] && !empty($c['tiene_exa'])) { $exa = $this->_normalizar_nota($c['exa']); $estExa = 'V'; }
+        if (!$tieneConfigRubrica && !$tieneSubnotas) {
+            if (!empty($c['tiene_nota1'])) { $nota1 = $this->_normalizar_nota($c['nota1']); $estNota1 = 'V'; }
+            if (!empty($c['tiene_nota2'])) { $nota2 = $this->_normalizar_nota($c['nota2']); $estNota2 = 'V'; }
+            if (!empty($c['tiene_nota3'])) { $nota3 = $this->_normalizar_nota($c['nota3']); $estNota3 = 'V'; }
+            if (!empty($c['tiene_exa']))   { $exa   = $this->_normalizar_nota($c['exa']);   $estExa   = 'V'; }
+        }
 
         $def = 0.0;
         if ($tieneSubnotas) {
