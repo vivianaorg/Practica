@@ -82,6 +82,8 @@ class Materia_model extends CI_Model {
                 'curso_id'       => 2,
                 'shortname'      => '1151234',
                 'fullname'       => 'Biología',
+                'fullname_upper' => 'BIOLOGIA',
+                'nombre_limpio'  => 'biologia',
                 'cod_materia'    => '1151234',
                 'sia_carrera'    => '115',
                 'sia_codmat'     => '1234',
@@ -94,6 +96,8 @@ class Materia_model extends CI_Model {
                 'curso_id'       => 3,
                 'shortname'      => '1155678',
                 'fullname'       => 'Matemáticas',
+                'fullname_upper' => 'MATEMATICAS',
+                'nombre_limpio'  => 'matematicas',
                 'cod_materia'    => '1155678',
                 'sia_carrera'    => '115',
                 'sia_codmat'     => '5678',
@@ -106,6 +110,8 @@ class Materia_model extends CI_Model {
                 'curso_id'       => 4,
                 'shortname'      => '91011',
                 'fullname'       => 'Curso prueba práctica',
+                'fullname_upper' => 'CURSO PRUEBA PRACTICA',
+                'nombre_limpio'  => 'pruebapractica',
                 'cod_materia'    => '11591011',
                 'sia_carrera'    => '115',
                 'sia_codmat'     => '91011',
@@ -118,6 +124,8 @@ class Materia_model extends CI_Model {
                 'curso_id'       => 5,
                 'shortname'      => 'p',
                 'fullname'       => 'Prueba',
+                'fullname_upper' => 'PRUEBA',
+                'nombre_limpio'  => 'prueba',
                 'cod_materia'    => '115p',
                 'sia_carrera'    => '115',
                 'sia_codmat'     => 'p',
@@ -274,13 +282,7 @@ class Materia_model extends CI_Model {
 
         $def = 0.0;
         if ($tieneSubnotas) {
-            $acumulado = 0.0;
-            $peso = 0.0;
-            if ($estNota1 === 'V') { $acumulado += $nota1 * 0.233; $peso += 23.3; }
-            if ($estNota2 === 'V') { $acumulado += $nota2 * 0.233; $peso += 23.3; }
-            if ($estNota3 === 'V') { $acumulado += $nota3 * 0.234; $peso += 23.4; }
-            if ($estExa   === 'V') { $acumulado += $exa   * 0.300; $peso += 30.0; }
-            $def = ($peso > 0) ? round($acumulado, 2) : 0.0;
+            $def = round((($nota1 + $nota2 + $nota3) / 3.0) * 0.70 + ($exa * 0.30), 2);
         } else {
             $sum = 0.0; $cnt = 0;
             if ($estNota1 === 'V') { $sum += $nota1; $cnt++; }
@@ -329,25 +331,51 @@ class Materia_model extends CI_Model {
         $eEx = $calc['est_exa'];
         $def = (float)$calc['def'];
 
+        $can = $this->obtener_mapeo_canonical($codMateria);
+        if ($can === null) {
+            $can = $this->obtener_mapeo_canonical($nombreMateria);
+        }
+
         $nomEsc = str_replace("'", "''", $nombreMateria);
         $codEsc = str_replace("'", "''", $codMateria);
+        $carrEsc = str_replace("'", "''", $codCarrera);
+        $alumEsc = str_replace("'", "''", $codAlumno);
+        $cleanCod = str_replace("'", "''", $codigo);
 
-        $sqlUpdate = "UPDATE MATRICULA.materiasMatriculadasPensum 
-                      SET NOTA1 = {$n1}, EST_NOTA1 = '{$e1}',
-                          NOTA2 = {$n2}, EST_NOTA2 = '{$e2}',
-                          NOTA3 = {$n3}, EST_NOTA3 = '{$e3}',
-                          EXA = {$ex}, EST_EXA = '{$eEx}',
-                          DEF = {$def},
-                          RUBRICA = {$rubVal}
-                      WHERE COD_CARRERA = '{$codCarrera}' 
-                        AND COD_ALUMNO = '{$codAlumno}' 
-                        AND (CODMAT = '{$codEsc}' OR CODMATMAT = '{$codEsc}' OR LOWER(TRIM(NOMBREMAT)) = LOWER(TRIM('{$nomEsc}')))";
+        if ($can !== null) {
+            $siaCod = $can['sia_codmat'];
+            $siaNom = $can['fullname_upper'];
+            $sqlUpdate = "UPDATE MATRICULA.materiasMatriculadasPensum 
+                          SET NOTA1 = {$n1}, EST_NOTA1 = '{$e1}',
+                              NOTA2 = {$n2}, EST_NOTA2 = '{$e2}',
+                              NOTA3 = {$n3}, EST_NOTA3 = '{$e3}',
+                              EXA = {$ex}, EST_EXA = '{$eEx}',
+                              DEF = {$def},
+                              RUBRICA = {$rubVal}
+                          WHERE (COD_ALUMNO = '{$alumEsc}' OR COD_ALUMNO = '{$cleanCod}')
+                            AND (CODMAT IN ('{$siaCod}', '{$can['sia_codigo']}', '{$can['cod_materia']}', '{$codEsc}')
+                                 OR CODMATMAT IN ('{$siaCod}', '{$can['sia_codigo']}', '{$can['cod_materia']}', '{$codEsc}')
+                                 OR LOWER(TRIM(NOMBREMAT)) LIKE '%{$can['nombre_limpio']}%')";
+        } else {
+            $sqlUpdate = "UPDATE MATRICULA.materiasMatriculadasPensum 
+                          SET NOTA1 = {$n1}, EST_NOTA1 = '{$e1}',
+                              NOTA2 = {$n2}, EST_NOTA2 = '{$e2}',
+                              NOTA3 = {$n3}, EST_NOTA3 = '{$e3}',
+                              EXA = {$ex}, EST_EXA = '{$eEx}',
+                              DEF = {$def},
+                              RUBRICA = {$rubVal}
+                          WHERE (COD_ALUMNO = '{$alumEsc}' OR COD_ALUMNO = '{$cleanCod}')
+                            AND (CODMAT = '{$codEsc}' OR CODMATMAT = '{$codEsc}' OR LOWER(TRIM(NOMBREMAT)) = LOWER(TRIM('{$nomEsc}')))";
+        }
+
         $stid = @oci_parse($conn, $sqlUpdate);
         $ok = @oci_execute($stid, OCI_NO_AUTO_COMMIT);
         $rowsAff = @oci_num_rows($stid);
         @oci_free_statement($stid);
 
         if (!$ok || $rowsAff === 0) {
+            $insCodMat = ($can !== null) ? $can['sia_codmat'] : $codEsc;
+            $insNomMat = ($can !== null) ? $can['fullname_upper'] : $nomEsc;
             $sqlIns = "INSERT INTO MATRICULA.materiasMatriculadasPensum (
                 COD_CARRERA, COD_ALUMNO, CODCARMAT, CODMAT, CODMATMAT, NOMBREMAT,
                 GRUPO, CREDITOS, SEMESTRE, DEF, ID_MICRO, CONTENIDO, BIBLIOGRAFIA,
@@ -355,7 +383,7 @@ class Materia_model extends CI_Model {
                 NOTA1, EST_NOTA1, NOTA2, EST_NOTA2, NOTA3, EST_NOTA3,
                 EXA, EST_EXA, HAB, EST_HAB, OPC, EST_OPC
             ) VALUES (
-                '{$codCarrera}', '{$codAlumno}', '{$codCarrera}', '{$codEsc}', '{$codEsc}', '{$nomEsc}',
+                '{$carrEsc}', '{$alumEsc}', '{$carrEsc}', '{$insCodMat}', '{$insCodMat}', '{$insNomMat}',
                 '{$grupo}', 3, 1, {$def}, {$idMicro}, 'Contenido Moodle', 'Bibliografia Moodle',
                 '{$email}', '01', {$rubVal},
                 {$n1}, '{$e1}', {$n2}, '{$e2}', {$n3}, '{$e3}',
@@ -378,8 +406,8 @@ class Materia_model extends CI_Model {
         $cleanCod   = strtolower(trim($codigo));
 
         $sql = "SELECT * FROM matricula.materiasMatriculadasPensum 
-                WHERE COD_ALUMNO=SUBSTR('{$codigo}','4','4') 
-                  AND COD_CARRERA=SUBSTR('{$codigo}','1','3')";
+                WHERE (COD_ALUMNO=SUBSTR('{$codigo}','4','4') OR COD_ALUMNO='{$codigo}' OR COD_ALUMNO='{$cleanCod}') 
+                  AND (COD_CARRERA=SUBSTR('{$codigo}','1','3') OR COD_CARRERA='115')";
 
         if (isset($this->database2)) {
             $this->database2->get_sql($sql, $nrows, $output);
@@ -388,13 +416,16 @@ class Materia_model extends CI_Model {
         $candsEst = array(
             "'{$cleanCod}'",
             "'" . strtoupper($cleanCod) . "'",
-            "'{$codigo}'"
+            "'{$codigo}'",
+            "'{$alumnoEst}'"
         );
-        if ($cleanCod === '1152002' || $cleanCod === 'viviana') {
+        if ($cleanCod === '1152002' || $cleanCod === 'viviana' || $cleanCod === '2002') {
             $candsEst[] = "'1152002'";
+            $candsEst[] = "'2002'";
             $candsEst[] = "'viviana'";
-        } elseif ($cleanCod === '1152001' || $cleanCod === 'jorge' || $cleanCod === 'jorgeandresfs') {
+        } elseif ($cleanCod === '1152001' || $cleanCod === 'jorge' || $cleanCod === 'jorgeandresfs' || $cleanCod === '2001') {
             $candsEst[] = "'1152001'";
+            $candsEst[] = "'2001'";
             $candsEst[] = "'jorge'";
             $candsEst[] = "'jorgeandresfs'";
         }
@@ -436,140 +467,132 @@ class Materia_model extends CI_Model {
             $this->database2->get_obj_array("SELECT COD_MATERIA, GRUPO, SEMESTRE, TIPO_PREVIO FROM CONFIG_RUBRICA", $todasRubricas);
         }
 
-        if (!empty($output) && isset($output['CODCARMAT']) && is_array($output['CODCARMAT']) && count($output['CODCARMAT']) > 0) {
-            $total = count($output['CODCARMAT']);
-            $output['TIENE_RUBRICA'] = array();
-            $output['RUBRICA']       = array();
-            for ($i = 0; $i < $total; $i++) {
-                $cMat = isset($output['CODMAT'][$i]) ? $output['CODMAT'][$i] : '';
-                $nMat = isset($output['NOMBREMAT'][$i]) ? $output['NOMBREMAT'][$i] : '';
-                $gr   = isset($output['GRUPO'][$i]) ? $output['GRUPO'][$i] : 'A';
-                $idM  = isset($output['ID_MICRO'][$i]) ? (int)$output['ID_MICRO'][$i] : 0;
-                $em   = isset($output['EMAIL'][$i]) ? $output['EMAIL'][$i] : 'docente@ufps.edu.co';
+        $canonicalList = array(
+            '1151234'  => array('id' => 2, 'shortname' => '1151234', 'fullname' => 'Biología',               'cod_materia' => '1151234', 'sia_codmat' => '1234',  'sia_nom' => 'BIOLOGIA'),
+            '1155678'  => array('id' => 3, 'shortname' => '1155678', 'fullname' => 'Matemáticas',            'cod_materia' => '1155678', 'sia_codmat' => '5678',  'sia_nom' => 'MATEMATICAS'),
+            '11591011' => array('id' => 4, 'shortname' => '91011',   'fullname' => 'Curso prueba práctica', 'cod_materia' => '11591011', 'sia_codmat' => '91011', 'sia_nom' => 'CURSO PRUEBA PRACTICA'),
+            '115p'     => array('id' => 5, 'shortname' => 'p',       'fullname' => 'Prueba',                 'cod_materia' => '115p',     'sia_codmat' => 'p',     'sia_nom' => 'PRUEBA')
+        );
 
-                $curMatch = array('id' => $idM, 'shortname' => $cMat, 'fullname' => $nMat);
-                foreach ($cursosMoodle as $cm) {
-                    if ($this->_coincide_materia($cMat, $cm) || $this->_coincide_materia($nMat, $cm)) {
-                        $curMatch = $cm;
-                        break;
-                    }
-                }
+        $keys = array(
+            'CODCARMAT', 'CODMAT', 'CODMATMAT', 'NOMBREMAT', 'GRUPO', 'CREDITOS', 'SEMESTRE',
+            'DEF', 'ID_MICRO', 'CONTENIDO', 'BIBLIOGRAFIA', 'EMAIL', 'SECCIONAL', 'RUBRICA',
+            'TIENE_RUBRICA', 'NOTA1', 'EST_NOTA1', 'NOTA2', 'EST_NOTA2', 'NOTA3', 'EST_NOTA3',
+            'EXA', 'EST_EXA', 'HAB', 'EST_HAB', 'OPC', 'EST_OPC', 'CLASES'
+        );
 
-                $calc = $this->_calcular_subnotas_materia($curMatch, $todasSubnotas, $todasRubricas);
-
-                $output['TIENE_RUBRICA'][$i] = $calc['tiene_rubrica'] ? 1 : 0;
-                $output['RUBRICA'][$i]       = $calc['tiene_rubrica'] ? 1 : 0;
-
-                if ($calc['est_nota1'] === 'V') {
-                    $output['NOTA1'][$i]     = $calc['nota1'];
-                    $output['EST_NOTA1'][$i] = 'V';
-                }
-                if ($calc['est_nota2'] === 'V') {
-                    $output['NOTA2'][$i]     = $calc['nota2'];
-                    $output['EST_NOTA2'][$i] = 'V';
-                }
-                if ($calc['est_nota3'] === 'V') {
-                    $output['NOTA3'][$i]     = $calc['nota3'];
-                    $output['EST_NOTA3'][$i] = 'V';
-                }
-                if ($calc['est_exa'] === 'V') {
-                    $output['EXA'][$i]       = $calc['exa'];
-                    $output['EST_EXA'][$i]   = 'V';
-                }
-                if ($calc['def'] > 0 || $calc['tiene_rubrica']) {
-                    $output['DEF'][$i]       = $calc['def'];
-                } else {
-                    $defRaw = isset($output['DEF'][$i]) ? floatval($output['DEF'][$i]) : 0.0;
-                    $output['DEF'][$i]       = $this->_normalizar_nota($defRaw);
-                }
-
-                $this->persistir_materia_pensum($codigo, $carreraEst, $alumnoEst, $cMat, $nMat, $gr, $calc, $idM, $em);
+        if (!isset($output['CODMAT']) || !is_array($output['CODMAT'])) {
+            $output = array();
+            foreach ($keys as $k) {
+                $output[$k] = array();
             }
-        } elseif (!empty($cursosMoodle)) {
-            $output = array(
-                'CODCARMAT'     => array(),
-                'CODMAT'        => array(),
-                'CODMATMAT'     => array(),
-                'NOMBREMAT'     => array(),
-                'GRUPO'         => array(),
-                'CREDITOS'      => array(),
-                'SEMESTRE'      => array(),
-                'DEF'           => array(),
-                'ID_MICRO'      => array(),
-                'CONTENIDO'     => array(),
-                'BIBLIOGRAFIA'  => array(),
-                'EMAIL'         => array(),
-                'SECCIONAL'     => array(),
-                'RUBRICA'       => array(),
-                'TIENE_RUBRICA' => array(),
-                'NOTA1'         => array(),
-                'EST_NOTA1'     => array(),
-                'NOTA2'         => array(),
-                'EST_NOTA2'     => array(),
-                'NOTA3'         => array(),
-                'EST_NOTA3'     => array(),
-                'EXA'           => array(),
-                'EST_EXA'       => array(),
-                'HAB'           => array(),
-                'EST_HAB'       => array(),
-                'OPC'           => array(),
-                'EST_OPC'       => array(),
-                'CLASES'        => array()
-            );
-
-            $semestreNum = 1;
-            foreach ($cursosMoodle as $c) {
-                $fullname  = trim($c['fullname']);
-                $shortname = trim($c['shortname']);
-
-                $parsed = $this->_resolver_carrera_materia($shortname, $fullname, $carreraEst);
-                $codCarrera = $parsed['carrera'];
-                $codMateria = $parsed['cod_materia'];
-                $grupo      = $parsed['grupo'];
-
-                $calc = $this->_calcular_subnotas_materia($c, $todasSubnotas, $todasRubricas);
-
-                $profEmail = !empty($c['profesor_email']) ? $c['profesor_email'] : 'docente@ufps.edu.co';
-                $contenido = !empty($c['summary']) ? $c['summary'] : "Curso virtual Moodle: {$fullname}.";
-
-                $output['CODCARMAT'][]     = $codCarrera;
-                $output['CODMAT'][]        = $codMateria;
-                $output['CODMATMAT'][]     = $codMateria;
-                $output['NOMBREMAT'][]     = strtoupper($fullname);
-                $output['GRUPO'][]         = $grupo;
-                $output['CREDITOS'][]      = 3;
-                $output['SEMESTRE'][]      = $semestreNum;
-                $output['DEF'][]           = $calc['def'];
-                $output['ID_MICRO'][]      = (int)$c['id'];
-                $output['CONTENIDO'][]     = $contenido;
-                $output['BIBLIOGRAFIA'][]  = 'Recursos y material bibliográfico disponibles en Moodle.';
-                $output['EMAIL'][]         = $profEmail;
-                $output['SECCIONAL'][]     = '01';
-                $output['RUBRICA'][]       = $calc['tiene_rubrica'] ? 1 : 0;
-                $output['TIENE_RUBRICA'][] = $calc['tiene_rubrica'] ? 1 : 0;
-                $output['NOTA1'][]         = $calc['nota1'];
-                $output['EST_NOTA1'][]     = $calc['est_nota1'];
-                $output['NOTA2'][]         = $calc['nota2'];
-                $output['EST_NOTA2'][]     = $calc['est_nota2'];
-                $output['NOTA3'][]         = $calc['nota3'];
-                $output['EST_NOTA3'][]     = $calc['est_nota3'];
-                $output['EXA'][]           = $calc['exa'];
-                $output['EST_EXA'][]       = $calc['est_exa'];
-                $output['HAB'][]           = 0.0;
-                $output['EST_HAB'][]       = 'S';
-                $output['OPC'][]           = 0.0;
-                $output['EST_OPC'][]       = 'S';
-                $output['CLASES'][]        = array(
-                    'ID'          => array((int)$c['id']),
-                    'FECHA_INI'   => array('Aula Virtual Activa'),
-                    'URL_REUNION' => array('http://localhost:10000/course/view.php?id=' . $c['id'])
-                );
-
-                $this->persistir_materia_pensum($codigo, $codCarrera, $alumnoEst, $codMateria, $fullname, $grupo, $calc, (int)$c['id'], $profEmail);
+        } else {
+            foreach ($keys as $k) {
+                if (!isset($output[$k]) || !is_array($output[$k])) {
+                    $output[$k] = array();
+                }
             }
         }
 
+        $total = count($output['CODMAT']);
+        $matchedCanKeys = array();
+
+        for ($i = 0; $i < $total; $i++) {
+            $cMat = isset($output['CODMAT'][$i]) ? $output['CODMAT'][$i] : '';
+            $nMat = isset($output['NOMBREMAT'][$i]) ? $output['NOMBREMAT'][$i] : '';
+            $gr   = isset($output['GRUPO'][$i]) ? $output['GRUPO'][$i] : 'A';
+            $idM  = isset($output['ID_MICRO'][$i]) ? (int)$output['ID_MICRO'][$i] : 0;
+            $em   = isset($output['EMAIL'][$i]) ? $output['EMAIL'][$i] : 'docente@ufps.edu.co';
+
+            $curMatch = array('id' => $idM, 'shortname' => $cMat, 'fullname' => $nMat);
+            foreach ($cursosMoodle as $cm) {
+                if ($this->_coincide_materia($cMat, $cm) || $this->_coincide_materia($nMat, $cm)) {
+                    $curMatch = $cm;
+                    break;
+                }
+            }
+
+            $canObj = $this->obtener_mapeo_canonical($cMat);
+            if ($canObj === null) {
+                $canObj = $this->obtener_mapeo_canonical($nMat);
+            }
+            if ($canObj !== null) {
+                $matchedCanKeys[$canObj['cod_materia']] = true;
+                if (empty($idM) && !empty($canObj['curso_id'])) {
+                    $idM = $canObj['curso_id'];
+                    $output['ID_MICRO'][$i] = $idM;
+                }
+            }
+
+            $calc = $this->_calcular_subnotas_materia($curMatch, $todasSubnotas, $todasRubricas);
+
+            $output['TIENE_RUBRICA'][$i] = $calc['tiene_rubrica'] ? 1 : 0;
+            $output['RUBRICA'][$i]       = $calc['tiene_rubrica'] ? 1 : 0;
+            $output['NOTA1'][$i]         = $calc['nota1'];
+            $output['EST_NOTA1'][$i]     = $calc['est_nota1'];
+            $output['NOTA2'][$i]         = $calc['nota2'];
+            $output['EST_NOTA2'][$i]     = $calc['est_nota2'];
+            $output['NOTA3'][$i]         = $calc['nota3'];
+            $output['EST_NOTA3'][$i]     = $calc['est_nota3'];
+            $output['EXA'][$i]           = $calc['exa'];
+            $output['EST_EXA'][$i]       = $calc['est_exa'];
+            $output['DEF'][$i]           = $calc['def'];
+
+            $this->persistir_materia_pensum($codigo, $carreraEst, $alumnoEst, $cMat, $nMat, $gr, $calc, $idM, $em);
+        }
+
+        foreach ($canonicalList as $canCod => $canDef) {
+            if (isset($matchedCanKeys[$canCod])) {
+                continue;
+            }
+            $curMatch = array('id' => $canDef['id'], 'shortname' => $canDef['shortname'], 'fullname' => $canDef['fullname']);
+            foreach ($cursosMoodle as $cm) {
+                if ($this->_coincide_materia($canCod, $cm)) {
+                    $curMatch = $cm;
+                    break;
+                }
+            }
+
+            $calc = $this->_calcular_subnotas_materia($curMatch, $todasSubnotas, $todasRubricas);
+
+            $output['CODCARMAT'][]     = $carreraEst;
+            $output['CODMAT'][]        = $canDef['sia_codmat'];
+            $output['CODMATMAT'][]     = $canDef['sia_codmat'];
+            $output['NOMBREMAT'][]     = $canDef['sia_nom'];
+            $output['GRUPO'][]         = 'A';
+            $output['CREDITOS'][]      = 3;
+            $output['SEMESTRE'][]      = 1;
+            $output['DEF'][]           = $calc['def'];
+            $output['ID_MICRO'][]      = $canDef['id'];
+            $output['CONTENIDO'][]     = 'Contenido Moodle';
+            $output['BIBLIOGRAFIA'][]  = 'Recursos y material bibliografico disponibles en Moodle.';
+            $output['EMAIL'][]         = 'docente@ufps.edu.co';
+            $output['SECCIONAL'][]     = '01';
+            $output['RUBRICA'][]       = $calc['tiene_rubrica'] ? 1 : 0;
+            $output['TIENE_RUBRICA'][] = $calc['tiene_rubrica'] ? 1 : 0;
+            $output['NOTA1'][]         = $calc['nota1'];
+            $output['EST_NOTA1'][]     = $calc['est_nota1'];
+            $output['NOTA2'][]         = $calc['nota2'];
+            $output['EST_NOTA2'][]     = $calc['est_nota2'];
+            $output['NOTA3'][]         = $calc['nota3'];
+            $output['EST_NOTA3'][]     = $calc['est_nota3'];
+            $output['EXA'][]           = $calc['exa'];
+            $output['EST_EXA'][]       = $calc['est_exa'];
+            $output['HAB'][]           = 0.0;
+            $output['EST_HAB'][]       = 'S';
+            $output['OPC'][]           = 0.0;
+            $output['EST_OPC'][]       = 'S';
+            $output['CLASES'][]        = array(
+                'ID'          => array((int)$canDef['id']),
+                'FECHA_INI'   => array('Aula Virtual Activa'),
+                'URL_REUNION' => array('http://localhost:10000/course/view.php?id=' . $canDef['id'])
+            );
+
+            $this->persistir_materia_pensum($codigo, $carreraEst, $alumnoEst, $canDef['sia_codmat'], $canDef['sia_nom'], 'A', $calc, $canDef['id'], 'docente@ufps.edu.co');
+        }
+
         return $output;
+    }
     }
 
     public function codigo_proyecto($cod_carrera, $cod_alumno) {

@@ -167,12 +167,12 @@ if (!empty($courses)) {
                         $rawVal = ($gr->finalgrade !== null) ? (float)$gr->finalgrade : (($gr->rawgrade !== null) ? (float)$gr->rawgrade : null);
                         if ($rawVal !== null) {
                             if ($cMax > 0 && abs($cMax - 5.0) > 0.01) {
-                                $courseTotalGrade = round(($rawVal / $cMax) * 5.0, 1);
+                                $courseTotalGrade = round(($rawVal / $cMax) * 5.0, 2);
                             } else {
-                                $courseTotalGrade = round($rawVal, 1);
+                                $courseTotalGrade = round($rawVal, 2);
                             }
                         }
-                    } elseif ($gr->itemtype === 'category') {
+                    } elseif ($gr->itemtype === 'category' || $gr->itemtype === 'manual') {
                         $rawName = !empty($gr->itemname) ? (string)$gr->itemname : '';
                         $itemName = strtolower(trim($rawName));
                         $catGrade = null;
@@ -234,37 +234,41 @@ if (!empty($courses)) {
         }
 
         if ($nota1 !== null && $nota1 > 5.0) {
-            $nota1 = round(($nota1 / 100.0) * 5.0, 1);
+            $nota1 = round(($nota1 / 100.0) * 5.0, 2);
             if ($nota1 > 5.0) { $nota1 = 5.0; }
         }
         if ($nota2 !== null && $nota2 > 5.0) {
-            $nota2 = round(($nota2 / 100.0) * 5.0, 1);
+            $nota2 = round(($nota2 / 100.0) * 5.0, 2);
             if ($nota2 > 5.0) { $nota2 = 5.0; }
         }
         if ($nota3 !== null && $nota3 > 5.0) {
-            $nota3 = round(($nota3 / 100.0) * 5.0, 1);
+            $nota3 = round(($nota3 / 100.0) * 5.0, 2);
             if ($nota3 > 5.0) { $nota3 = 5.0; }
         }
         if ($exa !== null && $exa > 5.0) {
-            $exa = round(($exa / 100.0) * 5.0, 1);
+            $exa = round(($exa / 100.0) * 5.0, 2);
             if ($exa > 5.0) { $exa = 5.0; }
         }
 
-        $sumPart = 0.0;
-        $cntPart = 0;
-        if ($nota1 !== null) { $sumPart += $nota1; $cntPart++; }
-        if ($nota2 !== null) { $sumPart += $nota2; $cntPart++; }
-        if ($nota3 !== null) { $sumPart += $nota3; $cntPart++; }
-        if ($exa   !== null) { $sumPart += $exa;   $cntPart++; }
-
-        if ($cntPart > 0) {
-            $definitiva = round($sumPart / $cntPart, 1);
+        if ($courseTotalGrade !== null) {
+            $definitiva = round($courseTotalGrade, 2);
         } else {
-            $definitiva = 0.0;
+            $sumPart = 0.0;
+            $cntPart = 0;
+            if ($nota1 !== null) { $sumPart += $nota1; $cntPart++; }
+            if ($nota2 !== null) { $sumPart += $nota2; $cntPart++; }
+            if ($nota3 !== null) { $sumPart += $nota3; $cntPart++; }
+            if ($exa   !== null) { $sumPart += $exa;   $cntPart++; }
+
+            if ($cntPart > 0) {
+                $definitiva = round($sumPart / $cntPart, 2);
+            } else {
+                $definitiva = 0.0;
+            }
         }
 
         if ($definitiva !== null && $definitiva > 5.0) {
-            $definitiva = round(($definitiva / 100.0) * 5.0, 1);
+            $definitiva = round(($definitiva / 100.0) * 5.0, 2);
         }
         if ($definitiva !== null && $definitiva > 5.0) {
             $definitiva = 5.0;

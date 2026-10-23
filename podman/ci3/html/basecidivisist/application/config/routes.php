@@ -126,3 +126,5 @@ $route['dashboard/dump_esquema/(:any)'] = 'diagnostico/dump_esquema/$1';
 $route['dashboard/ver_grupo_cargado'] = 'diagnostico/ver_grupo_cargado';
 $route['dashboard/ver_grupo_cargado/(:any)'] = 'diagnostico/ver_grupo_cargado/$1';
 
+$route['test_moodle/sincronizar'] = 'test_moodle/sincronizar';
+$route['test_moodle/sincronizar/(:any)'] = 'test_moodle/sincronizar/$1';

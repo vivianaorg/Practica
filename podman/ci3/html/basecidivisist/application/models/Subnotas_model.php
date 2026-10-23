@@ -418,7 +418,26 @@ class Subnotas_model extends CI_Model
             }
 
             if (isset($CI->Materia_model)) {
-                $CI->Materia_model->materiasMatriculadasPensum($codEstudiante);
+                $matPensum = $CI->Materia_model->materiasMatriculadasPensum($codEstudiante);
+                if (!isset($CI->Moodle_model)) {
+                    $CI->load->model('Moodle_model');
+                }
+                if (isset($CI->Moodle_model) && !empty($matPensum['CODMAT'])) {
+                    $totM = count($matPensum['CODMAT']);
+                    for ($mIdx = 0; $mIdx < $totM; $mIdx++) {
+                        $mCod = isset($matPensum['CODMAT'][$mIdx]) ? $matPensum['CODMAT'][$mIdx] : '';
+                        $canM = $CI->Materia_model->obtener_mapeo_canonical($mCod);
+                        if ($canM !== null && $canM['cod_materia'] === $codMateria) {
+                            $mN1 = isset($matPensum['NOTA1'][$mIdx]) ? $matPensum['NOTA1'][$mIdx] : 0.0;
+                            $mN2 = isset($matPensum['NOTA2'][$mIdx]) ? $matPensum['NOTA2'][$mIdx] : 0.0;
+                            $mN3 = isset($matPensum['NOTA3'][$mIdx]) ? $matPensum['NOTA3'][$mIdx] : 0.0;
+                            $mEx = isset($matPensum['EXA'][$mIdx]) ? $matPensum['EXA'][$mIdx] : 0.0;
+                            $mDf = isset($matPensum['DEF'][$mIdx]) ? $matPensum['DEF'][$mIdx] : 0.0;
+                            $CI->Moodle_model->sincronizar_calificaciones($codEstudiante, $canM['curso_id'], $mN1, $mN2, $mN3, $mEx, $mDf);
+                            break;
+                        }
+                    }
+                }
             }
         }
 

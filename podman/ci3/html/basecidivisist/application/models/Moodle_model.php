@@ -123,4 +123,21 @@ class Moodle_model extends CI_Model
 
         return $decodificado;
     }
+
+    public function sincronizar_calificaciones($codigo, $curso, $nota1 = null, $nota2 = null, $nota3 = null, $exa = null, $def = null)
+    {
+        $params = array(
+            'token'  => $this->token,
+            'codigo' => $codigo,
+            'curso'  => $curso
+        );
+        if ($nota1 !== null) { $params['nota1'] = $nota1; }
+        if ($nota2 !== null) { $params['nota2'] = $nota2; }
+        if ($nota3 !== null) { $params['nota3'] = $nota3; }
+        if ($exa   !== null) { $params['exa']   = $exa; }
+        if ($def   !== null) { $params['def']   = $def; }
+
+        $url = $this->base_url . '/sincronizar_calificaciones.php?' . http_build_query($params);
+        return $this->_llamar_endpoint($url);
+    }
 }

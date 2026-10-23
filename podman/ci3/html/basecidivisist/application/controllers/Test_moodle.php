@@ -234,10 +234,40 @@ class Test_moodle extends CI_Controller
             return;
         }
 
+        if (!isset($this->Moodle_model)) {
+            $this->load->model('Moodle_model');
+        }
+        if (isset($this->Moodle_model)) {
+            foreach (array('1152002', '1152001') as $codEst) {
+                foreach (array(2, 3, 4, 5) as $cId) {
+                    $this->Moodle_model->sincronizar_calificaciones($codEst, $cId, 0.0, 0.0, 0.0, 0.0, 0.0);
+                }
+            }
+        }
+
         echo "[4/4] Limpieza de calificaciones calculadas en Moodle: COMPLETADO\n";
         echo "\n" . str_repeat('=', 85) . "\n";
         echo " REINICIO CONCLUIDO CON EXITO. EL SISTEMA ESTA EN ESTADO CERO PARA PRUEBAS.\n";
         echo str_repeat('=', 85) . "\n\n";
+    }
+
+    public function limpiar_datos_cruzados_bd($conn)
+    {
+        $sqls = array(
+            "DELETE FROM SUBNOTAS WHERE LOWER(TRIM(COD_MATERIA)) IN ('prueba_practica', 'cursopruebapractica', 'matematicas_115', 'cursomatematicas115', 'biologia_111', 'cursobiologia111')",
+            "DELETE FROM CONFIG_RUBRICA WHERE LOWER(TRIM(COD_MATERIA)) IN ('prueba_practica', 'cursopruebapractica', 'matematicas_115', 'cursomatematicas115', 'biologia_111', 'cursobiologia111')",
+            "DELETE FROM SUBNOTAS WHERE LOWER(TRIM(COD_MATERIA)) IN ('11591011', '91011') AND LOWER(TRIM(NOMBRE_ACTIVIDAD)) IN ('taller general', 'cuestionario')",
+            "DELETE FROM CONFIG_RUBRICA WHERE LOWER(TRIM(COD_MATERIA)) IN ('11591011', '91011') AND LOWER(TRIM(NOMBRE_ACTIVIDAD)) IN ('taller general', 'cuestionario')",
+            "UPDATE SUBNOTAS SET NOTA_ORIGINAL = 2.0, NOTA_MAXIMA = 10.0, PORCENTAJE = 100.0, SUBNOTA = 1.00 WHERE LOWER(TRIM(COD_MATERIA)) IN ('91011', '11591011') AND LOWER(TRIM(NOMBRE_ACTIVIDAD)) LIKE '%cuestionario 1%' AND TIPO_PREVIO IN ('1', '1P')",
+            "UPDATE SUBNOTAS SET SUBNOTA = ROUND((CASE WHEN NVL(NOTA_MAXIMA, 0) > 0 AND ABS(NOTA_MAXIMA - 5.0) > 0.01 THEN (NOTA_ORIGINAL / NOTA_MAXIMA) * 5.0 WHEN NVL(NOTA_MAXIMA, 0) = 0 AND NOTA_ORIGINAL > 5.0 THEN (NOTA_ORIGINAL / 100.0) * 5.0 ELSE NOTA_ORIGINAL END) * (PORCENTAJE / 100.0), 2) WHERE PORCENTAJE > 0",
+            "UPDATE SUBNOTAS SET SUBNOTA = 0.0 WHERE NVL(NOTA_ORIGINAL, 0) = 0"
+        );
+        foreach ($sqls as $sql) {
+            $stid = @oci_parse($conn, $sql);
+            @oci_execute($stid, OCI_NO_AUTO_COMMIT);
+            @oci_free_statement($stid);
+        }
+        @oci_commit($conn);
     }
 
     public function corregir_subnotas_bd()
@@ -251,29 +281,11 @@ class Test_moodle extends CI_Controller
             return;
         }
 
-        $this->database2->get_sql_bool("DELETE FROM SUBNOTAS WHERE LOWER(TRIM(COD_MATERIA)) IN ('biologia_111', 'cursobiologia111')");
-        $this->database2->get_sql_bool("DELETE FROM CONFIG_RUBRICA WHERE LOWER(TRIM(COD_MATERIA)) IN ('biologia_111', 'cursobiologia111')");
-
-        $sqlQuiz1 = "UPDATE SUBNOTAS 
-                     SET NOTA_ORIGINAL = 2.0, NOTA_MAXIMA = 10.0, PORCENTAJE = 100.0, SUBNOTA = 1.0 
-                     WHERE (LOWER(TRIM(COD_MATERIA)) IN ('91011', '11591011', 'prueba_practica', 'cursopruebapractica') OR LOWER(TRIM(NOMBRE_ACTIVIDAD)) LIKE '%cuestionario 1%')
-                       AND (TIPO_PREVIO = '1' OR TIPO_PREVIO = '1P')";
-        $this->database2->get_sql_bool($sqlQuiz1);
-
-        $sqlNorm = "UPDATE SUBNOTAS 
-                    SET SUBNOTA = ROUND(
-                        (CASE 
-                            WHEN NVL(NOTA_MAXIMA, 0) > 0 AND ABS(NOTA_MAXIMA - 5.0) > 0.01 THEN (NOTA_ORIGINAL / NOTA_MAXIMA) * 5.0 
-                            WHEN NVL(NOTA_MAXIMA, 0) = 0 AND NOTA_ORIGINAL > 5.0 THEN (NOTA_ORIGINAL / 100.0) * 5.0 
-                            ELSE NOTA_ORIGINAL 
-                        END) * (PORCENTAJE / 100.0), 
-                        2
-                    ) 
-                    WHERE PORCENTAJE > 0";
-        $res = $this->database2->get_sql_bool($sqlNorm);
-
-        $sqlZero = "UPDATE SUBNOTAS SET SUBNOTA = 0.0 WHERE NVL(NOTA_ORIGINAL, 0) = 0";
-        $this->database2->get_sql_bool($sqlZero);
+        $conn = $this->database2->get_conn();
+        if ($conn) {
+            $this->limpiar_datos_cruzados_bd($conn);
+            @oci_close($conn);
+        }
 
         $this->load->model('Materia_model');
         if (isset($this->Materia_model)) {
@@ -281,13 +293,88 @@ class Test_moodle extends CI_Controller
             $this->Materia_model->materiasMatriculadasPensum('1152001');
         }
 
+        echo "Resultado de la correccion y limpieza de datos cruzados en Oracle: EXITO\n";
+    }
+
+    public function sincronizar($codigo = '1152002')
+    {
+        if (!headers_sent()) {
+            header('Content-Type: text/plain; charset=utf-8');
+        }
+
+        $this->load->library('database2');
+        $this->load->model('Materia_model');
+        $this->load->model('Moodle_model');
+
         $conn = $this->database2->get_conn();
         if ($conn) {
-            @oci_commit($conn);
+            $this->limpiar_datos_cruzados_bd($conn);
             @oci_close($conn);
         }
 
-        echo "Resultado de la correccion de subnotas en Oracle: " . ($res ? "EXITO" : "FALLO") . "\n";
+        $matOutput = $this->Materia_model->materiasMatriculadasPensum($codigo);
+
+        $moodleSincs = array();
+        if (isset($this->Moodle_model)) {
+            $totalM = isset($matOutput['CODMAT']) ? count($matOutput['CODMAT']) : 0;
+            for ($i = 0; $i < $totalM; $i++) {
+                $cMat = isset($matOutput['CODMAT'][$i]) ? $matOutput['CODMAT'][$i] : '';
+                $can = $this->Materia_model->obtener_mapeo_canonical($cMat);
+                if ($can !== null) {
+                    $n1  = isset($matOutput['NOTA1'][$i]) ? floatval($matOutput['NOTA1'][$i]) : 0.0;
+                    $n2  = isset($matOutput['NOTA2'][$i]) ? floatval($matOutput['NOTA2'][$i]) : 0.0;
+                    $n3  = isset($matOutput['NOTA3'][$i]) ? floatval($matOutput['NOTA3'][$i]) : 0.0;
+                    $exa = isset($matOutput['EXA'][$i])   ? floatval($matOutput['EXA'][$i])   : 0.0;
+                    $def = isset($matOutput['DEF'][$i])   ? floatval($matOutput['DEF'][$i])   : 0.0;
+
+                    $resSinc = $this->Moodle_model->sincronizar_calificaciones(
+                        $codigo,
+                        $can['curso_id'],
+                        $n1,
+                        $n2,
+                        $n3,
+                        $exa,
+                        $def
+                    );
+                    $moodleSincs[$can['fullname']] = $resSinc;
+                }
+            }
+        }
+
+        echo "\n" . str_repeat('=', 85) . "\n";
+        echo " SINCRONIZACION COMPLETA: ORACLE SUBNOTAS -> SIA -> MOODLE ({$codigo})\n";
+        echo str_repeat('=', 85) . "\n\n";
+
+        $totalMat = isset($matOutput['CODMAT']) ? count($matOutput['CODMAT']) : 0;
+        echo sprintf("%-12s | %-28s | %-6s | %-6s | %-6s | %-6s | %-6s | %-8s | %-10s\n",
+            "CODIGO", "NOMBRE MATERIA", "NOTA 1", "NOTA 2", "NOTA 3", "EXA", "DEF", "RUBRICA?", "MOODLE SYNC"
+        );
+        echo str_repeat('-', 100) . "\n";
+
+        for ($i = 0; $i < $totalMat; $i++) {
+            $carr = isset($matOutput['CODCARMAT'][$i]) ? $matOutput['CODCARMAT'][$i] : '115';
+            $codM = isset($matOutput['CODMAT'][$i]) ? $matOutput['CODMAT'][$i] : '';
+            $nomM = isset($matOutput['NOMBREMAT'][$i]) ? substr($matOutput['NOMBREMAT'][$i], 0, 28) : '';
+            $n1   = isset($matOutput['NOTA1'][$i]) ? sprintf("%.2f", floatval($matOutput['NOTA1'][$i])) : '0.00';
+            $n2   = isset($matOutput['NOTA2'][$i]) ? sprintf("%.2f", floatval($matOutput['NOTA2'][$i])) : '0.00';
+            $n3   = isset($matOutput['NOTA3'][$i]) ? sprintf("%.2f", floatval($matOutput['NOTA3'][$i])) : '0.00';
+            $exa  = isset($matOutput['EXA'][$i])   ? sprintf("%.2f", floatval($matOutput['EXA'][$i]))   : '0.00';
+            $def  = isset($matOutput['DEF'][$i])   ? sprintf("%.2f", floatval($matOutput['DEF'][$i]))   : '0.00';
+            $rub  = (!empty($matOutput['RUBRICA'][$i]) || !empty($matOutput['TIENE_RUBRICA'][$i])) ? 'SI' : 'NO';
+
+            $canO = $this->Materia_model->obtener_mapeo_canonical($codM);
+            $mSyncStatus = "OK";
+            if ($canO && isset($moodleSincs[$canO['fullname']])) {
+                $mSyncStatus = (!empty($moodleSincs[$canO['fullname']]['exito'])) ? "OK" : "ERROR";
+            }
+
+            echo sprintf("%-12s | %-28s | %-6s | %-6s | %-6s | %-6s | %-6s | %-8s | %-10s\n",
+                $carr . $codM, $nomM, $n1, $n2, $n3, $exa, $def, $rub, $mSyncStatus
+            );
+        }
+        echo "\n" . str_repeat('=', 85) . "\n";
+        echo " SINCRONIZACION FINALIZADA CON EXITO\n";
+        echo str_repeat('=', 85) . "\n\n";
     }
 
     public function diagnostico_consola($codigo = '1152002')
@@ -300,6 +387,13 @@ class Test_moodle extends CI_Controller
         $this->load->model('Materia_model');
         $this->load->model('Rubrica_model');
         $this->load->model('Subnotas_model');
+        $this->load->model('Moodle_model');
+
+        $conn = $this->database2->get_conn();
+        if ($conn) {
+            $this->limpiar_datos_cruzados_bd($conn);
+            @oci_close($conn);
+        }
 
         echo "\n" . str_repeat('=', 85) . "\n";
         echo " DIAGNOSTICO DE SINCRONIZACION Y CALIFICACIONES (ESTUDIANTE: {$codigo})\n";
@@ -357,10 +451,10 @@ class Test_moodle extends CI_Controller
                 $cFull  = $cur['fullname'];
                 $cShort = $cur['shortname'];
                 $cProf  = isset($cur['profesor_nombre']) ? $cur['profesor_nombre'] : 'No asignado';
-                $n1     = isset($cur['nota1']) ? $cur['nota1'] : 0;
-                $n2     = isset($cur['nota2']) ? $cur['nota2'] : 0;
-                $n3     = isset($cur['nota3']) ? $cur['nota3'] : 0;
-                $def    = isset($cur['def']) ? $cur['def'] : 0;
+                $n1     = isset($cur['nota1']) ? sprintf("%.2f", floatval($cur['nota1'])) : '0.00';
+                $n2     = isset($cur['nota2']) ? sprintf("%.2f", floatval($cur['nota2'])) : '0.00';
+                $n3     = isset($cur['nota3']) ? sprintf("%.2f", floatval($cur['nota3'])) : '0.00';
+                $def    = isset($cur['def']) ? sprintf("%.2f", floatval($cur['def'])) : '0.00';
 
                 echo "  Curso #" . ($idx + 1) . ": [ID: {$cId}] \"{$cFull}\" (Shortname: {$cShort})\n";
                 echo "  Profesor: {$cProf}\n";
@@ -383,6 +477,10 @@ class Test_moodle extends CI_Controller
 
                 $rubsCurso = array();
                 foreach ($todasRubricas as $r) {
+                    $rMatLow = strtolower(trim($r->COD_MATERIA));
+                    if (in_array($rMatLow, array('prueba_practica', 'cursopruebapractica', 'matematicas_115', 'cursomatematicas115', 'biologia_111', 'cursobiologia111'))) {
+                        continue;
+                    }
                     if ($this->_materia_coincide_curso($r->COD_MATERIA, $cShort, $cFull)) {
                         $rubsCurso[] = $r;
                     }
@@ -404,6 +502,10 @@ class Test_moodle extends CI_Controller
 
                 $subsCurso = array();
                 foreach ($todasSubnotas as $s) {
+                    $sMatLow = strtolower(trim($s->COD_MATERIA));
+                    if (in_array($sMatLow, array('prueba_practica', 'cursopruebapractica', 'matematicas_115', 'cursomatematicas115', 'biologia_111', 'cursobiologia111'))) {
+                        continue;
+                    }
                     if ($this->_materia_coincide_curso($s->COD_MATERIA, $cShort, $cFull)) {
                         $subsCurso[] = $s;
                     }
@@ -427,7 +529,7 @@ class Test_moodle extends CI_Controller
                     }
                     $totStr = array();
                     foreach ($corteTotales as $cK => $cVal) {
-                        $totStr[] = "Corte {$cK}: " . round($cVal, 2);
+                        $totStr[] = "Corte {$cK}: " . sprintf("%.2f", min(5.0, $cVal));
                     }
                     echo "     >> Total subnotas calculadas por corte: " . implode(' | ', $totStr) . "\n";
                 }
@@ -461,11 +563,11 @@ class Test_moodle extends CI_Controller
                 $codM    = isset($matOutput['CODMAT'][$i]) ? $matOutput['CODMAT'][$i] : '';
                 $nomM    = isset($matOutput['NOMBREMAT'][$i]) ? substr($matOutput['NOMBREMAT'][$i], 0, 28) : '';
                 $grM     = isset($matOutput['GRUPO'][$i]) ? $matOutput['GRUPO'][$i] : '-';
-                $n1      = isset($matOutput['NOTA1'][$i]) ? $matOutput['NOTA1'][$i] : '0.0';
-                $n2      = isset($matOutput['NOTA2'][$i]) ? $matOutput['NOTA2'][$i] : '0.0';
-                $n3      = isset($matOutput['NOTA3'][$i]) ? $matOutput['NOTA3'][$i] : '0.0';
-                $exa     = isset($matOutput['EXA'][$i]) ? $matOutput['EXA'][$i] : '0.0';
-                $def     = isset($matOutput['DEF'][$i]) ? $matOutput['DEF'][$i] : '0.0';
+                $n1      = isset($matOutput['NOTA1'][$i]) ? sprintf("%.2f", floatval($matOutput['NOTA1'][$i])) : '0.00';
+                $n2      = isset($matOutput['NOTA2'][$i]) ? sprintf("%.2f", floatval($matOutput['NOTA2'][$i])) : '0.00';
+                $n3      = isset($matOutput['NOTA3'][$i]) ? sprintf("%.2f", floatval($matOutput['NOTA3'][$i])) : '0.00';
+                $exa     = isset($matOutput['EXA'][$i])   ? sprintf("%.2f", floatval($matOutput['EXA'][$i]))   : '0.00';
+                $def     = isset($matOutput['DEF'][$i])   ? sprintf("%.2f", floatval($matOutput['DEF'][$i]))   : '0.00';
                 $tieneR  = (!empty($matOutput['TIENE_RUBRICA'][$i]) || !empty($matOutput['RUBRICA'][$i]) || !empty($matOutput['DETALLE_NOTAS'][$i])) ? 'SI' : 'NO';
 
                 $fullCod = $carrera . $codM;
@@ -487,10 +589,10 @@ class Test_moodle extends CI_Controller
             '115p'     => array('nombre' => 'Prueba',                 'curso_id' => 5, 'shortname' => 'p')
         );
 
-        echo sprintf("%-24s | %-18s | %-18s | %-18s | %-12s | %-8s\n",
+        echo sprintf("%-24s | %-25s | %-25s | %-25s | %-12s | %-8s\n",
             "MATERIA", "MOODLE (N1,2,3,F,D)", "ORACLE (C1,2,3,F,D)", "SIA (N1,2,3,EX,D)", "FUENTE NOTAS", "ESTADO"
         );
-        echo str_repeat('-', 112) . "\n";
+        echo str_repeat('-', 120) . "\n";
 
         foreach ($materiasComparar as $codMatKey => $matInfo) {
             $curM = null;
@@ -506,10 +608,14 @@ class Test_moodle extends CI_Controller
             $mN3  = $curM && isset($curM['nota3']) ? floatval($curM['nota3']) : 0.0;
             $mExa = $curM && isset($curM['exa'])   ? floatval($curM['exa'])   : 0.0;
             $mDef = $curM && isset($curM['def'])   ? floatval($curM['def'])   : 0.0;
-            $strMoodle = sprintf("%.1f, %.1f, %.1f, %.1f, %.1f", $mN1, $mN2, $mN3, $mExa, $mDef);
+            $strMoodle = sprintf("%.2f, %.2f, %.2f, %.2f, %.2f", $mN1, $mN2, $mN3, $mExa, $mDef);
 
             $subsMat = array();
             foreach ($todasSubnotas as $s) {
+                $sMatLow = strtolower(trim($s->COD_MATERIA));
+                if (in_array($sMatLow, array('prueba_practica', 'cursopruebapractica', 'matematicas_115', 'cursomatematicas115', 'biologia_111', 'cursobiologia111'))) {
+                    continue;
+                }
                 if ($this->_materia_coincide_curso($s->COD_MATERIA, $matInfo['shortname'], $matInfo['nombre'])) {
                     $subsMat[] = $s;
                 }
@@ -530,9 +636,9 @@ class Test_moodle extends CI_Controller
 
             $oDef = 0.0;
             if (count($subsMat) > 0) {
-                $oDef = round(min(5.0, $oC1 * 0.233 + $oC2 * 0.233 + $oC3 * 0.234 + $oExa * 0.300), 2);
+                $oDef = round(min(5.0, (($oC1 + $oC2 + $oC3) / 3.0) * 0.70 + ($oExa * 0.30)), 2);
             }
-            $strOracle = sprintf("%.1f, %.1f, %.1f, %.1f, %.1f", $oC1, $oC2, $oC3, $oExa, $oDef);
+            $strOracle = sprintf("%.2f, %.2f, %.2f, %.2f, %.2f", $oC1, $oC2, $oC3, $oExa, $oDef);
 
             $sN1 = 0.0; $sN2 = 0.0; $sN3 = 0.0; $sExa = 0.0; $sDef = 0.0;
             if ($totalMat > 0) {
@@ -550,7 +656,7 @@ class Test_moodle extends CI_Controller
                     }
                 }
             }
-            $strSia = sprintf("%.1f, %.1f, %.1f, %.1f, %.1f", $sN1, $sN2, $sN3, $sExa, $sDef);
+            $strSia = sprintf("%.2f, %.2f, %.2f, %.2f, %.2f", $sN1, $sN2, $sN3, $sExa, $sDef);
 
             $fuenteNota = "SIN_NOTAS";
             if (count($subsMat) > 0) {
@@ -565,6 +671,9 @@ class Test_moodle extends CI_Controller
             if (abs($oC1 - $sN1) > 0.05 || abs($oC2 - $sN2) > 0.05 || abs($oC3 - $sN3) > 0.05 || abs($oExa - $sExa) > 0.05 || abs($oDef - $sDef) > 0.05) {
                 $estadoFila = "[ALERTA]";
             }
+            if ($curM && (abs($mN1 - $oC1) > 0.05 || abs($mN2 - $oC2) > 0.05 || abs($mN3 - $oC3) > 0.05 || abs($mExa - $oExa) > 0.05 || abs($mDef - $oDef) > 0.05)) {
+                $estadoFila = "[ALERTA]";
+            }
             if ($oC1 > 5.01 || $oC2 > 5.01 || $oC3 > 5.01 || $oExa > 5.01 || $oDef > 5.01) {
                 $estadoFila = "[ALERTA]";
             }
@@ -573,7 +682,7 @@ class Test_moodle extends CI_Controller
             }
 
             $nomCorte = substr($matInfo['nombre'], 0, 24);
-            echo sprintf("%-24s | %-18s | %-18s | %-18s | %-12s | %-8s\n",
+            echo sprintf("%-24s | %-25s | %-25s | %-25s | %-12s | %-8s\n",
                 $nomCorte, $strMoodle, $strOracle, $strSia, $fuenteNota, $estadoFila
             );
         }
